@@ -6,36 +6,7 @@ hooks:
     - matcher: "Task"
       hooks:
         - type: command
-          command: |
-            #!/bin/bash
-            # Validate flow-iteration subagent invocation
-            # This hook ensures PRD files exist before spawning flow-iteration agent
-
-            # ALWAYS exit 0 (success) unless PRD validation fails
-            # Never exit with error codes that would stop the flow
-
-            # Extract subagent_type - try jq first, fall back to grep
-            SUBAGENT_TYPE=""
-
-            if command -v jq >/dev/null 2>&1; then
-              # Use jq for robust JSON parsing
-              SUBAGENT_TYPE=$(echo "$TOOL_INPUT" | jq -r '.subagent_type // empty' 2>/dev/null) || SUBAGENT_TYPE=""
-            else
-              # Fallback to grep pattern matching
-              SUBAGENT_TYPE=$(echo "$TOOL_INPUT" | grep -oP '"subagent_type"\s*:\s*"\K[^"]+' 2>/dev/null | head -1) || SUBAGENT_TYPE=""
-            fi
-
-            # Only validate if this is a flow-iteration agent call
-            if [ "$SUBAGENT_TYPE" = "flow-iteration" ]; then
-              # Check if at least one PRD file exists
-              if ! ls docs/prd-*.json 2>/dev/null | grep -q .; then
-                echo "Error: No PRD files found in docs/. Create a PRD first using the flow-prd skill." >&2
-                exit 3  # Exit code 3 signals missing PRD
-              fi
-            fi
-
-            # Always exit 0 for success
-            exit 0
+          command: node -e "const fs=require('fs');try{const input=JSON.parse(process.env.TOOL_INPUT||'{}');if(input.subagent_type==='flow-iteration'){if(!fs.existsSync('docs')){console.error('Error: No docs/ directory found. Create a PRD first using the flow-prd skill.');process.exit(3);}const prds=fs.readdirSync('docs').filter(f=>f.startsWith('prd-')&&f.endsWith('.json'));if(prds.length===0){console.error('Error: No PRD files found in docs/. Create a PRD first using the flow-prd skill.');process.exit(3);}}process.exit(0);}catch(e){process.exit(0);}"
           once: false
 ---
 

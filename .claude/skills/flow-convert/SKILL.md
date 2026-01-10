@@ -47,6 +47,21 @@ Take a PRD and convert it to `docs/prd-[feature-name].json`. Create `docs/` fold
 
 **CRITICAL:** Each story MUST include a `mavenSteps` array that specifies which Maven workflow steps are required.
 
+**Maven Step to Agent Mapping:**
+
+| Maven Step | Agent | Description |
+|------------|-------|-------------|
+| 1 | development-agent | Foundation - Import UI with mock data or create from scratch |
+| 2 | development-agent | Package Manager - Convert npm → pnpm |
+| 3 | refactor-agent | Feature Structure - Restructure to feature-based folder structure |
+| 4 | refactor-agent | Modularization - Modularize components >300 lines |
+| 5 | quality-agent | Type Safety - No 'any' types, @ aliases |
+| 6 | refactor-agent | UI Centralization - Centralize UI components to @shared/ui |
+| 7 | development-agent | Data Layer - Centralized data layer with backend setup |
+| 8 | security-agent | Auth Integration - Firebase + Supabase authentication flow |
+| 9 | development-agent | MCP Integration - MCP integrations (web-search, web-reader, chrome, expo, supabase) |
+| 10 | security-agent | Security & Error Handling - Security and error handling |
+
 **Map Maven steps to story types:**
 
 | Story Type | Required Maven Steps |
