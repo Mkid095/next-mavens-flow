@@ -34,11 +34,56 @@ Take a PRD and convert it to `docs/prd-[feature-name].json`. Create `docs/` fold
         "Criterion 2",
         "Typecheck passes"
       ],
+      "mavenSteps": [1, 7],
       "priority": 1,
       "passes": false,
       "notes": ""
     }
   ]
+}
+```
+
+### Maven Steps Field
+
+**CRITICAL:** Each story MUST include a `mavenSteps` array that specifies which Maven workflow steps are required.
+
+**Map Maven steps to story types:**
+
+| Story Type | Required Maven Steps |
+|------------|---------------------|
+| New feature UI from scratch | [1, 3, 5, 6, 10] |
+| Adding UI component to existing page | [3, 5, 6] |
+| Database schema changes | [1, 7] |
+| Backend API/Server actions | [1, 7, 10] |
+| Authentication flow | [1, 7, 8, 10] |
+| MCP integration | [9] |
+| Refactoring existing code | [4, 5] |
+| Full feature (schema + backend + UI) | [1, 3, 4, 5, 6, 7, 10] |
+
+**Example assignments:**
+```json
+// Database migration story
+{
+  "id": "US-001",
+  "title": "Add status column to tasks table",
+  "mavenSteps": [1, 7],  // Foundation + Data layer
+  ...
+}
+
+// UI component story
+{
+  "id": "US-002",
+  "title": "Add status badge to task cards",
+  "mavenSteps": [5, 6],  // Type safety + UI centralization
+  ...
+}
+
+// Full feature story
+{
+  "id": "US-003",
+  "title": "Create user profile page",
+  "mavenSteps": [1, 3, 5, 6, 7, 10],  // Most steps
+  ...
 }
 ```
 
@@ -121,6 +166,7 @@ For testable stories:
 4. **All stories**: `passes: false` and empty `notes`
 5. **branchName**: Derive from feature name, kebab-case, prefixed with `flow/`
 6. **Always add**: "Typecheck passes" to every story's acceptance criteria
+7. **CRITICAL**: Add `mavenSteps` array to each story - see Maven Steps Field section above
 
 ---
 
@@ -174,6 +220,7 @@ Add ability to mark tasks with different statuses.
         "Generate and run migration successfully",
         "Typecheck passes"
       ],
+      "mavenSteps": [1, 7],
       "priority": 1,
       "passes": false,
       "notes": ""
@@ -188,6 +235,7 @@ Add ability to mark tasks with different statuses.
         "Typecheck passes",
         "Verify in browser"
       ],
+      "mavenSteps": [5, 6],
       "priority": 2,
       "passes": false,
       "notes": ""
@@ -203,6 +251,7 @@ Add ability to mark tasks with different statuses.
         "Typecheck passes",
         "Verify in browser"
       ],
+      "mavenSteps": [3, 5, 6, 7],
       "priority": 3,
       "passes": false,
       "notes": ""
@@ -217,6 +266,7 @@ Add ability to mark tasks with different statuses.
         "Typecheck passes",
         "Verify in browser"
       ],
+      "mavenSteps": [5, 6],
       "priority": 4,
       "passes": false,
       "notes": ""
@@ -250,6 +300,7 @@ Add ability to mark tasks with different statuses.
 - [ ] Stories are ordered by dependency (schema to backend to UI)
 - [ ] Every story has "Typecheck passes" as criterion
 - [ ] UI stories have "Verify in browser" as criterion
+- [ ] **Every story has mavenSteps array specifying required Maven steps**
 - [ ] Acceptance criteria are verifiable (not vague)
 - [ ] No story depends on a later story
 - [ ] Created `docs/` folder if it didn't exist
