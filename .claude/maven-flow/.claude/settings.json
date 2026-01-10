@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash maven-flow/hooks/post-tool-use-quality.sh",
+            "once": false
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash maven-flow/hooks/stop-comprehensive-check.sh",
+            "once": false
+          }
+        ]
+      }
+    ]
+  }
+}
