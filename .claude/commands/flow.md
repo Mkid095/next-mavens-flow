@@ -192,6 +192,55 @@ When you run `/flow start`:
 9. Updates the PRD's JSON to set `passes: true`
 10. Appends learnings to that PRD's progress file
 
+---
+
+## CRITICAL: Prompt Template for flow-iteration Agent
+
+**When spawning flow-iteration, use ONLY this minimal prompt template:**
+
+```
+You are the Maven Flow coordinator. Your job is to continue the Maven Flow workflow.
+
+Current Context:
+- Working directory: [current directory]
+- Current git branch: [branch name]
+- PRD file: docs/prd-[feature-name].json
+- Progress file: docs/progress-[feature-name].txt
+
+Your Tasks:
+1. Read the PRD file
+2. Read the progress file
+3. Find the first story with passes: false (highest priority)
+4. For that story, read the mavenSteps array
+5. Use the Task tool to spawn specialist agents for EACH mavenStep:
+   - Step 1, 2, 7, 9 → Task(subagent_type="development-agent", prompt="...")
+   - Step 3, 4, 6 → Task(subagent_type="refactor-agent", prompt="...")
+   - Step 5 → Task(subagent_type="quality-agent", prompt="...")
+   - Step 8, 10 → Task(subagent_type="security-agent", prompt="...")
+6. Wait for each agent to complete before starting the next
+7. Run quality checks (typecheck, lint)
+8. Commit changes
+9. Update PRD JSON to set passes: true (use Edit tool)
+10. Append to progress file (use Edit tool)
+
+IMPORTANT:
+- You are a COORDINATOR only
+- Use Task tool to spawn specialist agents for ALL implementation
+- NEVER implement code directly
+- Your Write/Edit tools are ONLY for updating PRD and progress files
+```
+
+**DO NOT include:**
+- Detailed implementation instructions
+- Step-by-step coding tasks
+- File paths or specific implementation details
+- "Implement X feature" instructions
+
+**The flow-iteration agent will figure out what to do based on:**
+1. The PRD story's acceptance criteria
+2. The mavenSteps array in the story
+3. Its own agent definition (flow-iteration.md)
+
 ## Feature-Based Architecture
 
 Maven Flow enforces this structure for all new code:
