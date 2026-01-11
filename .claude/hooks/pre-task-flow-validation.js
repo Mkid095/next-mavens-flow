@@ -27,24 +27,32 @@ const MAVEN_FLOW_AGENTS = [
 
 function main() {
   try {
-    // Parse TOOL_INPUT environment variable
-    const toolInput = process.env.TOOL_INPUT || '{}';
+    // Read JSON from STDIN (Claude Code hooks pass input via stdin)
+    const stdinBuffer = fs.readFileSync(0, 'utf-8');
     let input;
 
-    try {
-      input = JSON.parse(toolInput);
-    } catch (parseError) {
-      // TOOL_INPUT is not valid JSON, exit silently
+    if (stdinBuffer.trim()) {
+      try {
+        input = JSON.parse(stdinBuffer);
+      } catch (parseError) {
+        // Input is not valid JSON, exit silently
+        process.exit(0);
+      }
+    } else {
+      // No input received, exit silently
       process.exit(0);
     }
 
+    // Extract tool_input from the hook JSON structure
+    const toolInput = input.tool_input || {};
+
     // Only validate Maven Flow agent spawns
-    if (!input.subagent_type || !MAVEN_FLOW_AGENTS.includes(input.subagent_type)) {
+    if (!toolInput.subagent_type || !MAVEN_FLOW_AGENTS.includes(toolInput.subagent_type)) {
       process.exit(0);
     }
 
     // Get working directory from Claude or use current directory
-    const workingDir = process.cwd();
+    const workingDir = input.cwd || process.cwd();
 
     // Check if docs/ directory exists
     const docsDir = path.join(workingDir, 'docs');
