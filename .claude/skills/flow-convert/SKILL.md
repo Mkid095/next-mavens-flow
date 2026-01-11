@@ -75,49 +75,21 @@ claude mcp get <server-name>
   "project": "[Project Name]",
   "branchName": "flow/[feature-name-kebab-case]",
   "description": "[Feature description from PRD]",
-  "availableMcpTools": {
+  "mcpDiscovery": {
     "lastScanned": "2025-01-11T14:00:00Z",
+    "discoveryMethod": "claude mcp list",
     "configuredMCPs": {
       "supabase": {
         "status": "connected",
-        "tools": ["supabase_query", "supabase_exec", "supabase_subscribe"],
-        "mappedToSteps": [7, 8, 10],
-        "toolPurpose": "Database operations, RLS policies, migrations"
+        "tools": ["supabase_query", "supabase_exec", "supabase_subscribe"]
       },
       "web-search-prime": {
         "status": "connected",
-        "tools": ["webSearchPrime"],
-        "mappedToSteps": "all",
-        "toolPurpose": "Web research for dependencies and documentation"
+        "tools": ["webSearchPrime"]
       },
       "web-reader": {
         "status": "connected",
-        "tools": ["webReader"],
-        "mappedToSteps": "all",
-        "toolPurpose": "Fetch and read documentation from URLs"
-      }
-    },
-    "agentToolAssignments": {
-      "development-agent": {
-        "mcpTools": [
-          { "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] },
-          { "mcp": "web-search-prime", "tools": ["webSearchPrime"] },
-          { "mcp": "web-reader", "tools": ["webReader"] }
-        ]
-      },
-      "security-agent": {
-        "mcpTools": [
-          { "mcp": "supabase", "tools": ["supabase_query", "supabase_subscribe"] }
-        ]
-      },
-      "refactor-agent": {
-        "mcpTools": []
-      },
-      "quality-agent": {
-        "mcpTools": []
-      },
-      "design-agent": {
-        "mcpTools": []
+        "tools": ["webReader"]
       }
     }
   },
@@ -132,6 +104,13 @@ claude mcp get <server-name>
         "Typecheck passes"
       ],
       "mavenSteps": [1, 7],
+      "availableMcpTools": {
+        "development-agent": [
+          { "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] },
+          { "mcp": "web-search-prime", "tools": ["webSearchPrime"] },
+          { "mcp": "web-reader", "tools": ["webReader"] }
+        ]
+      },
       "priority": 1,
       "passes": false,
       "notes": ""
@@ -139,6 +118,43 @@ claude mcp get <server-name>
   ]
 }
 ```
+
+**CRITICAL ARCHITECTURAL DECISION:**
+
+**Why MCP tools are at the STORY level (not PRD level):**
+
+1. **Context Isolation:** Each story has its own specific MCP tools, reducing confusion as context grows
+2. **Precision:** Agents know exactly which tools to use for that specific story
+3. **No Hallucination:** Prevents agents from "forgetting" which tools are available in large contexts
+4. **Granular Control:** Different stories can use different subsets of MCP tools
+
+**How it works:**
+
+When `/flow` processes a story:
+1. Reads the story's `mavenSteps` array
+2. For each step, checks the story's `availableMcpTools` for that agent
+3. Spawns the agent with ONLY the tools listed for that story
+4. Agent knows exactly which MCP tools to use
+
+**Example Story with MCP Tools:**
+
+```json
+{
+  "id": "US-001",
+  "title": "Add status field to tasks table",
+  "mavenSteps": [1, 7],
+  "availableMcpTools": {
+    "development-agent": [
+      { "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] }
+    ]
+  }
+}
+```
+
+When processing this story:
+- Step 1 (development-agent): Can use `supabase_query`, `supabase_exec`
+- Step 7 (development-agent): Can use `supabase_query`, `supabase_exec`
+- No other MCP tools are available for this story (reduces confusion)
 
 ### Maven Steps Field
 
@@ -322,6 +338,24 @@ Add ability to mark tasks with different statuses.
   "project": "TaskApp",
   "branchName": "flow/task-status",
   "description": "Task Status Feature - Track task progress with status indicators",
+  "mcpDiscovery": {
+    "lastScanned": "2025-01-11T14:00:00Z",
+    "discoveryMethod": "claude mcp list",
+    "configuredMCPs": {
+      "supabase": {
+        "status": "connected",
+        "tools": ["supabase_query", "supabase_exec", "supabase_subscribe"]
+      },
+      "web-search-prime": {
+        "status": "connected",
+        "tools": ["webSearchPrime"]
+      },
+      "web-reader": {
+        "status": "connected",
+        "tools": ["webReader"]
+      }
+    }
+  },
   "userStories": [
     {
       "id": "US-001",
@@ -333,6 +367,13 @@ Add ability to mark tasks with different statuses.
         "Typecheck passes"
       ],
       "mavenSteps": [1, 7],
+      "availableMcpTools": {
+        "development-agent": [
+          { "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] },
+          { "mcp": "web-search-prime", "tools": ["webSearchPrime"] },
+          { "mcp": "web-reader", "tools": ["webReader"] }
+        ]
+      },
       "priority": 1,
       "passes": false,
       "notes": ""
@@ -348,6 +389,7 @@ Add ability to mark tasks with different statuses.
         "Verify in browser"
       ],
       "mavenSteps": [5, 6],
+      "availableMcpTools": {},
       "priority": 2,
       "passes": false,
       "notes": ""
@@ -364,6 +406,12 @@ Add ability to mark tasks with different statuses.
         "Verify in browser"
       ],
       "mavenSteps": [3, 5, 6, 7],
+      "availableMcpTools": {
+        "development-agent": [
+          { "mcp": "supabase", "tools": ["supabase_query"] },
+          { "mcp": "web-search-prime", "tools": ["webSearchPrime"] }
+        ]
+      },
       "priority": 3,
       "passes": false,
       "notes": ""
@@ -379,6 +427,7 @@ Add ability to mark tasks with different statuses.
         "Verify in browser"
       ],
       "mavenSteps": [5, 6],
+      "availableMcpTools": {},
       "priority": 4,
       "passes": false,
       "notes": ""
@@ -413,6 +462,8 @@ Add ability to mark tasks with different statuses.
 - [ ] Every story has "Typecheck passes" as criterion
 - [ ] UI stories have "Verify in browser" as criterion
 - [ ] **Every story has mavenSteps array specifying required Maven steps**
+- [ ] **Every story has availableMcpTools object (even if empty {})**
+- [ ] **mcpDiscovery object included at PRD level**
 - [ ] Acceptance criteria are verifiable (not vague)
 - [ ] No story depends on a later story
 - [ ] Created `docs/` folder if it didn't exist
