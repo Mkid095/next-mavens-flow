@@ -4,155 +4,18 @@ This document provides comprehensive reference for all MCP tools available to Ma
 
 ---
 
-## 1. Supabase MCP (Database Operations)
+## Dynamic MCP Discovery (CRITICAL)
 
-**Available to:** development-agent, security-agent (when specified in PRD story's `availableMcpTools`)
+**Maven Flow is designed to work with ANY MCP servers available on your system.**
 
-**Use for:**
-- Creating tables
-- Adding columns
-- Running migrations
-- Querying data
-- Setting up relationships
-- Verifying RLS (Row Level Security) policies
-- Checking database permissions
+### How MCP Discovery Works
 
-**How to use:**
-- Use the Supabase MCP tools directly from your available tool set
-- Look for tools with `supabase` prefix or database-related names
-- **Do NOT** write custom fetch() calls or use the Supabase REST API directly
-- The exact tool names may vary - use what's available in your tool set
+1. **At runtime**, the flow command scans for available MCP servers using `claude mcp list`
+2. **Agents receive** the list of available MCP servers dynamically
+3. **Agents use** whatever MCP tools are available - no hardcoded expectations
+4. **System works** even without any MCP servers (falls back to standard tools)
 
-**Before using Supabase MCP:**
-1. **CONFIRM the Supabase project ID** - Check environment files, config files
-2. **NEVER assume** - Always verify the project ID before operations
-3. **Common locations:** `.env.local`, `.env`, `supabase/config.toml`, `src/lib/supabase.ts`
-
-```bash
-# Check for project ID first
-grep -r "SUPABASE_PROJECT_ID" .env* src/lib/ 2>/dev/null
-grep -r "supabase" . --include="*.ts" --include="*.js" --include="*.tsx" | head -5
-
-# If not found, ASK THE USER for the Supabase project URL/ID
-```
-
----
-
-## 2. Chrome DevTools (Web Application Testing)
-
-**Available to:** All agents (for web app testing)
-
-**Use for:**
-- React/Next.js/Vue web app testing
-- Debugging UI issues
-- Checking console errors
-- Inspecting network requests
-- Testing auth flows
-- Checking token storage
-
-**How to use:**
-1. Start the dev server (e.g., `pnpm dev`)
-2. Open Chrome browser
-3. Navigate to `http://localhost:3000` (or appropriate port)
-4. Open Chrome DevTools (F12 or Right-click → Inspect)
-5. Test the functionality
-6. Check Console tab for errors
-7. Check Network tab for API calls
-8. Verify DOM elements in Elements tab
-9. Check Application tab for token storage (security testing)
-10. Test auth flows (login, logout, session management)
-
----
-
-## 3. Web Search Prime (Research)
-
-**Available to:** All agents
-
-**Use for:**
-- Research best practices
-- Find documentation for libraries
-- Look up error messages
-- Check for updated APIs
-- Verify implementation approaches
-- Security research (OWASP, vulnerabilities)
-- Design pattern research
-
-**When to use:**
-```
-❌ DON'T GUESS: "I think this might work like..."
-✅ DO RESEARCH: Use web-search-prime to find the correct approach
-
-Examples:
-- "How do I use Supabase MCP with TypeScript?"
-- "Best practices for ESLint configuration in Next.js 15"
-- "Error: 'Cannot find module @shared/ui'"
-- "OWASP best practices for authentication in 2025"
-- "Supabase RLS policies security guide"
-```
-
----
-
-## 4. Web Reader (Documentation Reading)
-
-**Available to:** All agents
-
-**Use for:**
-- Reading documentation pages
-- Extracting code examples from docs
-- Parsing API references
-- Security documentation
-- Design guidelines
-
----
-
-## Story-Level MCP Assignment
-
-**CRITICAL:** MCP tools are assigned PER STORY in the PRD JSON's `availableMcpTools` object, not at the PRD level.
-
-**When you are spawned as an agent:**
-1. Check your available tool set - the MCP tools you have access to will be visible
-2. Use the MCP tools that are available to you
-3. The story configuration specifies which MCP servers you can access
-4. The exact tool names are discovered dynamically - use what you see available
-
-**Example story configuration:**
-```json
-{
-  "id": "US-001",
-  "mavenSteps": [1, 7],
-  "availableMcpTools": {
-    "development-agent": [
-      { "mcp": "supabase" },
-      { "mcp": "web-search-prime" }
-    ]
-  }
-}
-```
-
-**This means:**
-- You have access to Supabase MCP and Web Search Prime MCP servers
-- When you check your available tools, you'll see the specific tools from these servers
-- Use the tools that appear in your tool set - don't hardcode specific tool names
-
----
-
-## MCP Tool Pattern Reference
-
-**Note:** This is a general reference. The exact tool names available to you depend on what MCP servers are configured in your environment. When working on a story, check your available tool set to see what MCP tools you have access to.
-
-| MCP Server | Use For Steps | Typical Use Case | Primary Agents |
-|------------|---------------|------------------|----------------|
-| supabase | 7, 8, 10 | Database operations | development, security |
-| postgres, mysql, mongo | 7, 8, 10 | Database operations | development, security |
-| web-search, search | All steps | Research, documentation | All agents |
-| web-reader, fetch | All steps | Reading web content | All agents |
-| chrome, browser, puppeteer | Testing | Browser automation | All agents |
-| vercel, wrangler, cloudflare | 9 | Deployment | development |
-| figma, design | 11 | UI/UX design | design |
-
----
-
-## Checking Available MCPs
+### Checking Your Available MCPs
 
 ```bash
 # List all configured MCP servers
@@ -161,3 +24,133 @@ claude mcp list
 # Get detailed info about a specific MCP server
 claude mcp get <server-name>
 ```
+
+---
+
+## Common MCP Use Cases (Examples)
+
+**Note:** These are examples of common MCP servers. Your system may have different MCPs available. The flow command will discover and use whatever MCPs you have configured.
+
+### Database Operations
+**Typical MCPs:** supabase, postgres, mysql, mongo, sqlite
+**Use for:** Creating tables, querying data, running migrations
+**When available:** Use MCP tools instead of writing raw SQL
+**Fallback:** Use standard database clients or SQL files
+
+### Web Research
+**Typical MCPs:** web-search, web-reader, fetch, brave-search
+**Use for:** Researching best practices, finding documentation, looking up errors
+**When available:** Use MCP tools instead of guessing
+**Fallback:** Use Read tool to check local docs, AskUserQuestion
+
+### Browser Testing
+**Typical MCPs:** chrome-devtools, browser, puppeteer, playwright
+**Use for:** Testing web applications, debugging UI, checking console
+**When available:** Use MCP tools for automated testing
+**Fallback:** Manual browser testing instructions
+
+### Deployment
+**Typical MCPs:** vercel, wrangler, cloudflare, netlify
+**Use for:** Deploying applications, managing deployments
+**When available:** Use MCP tools for streamlined deployment
+**Fallback:** Standard CLI commands (vercel CLI, wrangler CLI, etc.)
+
+### Design
+**Typical MCPs:** figma, design, canva
+**Use for:** UI/UX design, design system integration
+**When available:** Use MCP tools for design-to-code workflow
+**Fallback:** Manual design implementation
+
+---
+
+## Working Without MCPs
+
+**Maven Flow works perfectly without any MCP servers.** The system will:
+
+1. **Use standard tools** (Read, Write, Edit, Bash, Grep, Glob)
+2. **Ask for help** when needed (AskUserQuestion)
+3. **Provide clear instructions** for manual steps
+4. **Never require** a specific MCP to be present
+
+---
+
+## Story-Level MCP Assignment
+
+**MCP configuration in PRD files is OPTIONAL and HINT-BASED.**
+
+### When `availableMcpTools` is specified:
+
+```json
+{
+  "id": "US-001",
+  "mavenSteps": [1, 7],
+  "availableMcpTools": {
+    "development-agent": [
+      { "mcp": "database" },
+      { "mcp": "web-search" }
+    ]
+  }
+}
+```
+
+This means:
+- **If** these MCPs are available, prioritize them
+- **If not available**, use alternative approaches (standard tools)
+- **Never fail** just because a specific MCP isn't installed
+
+### When `availableMcpTools` is NOT specified:
+
+The flow command will:
+1. Scan all available MCPs
+2. Identify relevant tools based on the step requirements
+3. Use whatever is available
+
+---
+
+## Agent Guidelines for MCP Usage
+
+### When You ARE Spawned as an Agent:
+
+1. **Check your available tool set** - See what MCP tools you have
+2. **Use MCPs when helpful** - They can speed up your work
+3. **Fall back gracefully** - If MCPs aren't available, use standard tools
+4. **Never assume** - Don't write code that requires a specific MCP
+
+### Example: Database Operations
+
+**WITH Supabase MCP:**
+```
+1. Use Supabase MCP tools to query/create tables
+2. Verify results
+3. Done
+```
+
+**WITHOUT Supabase MCP:**
+```
+1. Read existing migration files to understand schema
+2. Write new migration file
+3. Use Bash to run migration: pnpm exec supabase db push
+4. Verify results
+```
+
+Both approaches work - the system adapts to what's available.
+
+---
+
+## Step-to-MCP Mapping (Guidelines Only)
+
+**Note:** These are general guidelines for when certain MCP types are helpful. The system will work with whatever MCPs you have.
+
+| Maven Step | Helpful MCP Types | If Unavailable, Use |
+|------------|-------------------|---------------------|
+| 1 (Foundation) | design, browser | Manual design implementation |
+| 2 (Package Manager) | None required | Standard CLI tools |
+| 3 (Feature Structure) | None required | Read, Edit, Glob tools |
+| 4 (Modularization) | None required | Read, Edit tools |
+| 5 (Type Safety) | None required | TypeScript compiler |
+| 6 (UI Centralization) | None required | Read, Edit, Glob tools |
+| 7 (Data Layer) | database (supabase, postgres, etc.) | Migration files, SQL scripts |
+| 8 (Auth) | database, firebase | SDK documentation, direct API calls |
+| 9 (MCP Integration) | Whatever MCPs you have | Manual configuration |
+| 10 (Security) | database (for RLS) | SQL migration files |
+| 11 (Mobile Design) | design, figma | Manual design implementation |
