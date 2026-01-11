@@ -20,19 +20,44 @@ Autonomous AI development flow that implements PRD stories using the Maven 10-St
 
 **Architecture:** The `/flow` command (running in main Claude context) coordinates ALL specialist agent spawning directly. Subagents are NOT used for coordination since they cannot spawn other subagents.
 
+---
+
+## Prerequisites Check
+
+Before starting, the command validates:
+
+1. **`docs/` directory exists**
+   - If missing: `❌ Error: No docs/ directory found.`
+   - Fix: Create the directory: `mkdir docs`
+
+2. **PRD files exist** (`docs/prd-*.json`)
+   - If missing: `❌ Error: No PRD files found in docs/.`
+   - Fix: Create a PRD first using the `flow-prd` skill:
+     ```
+     Tell me you want to create a PRD for [feature]
+     Example: "Create a PRD for a user authentication feature"
+     ```
+
+3. **At least one incomplete story**
+   - If all PRDs complete: `✅ All PRDs complete! No work to do.`
+   - Fix: Create a new PRD or add stories to existing PRD
+
+---
+
 When you execute `/flow start` or `/flow continue`:
 
-1. Scan for incomplete PRDs
-2. Pick the first incomplete story
-3. **Spawn specialist agents directly using Task tool:**
+1. **Validate prerequisites** (docs/, PRD files, incomplete stories)
+2. Scan for incomplete PRDs
+3. Pick the first incomplete story
+4. **Spawn specialist agents directly using Task tool:**
    - For each mavenStep in the story, spawn appropriate agent
    - Wait for agent to complete before spawning next
    - Continue until all mavenSteps are done
-4. Run quality checks, commit, update PRD
-5. **Repeat automatically** for next story
-6. Continue until ALL PRDs have ALL stories passing
-7. Do NOT wait for user input between stories
-8. Do NOT stop after one story - keep going until ALL are complete
+5. Run quality checks, commit, update PRD
+6. **Repeat automatically** for next story
+7. Continue until ALL PRDs have ALL stories passing
+8. Do NOT wait for user input between stories
+9. Do NOT stop after one story - keep going until ALL are complete
 
 **Example:**
 ```
