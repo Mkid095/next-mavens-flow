@@ -31,22 +31,19 @@ Shows current MCP configuration and tool mappings.
 
 ### 1. MCP Discovery Phase
 
-Reads `~/.claude/settings.json` to find configured MCP servers:
+Uses `claude mcp list` to find configured MCP servers:
 
-```json
-{
-  "mcpServers": {
-    "supabase": { "type": "http", "url": "https://api.supabase.com/mcp" },
-    "web-search-prime": { "type": "http", "url": "http://localhost:3000/mcp" },
-    "chrome": { "type": "stdio", "command": "npx", "args": ["@modelcontextprotocol/server-chrome"] }
-  }
-}
+```bash
+# Example output from claude mcp list
+web-search-prime: https://api.z.ai/api/mcp/web_search_prime/mcp (HTTP) - ✓ Connected
+web-reader: https://api.z.ai/api/mcp/web_reader/mcp (HTTP) - ✓ Connected
+supabase: npx -y @supabase/mcp-server - ✓ Connected
 ```
 
 For each MCP, the system:
-1. Calls the MCP to list available tools
-2. Records tool names, descriptions, and input schemas
-3. Identifies the MCP's purpose (database, web, testing, etc.)
+1. Runs `claude mcp get <name>` to get detailed information
+2. Identifies available tools from the current session (tools prefixed with `mcp__`)
+3. Maps tool names to Maven workflow steps based on patterns
 
 ### 2. Tool Mapping Phase
 
@@ -123,13 +120,14 @@ tools: Read, Write, Edit, Bash, Grep, Glob, mcp__supabase__supabase_query, mcp__
 ```
 /setup scan
 
-Scanning for configured MCP servers...
+Scanning for configured MCP servers using claude mcp list...
 
-Found in ~/.claude/settings.json:
-  ✅ supabase
-  ✅ web-search-prime
-  ✅ web-reader
-  ❌ chrome (not configured)
+$ claude mcp list
+web-search-prime: https://api.z.ai/api/mcp/web_search_prime/mcp (HTTP) - ✓ Connected
+web-reader: https://api.z.ai/api/mcp/web_reader/mcp (HTTP) - ✓ Connected
+supabase: npx -y @supabase/mcp-server - ✓ Connected
+
+Configured MCPs: 3 found
 
 Discovering available tools...
 
