@@ -1,13 +1,6 @@
 ---
 description: Run Maven Flow - autonomous AI development with PRD-driven iteration and 10-step workflow
 argument-hint: start [max-iterations] | status | continue [prd-name] | reset [prd-name] | help
-hooks:
-  PreToolUse:
-    - matcher: "Task"
-      hooks:
-        - type: command
-          command: node ~/.claude/hooks/pre-task-flow-validation.js
-          once: false
 ---
 
 # Maven Flow
