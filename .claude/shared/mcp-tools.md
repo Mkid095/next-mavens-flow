@@ -15,7 +15,7 @@ This document provides reference for MCP tools used in Maven Flow.
      "mavenSteps": [1, 7],
      "mcpTools": {
        "step1": ["supabase"],
-       "step7": ["supabase", "web-search"]
+       "step7": ["supabase", "web-search-prime"]
      }
    }
    ```
@@ -24,6 +24,8 @@ This document provides reference for MCP tools used in Maven Flow.
 
 3. **Agent:** Uses the MCP tools they have available
 
+**Important:** You only specify the MCP **name**, not individual tools. The agent will automatically discover and use the available tools from that MCP.
+
 ---
 
 ## Common MCPs
@@ -31,13 +33,35 @@ This document provides reference for MCP tools used in Maven Flow.
 | MCP Name | Use For | Examples |
 |----------|---------|----------|
 | supabase | Database operations | Query tables, create schemas, run migrations |
-| web-search | Research | Find documentation, look up errors |
+| web-search-prime | Research | Find documentation, look up errors |
 | web-reader | Read web pages | Parse docs, extract examples |
 | chrome-devtools | Browser testing | Test web apps, check console |
 | playwright | Browser automation | Automated browser testing |
 | vercel | Deployment | Deploy to Vercel |
 | wrangler | Deployment | Deploy to Cloudflare |
 | figma | Design | Design-to-code workflow |
+
+---
+
+## Supabase MCP
+
+**When told to use the "supabase" MCP server:**
+
+The supabase MCP provides direct access to your Supabase project for database operations.
+
+**What you can do with supabase MCP:**
+- **Database Operations:** List tables, query data, execute SQL, apply migrations
+- **Schema Management:** Create/modify tables, add columns, set up relationships
+- **Type Generation:** Auto-generate TypeScript types from your database schema
+- **Project Configuration:** Get API keys, URLs, and project details
+- **Branching:** Test schema changes in isolated database branches
+- **Edge Functions:** List, deploy, and manage edge functions
+- **Monitoring:** View logs and get performance recommendations
+
+**IMPORTANT:**
+- Always use the MCP to verify the actual database state
+- Don't read type files or migration files - they may be outdated
+- Query the database directly to verify tables, columns, and data
 
 ---
 
@@ -51,7 +75,7 @@ This document provides reference for MCP tools used in Maven Flow.
 
 **Example:**
 ```
-Task: "Use supabase MCP to verify products table"
+Task: "Use these MCPs: supabase"
 
 Agent:
 ✓ Looks for supabase MCP tools
@@ -74,7 +98,7 @@ Agent:
       "mavenSteps": [1, 7],
       "mcpTools": {
         "step1": ["supabase"],
-        "step7": ["supabase", "web-search"]
+        "step7": ["supabase", "web-search-prime"]
       }
     }
   ]
@@ -84,4 +108,5 @@ Agent:
 **Key points:**
 - `mcpTools` is optional (omit if no MCPs needed)
 - Specify step-by-step which MCPs to use
-- Agent will figure out how to use them
+- Only list MCP **names** (e.g., "supabase"), not individual tools
+- Agent will automatically discover and use available tools from those MCPs

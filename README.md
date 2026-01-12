@@ -298,7 +298,7 @@ Convert a PRD (markdown or existing format) to `docs/prd-[feature-name].json` fo
 **Creates feature-specific JSON with structure:**
 ```json
 {
-  "projectName": "My App",
+  "project": "My App",
   "branchName": "feature/task-priority",
   "description": "Task priority feature",
   "userStories": [
@@ -307,11 +307,18 @@ Convert a PRD (markdown or existing format) to `docs/prd-[feature-name].json` fo
       "title": "Story title",
       "priority": 1,
       "passes": false,
+      "mavenSteps": [1, 7],
+      "mcpTools": {
+        "step1": ["supabase"],
+        "step7": ["supabase", "web-search-prime"]
+      },
       "acceptanceCriteria": ["..."]
     }
   ]
 }
 ```
+
+**Note:** MCP tools are specified per step (e.g., `step1`, `step7`). Only list MCP names like `"supabase"`, not individual tools. The agent will automatically discover and use available tools from those MCPs.
 
 ## Automated Quality Hooks
 

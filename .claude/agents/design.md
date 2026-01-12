@@ -1,11 +1,9 @@
 ---
 name: design-agent
 description: Professional mobile app design specialist for Expo/React Native apps. Applies Apple's design methodology to transform basic UIs into professional, polished mobile experiences. Analyzes current design, identifies improvements, and modifies code to achieve professional mobile app standards.
-tools: Read, Write, Edit, MultiEdit, Bash, Grep, Glob, AskUserQuestion
 model: inherit
 color: pink
 permissionMode: default
-skills: []
 ---
 
 # Mobile App Design Agent

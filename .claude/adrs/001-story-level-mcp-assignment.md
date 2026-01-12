@@ -4,6 +4,8 @@
 
 **Date:** 2025-01-11
 
+**Last Updated:** 2025-01-11 (Simplified structure)
+
 ## Context
 
 When implementing Maven Flow, we faced a critical decision about how to assign MCP (Model Context Protocol) tools to specialist agents:
@@ -21,68 +23,69 @@ When implementing Maven Flow, we faced a critical decision about how to assign M
 
 ## Decision
 
-**MCP tools are assigned PER STORY in the PRD JSON's `availableMcpTools` object, NOT at the PRD level.**
+**MCP tools are assigned PER STORY PER STEP in the PRD JSON's `mcpTools` object, NOT at the PRD level.**
 
-Each story specifies exactly which MCP tools each agent can use:
+Each story specifies which MCPs to use for each Maven step:
 
 ```json
 {
   "id": "US-001",
   "title": "Add status field to tasks table",
   "mavenSteps": [1, 7],
-  "availableMcpTools": {
-    "development-agent": [
-      { "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] }
-    ]
+  "mcpTools": {
+    "step1": ["supabase"],
+    "step7": ["supabase", "web-search-prime"]
   }
 }
 ```
 
 **Key Principles:**
-1. **Story-level specificity**: Each story lists its exact MCP tool requirements
-2. **Agent-level granularity**: Different agents may have different tools for the same story
-3. **Explicit declaration**: No automatic tool discovery during execution
-4. **Context isolation**: Reduces confusion as context grows
+1. **Story-level specificity**: Each story lists its exact MCP requirements
+2. **Step-level granularity**: Different steps may use different MCPs
+3. **Simple declaration**: Only list MCP names (e.g., "supabase"), not individual tools
+4. **Agent auto-discovery**: Agents automatically discover available tools from those MCPs
+
+**Important:** You only specify the MCP **name**, not individual tools. The agent will automatically discover and use the available tools from that MCP.
 
 ## Consequences
 
 **Benefits:**
-- **Context Isolation**: Each story has its own specific MCP tools, reducing confusion as context grows
-- **Precision**: Agents know exactly which tools to use for that specific story
-- **No Hallucination**: Prevents agents from "forgetting" which tools are available in large contexts
-- **Granular Control**: Different stories can use different subsets of MCP tools
-- **Debuggability**: Easy to see which tools are available for each story
+- **Context Isolation**: Each story has its own specific MCPs, reducing confusion as context grows
+- **Precision**: Flow command tells agents exactly which MCPs to use for each step
+- **No Hallucination**: Prevents agents from "forgetting" which MCPs are available in large contexts
+- **Granular Control**: Different stories and steps can use different MCPs
+- **Debuggability**: Easy to see which MCPs are available for each story/step
+- **Simplicity**: No need to list individual tools - just MCP names
 
 **Trade-offs:**
-- **More manual work**: PRD creators must specify tools for each story
-- **Larger PRD files**: Each story includes MCP tool configuration
-- **Potential for errors**: Incorrect tool specification must be caught during PRD review
+- **Manual specification**: PRD creators must specify MCPs for each story
+- **Larger PRD files**: Each story includes MCP configuration
 
 ## Alternatives Considered
 
 ### Alternative 1: PRD-Level MCP Assignment
-**Description:** Assign MCP tools once at the PRD level, all stories inherit them.
+**Description:** Assign MCPs once at the PRD level, all stories inherit them.
 
 **Rejected because:**
-- Causes context overload as all stories share the same tool list
-- Agents may use inappropriate tools for specific tasks
-- No granular control per story
+- Causes context overload as all stories share the same MCP list
+- Agents may use inappropriate MCPs for specific tasks
+- No granular control per story or step
 
-### Alternative 2: Automatic MCP Discovery
+### Alternative 2: Individual Tool Listing
+**Description:** List individual tools within each MCP (e.g., `{ "mcp": "supabase", "tools": ["supabase_query", "supabase_exec"] }`).
+
+**Rejected because:**
+- Over-complicated structure
+- Agents automatically discover tools from MCPs anyway
+- More prone to errors when MCP tools change
+
+### Alternative 3: Automatic MCP Discovery
 **Description:** Automatically discover available MCP tools using `claude mcp list` during flow execution.
 
 **Rejected because:**
-- Creates architecture confusion (3 competing discovery mechanisms)
+- Creates architecture confusion
 - Agents may hallucinate tool availability in large contexts
 - Unpredictable behavior as MCP configuration changes
-
-### Alternative 3: Dynamic Tool Assignment
-**Description:** Allow agents to dynamically request tools as needed during execution.
-
-**Rejected because:**
-- Subagents cannot spawn other subagents (Claude Code CLI limitation)
-- Creates complex coordination problems
-- Difficult to audit and debug
 
 ## Implementation
 
@@ -90,29 +93,42 @@ Each story specifies exactly which MCP tools each agent can use:
 ```json
 {
   "project": "Project Name",
-  "mcpDiscovery": {
-    "lastScanned": "2025-01-11T14:00:00Z",
-    "configuredMCPs": { /* informational metadata */ }
-  },
+  "branchName": "flow/feature-name",
+  "description": "Feature description",
   "userStories": [
     {
       "id": "US-001",
+      "title": "Story title",
+      "description": "As a user, I want feature so that benefit",
+      "acceptanceCriteria": ["Criterion 1", "Typecheck passes"],
       "mavenSteps": [1, 7],
-      "availableMcpTools": {
-        "development-agent": [
-          { "mcp": "supabase", "tools": ["supabase_query"] }
-        ]
-      }
+      "mcpTools": {
+        "step1": ["supabase"],
+        "step7": ["supabase", "web-search-prime"]
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
 ```
 
 **Flow Processing:**
-1. Read story's `mavenSteps` array
-2. For each step, check story's `availableMcpTools` for that agent
-3. Spawn agent with ONLY the tools listed for that story
-4. Agent knows exactly which MCP tools to use
+1. Read story's `mavenSteps` array (e.g., [1, 7])
+2. For each step, read story's `mcpTools` for that step (e.g., `mcpTools.step1`)
+3. Spawn specialist agent and tell them: "Use these MCPs: supabase"
+4. Agent checks if those MCPs are in their available tools
+5. Agent uses those MCPs (or falls back to standard tools if unavailable)
+
+**Maven Step to Agent Mapping:**
+| Maven Step | Agent |
+|------------|-------|
+| 1, 2, 7, 9 | development-agent |
+| 3, 4, 6 | refactor-agent |
+| 5 | quality-agent |
+| 8, 10 | security-agent |
+| 11 | design-agent (optional, for mobile) |
 
 ## References
 

@@ -4,6 +4,33 @@ This document provides common patterns, workflows, and conventions shared across
 
 ---
 
+## MCP Tool Usage Pattern (CRITICAL)
+
+**When an agent is told to use MCP tools, the instruction MUST appear at the VERY START of the task prompt:**
+
+```markdown
+*** CRITICAL: MCP TOOLS INSTRUCTION ***
+You MUST use the Supabase MCP tools for ALL database operations.
+DO NOT read migration files or create scripts.
+Query the database DIRECTLY using Supabase MCP tools.
+
+[Rest of task prompt...]
+```
+
+**For database verification tasks:**
+1. **FIRST:** Use Supabase MCP to query the database directly
+2. **DON'T** read migration files or type files
+3. **DON'T** create scripts - use the MCP server
+4. **ONLY** fall back to files if MCP is unavailable
+
+**When told to use "supabase" MCP:**
+- Use it to check tables, query schema, read/write data, apply migrations
+- Use it to generate TypeScript types from the actual database
+- Use it to get project configuration (API keys, URLs)
+- Always verify the actual database state, not files
+
+---
+
 ## Commit Format (CRITICAL - ALL AGENTS)
 
 **ALL commits MUST use this exact format:**

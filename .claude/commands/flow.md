@@ -78,10 +78,16 @@ When you execute `/flow start` or `/flow continue`:
      - Step 5 → Task(subagent_type="quality-agent")
      - Step 8, 10 → Task(subagent_type="security-agent")
      - Step 11 → Task(subagent_type="design-agent") [optional, for mobile apps]
-   - **Tell agent which MCPs to use:**
+   - **Tell agent which MCPs to use with EXPLICIT INSTRUCTIONS at the start of prompt:**
      ```
+     *** CRITICAL: MCP TOOLS INSTRUCTION ***
+     You MUST use the Supabase MCP tools for ALL database operations.
+     DO NOT read migration files or create scripts.
+     SCAN FIRST - Use MCP to list/check what exists in the database BEFORE making any changes.
+     Query the database DIRECTLY using Supabase MCP tools.
+
      Story: US-POS-001, Step 1
-     Use these MCPs: supabase
+     MCPs: supabase
      ```
    - Wait for each agent to complete
    - Run quality checks (typecheck, lint)
@@ -258,7 +264,7 @@ For each incomplete story:
 
 **From PRD:**
 - mavenSteps: [1, 3, 5, 7]
-- mcpTools: { step1: ["supabase"], step7: ["supabase", "web-search"] }
+- mcpTools: { step1: ["supabase"], step7: ["supabase", "web-search-prime"] }
 - Description: [Story description]
 - Acceptance Criteria: [List from PRD]
 
@@ -266,25 +272,25 @@ For each incomplete story:
 
 1. [Step 1 - Foundation]
    Spawning development agent...
-   Instruction: "Use supabase MCP"
+   Instruction: "Use these MCPs: supabase"
+   INSTRUCTION: USE SUPABASE MCP TOOLS to query/verify database directly. DO NOT just read type files.
    → [Waiting for completion]
    → [Agent completed successfully]
 
 2. [Step 3 - Feature Structure]
    Spawning refactor agent...
-   Instruction: "No MCPs needed"
    → [Waiting for completion]
    → [Agent completed successfully]
 
 3. [Step 5 - Type Safety]
    Spawning quality agent...
-   Instruction: "No MCPs needed"
    → [Waiting for completion]
    → [Agent completed successfully]
 
 4. [Step 7 - Data Layer]
    Spawning development agent...
-   Instruction: "Use supabase MCP, web-search MCP"
+   Instruction: "Use these MCPs: supabase, web-search-prime"
+   INSTRUCTION: USE SUPABASE MCP TOOLS to query/verify database directly. USE WEB-SEARCH for research.
    → [Waiting for completion]
    → [Agent completed successfully]
 

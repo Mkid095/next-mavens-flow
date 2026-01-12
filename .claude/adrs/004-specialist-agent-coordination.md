@@ -105,19 +105,25 @@ Main Claude (with /flow command loaded)
 
 **From PRD:**
 - mavenSteps: [1, 7]
-- availableMcpTools: { development-agent: [...] }
+- mcpTools: { step1: ["supabase"], step7: ["supabase"] }
 
 **Processing:**
 
 1. [Step 1 - Foundation]
    Spawning development agent...
-   Available MCP tools: supabase_query, supabase_exec
+   Instruction: "Use these MCPs: supabase"
+   *** CRITICAL: MCP TOOLS INSTRUCTION ***
+   You MUST use the Supabase MCP tools for ALL database operations.
+   DO NOT read migration files or create scripts.
+   Query the database DIRECTLY using Supabase MCP tools.
    → [Waiting for completion]
    → [Agent completed successfully]
 
 2. [Step 7 - Data Layer]
    Spawning development agent...
-   Available MCP tools: supabase_query, supabase_exec
+   Instruction: "Use these MCPs: supabase"
+   *** CRITICAL: MCP TOOLS INSTRUCTION ***
+   You MUST use the Supabase MCP tools for ALL database operations.
    → [Waiting for completion]
    → [Agent completed successfully]
 
