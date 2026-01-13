@@ -1,6 +1,6 @@
 ---
 description: Run Maven Flow - autonomous AI development with PRD-driven iteration and 10-step workflow
-argument-hint: start [max-iterations] | status | continue [prd-name] | reset [prd-name] | help
+argument-hint: start [max-iterations] | status | continue [prd-name] | reset [prd-name] | test [prd-name] | consolidate [prd-name] | help
 ---
 
 # Maven Flow
@@ -168,11 +168,525 @@ Recent progress:
 /flow reset task-priority  # Reset specific PRD
 ```
 
+### Test application
+```
+/flow test [prd-name]
+```
+- Runs comprehensive testing of all implemented features
+- Uses testing-agent with chrome-devtools MCP
+- Tests all completed stories (where `passes: true`)
+- Creates error log at `docs/errors-[feature-name].md`
+- Uses standard test user: `revccnt@gmail.com` / `Elishiba!90`
+
+**Process:**
+1. Reads PRD to find completed stories
+2. Starts dev server: `pnpm dev`
+3. Opens application using chrome-devtools MCP
+4. Tests user signup/login
+5. Tests each completed feature's acceptance criteria
+6. Checks console for errors
+7. Logs all errors found with details
+8. Creates error log markdown file
+
+**What gets tested:**
+- User authentication (signup, login, logout)
+- All completed stories' acceptance criteria
+- Console errors (JavaScript, network, API)
+- UI functionality
+- Navigation between pages
+- Form submissions
+- Data display
+
+**Error log format:** `docs/errors-[feature-name].md`
+- Each error with story ID, severity, error message
+- Steps to reproduce
+- Expected vs actual behavior
+- Related file references
+- Suggested fixes
+
+**Examples:**
+```bash
+/flow test                    # Test current PRD (auto-detects)
+/flow test authentication     # Test authentication PRD
+/flow test task-priority      # Test task-priority PRD
+```
+
+**After testing:**
+- Review error log: `docs/errors-[feature-name].md`
+- Run `/flow consolidate [prd-name]` to fix errors
+
+---
+
+### Consolidate and fix errors
+```
+/flow consolidate [prd-name]
+```
+- Reads error log from `docs/errors-[feature-name].md`
+- Identifies which stories/steps have errors
+- Re-runs ONLY the affected steps (not entire stories)
+- Fixes specific errors found during testing
+- Does NOT reimplement completed features
+
+**Process:**
+1. Read error log: `docs/errors-[feature-name].md`
+2. Parse each error to identify:
+   - Which story (US-XXX) has the error
+   - Which step/mavenStep needs to be re-run
+   - What the specific error is
+3. For each error:
+   - Spawn appropriate agent (development, quality, security, etc.)
+   - Tell agent exactly what error to fix
+   - Wait for fix to be applied
+4. Re-test ONLY the fixed item
+5. Mark error as resolved in log
+6. Continue until all errors fixed
+
+**What it does NOT do:**
+- Does NOT run full mavenSteps again
+- Does NOT re-implement completed features
+- Does NOT touch working code
+- Only fixes the specific errors identified
+
+**Examples:**
+```bash
+/flow consolidate            # Consolidate current PRD
+/flow consolidate auth       # Consolidate authentication PRD
+```
+
+**Output:**
+- Shows which errors are being fixed
+- Shows which agent is handling each fix
+- Commits each fix separately
+- Updates error log as fixes are applied
+
+---
+
 ### Help
 ```
 /flow help
 ```
-- Displays this help information
+- Displays comprehensive help information
+- Shows detailed command reference, workflow, and troubleshooting
+
+---
+
+# Comprehensive Guide
+
+## Table of Contents
+1. [Quick Start](#quick-start)
+2. [Command Reference](#command-reference)
+3. [Maven 10-Step Workflow](#maven-10-step-workflow)
+4. [Specialist Agents](#specialist-agents)
+5. [MCP Tool Assignment](#mcp-tool-assignment)
+6. [Quality Standards](#quality-standards)
+7. [Browser Testing](#browser-testing)
+8. [Required MCPs](#required-mcps)
+9. [Testing & Consolidation](#testing--consolidation)
+10. [Mobile Development](#mobile-development)
+11. [Common Workflows](#common-workflows)
+12. [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start
+
+### For New Users
+
+**Step 1: Create your first PRD**
+```
+Tell me you want to create a PRD for [feature description]
+Example: "Create a PRD for a user authentication system"
+```
+
+**Step 2: Convert to JSON format**
+```
+/flow-convert
+```
+This creates `docs/prd-[feature-name].json`
+
+**Step 3: Start autonomous development**
+```
+/flow start
+```
+
+The flow will:
+- Scan for all incomplete PRDs
+- Process each story automatically
+- Spawn specialist agents for each step
+- Commit changes with proper format
+- Continue until ALL stories are complete
+
+**Step 4: Monitor progress**
+```
+/flow status
+```
+
+---
+
+## Command Reference
+
+### `/flow start [max-iterations]`
+Starts autonomous flow execution.
+
+**Parameters:**
+- `max-iterations` (optional): Number of stories to process (default: 10)
+
+**Behavior:**
+- Scans for all PRD files in `docs/`
+- Identifies incomplete stories (`passes: false`)
+- Processes stories in priority order
+- Spawns specialist agents for each mavenStep
+- Runs quality checks after each story
+- Commits changes with standardized format
+- Updates PRD to mark story complete
+- Continues to next story automatically
+
+**Examples:**
+```bash
+/flow start          # Process up to 10 stories (default)
+/flow start 20       # Process up to 20 stories
+/flow start 1        # Process exactly 1 story then stop
+```
+
+**What happens during execution:**
+1. Validates prerequisites (docs/, PRD files, incomplete stories)
+2. Lists all PRD files found
+3. Shows which PRD will be processed first
+4. For each incomplete story:
+   - Displays story ID and title
+   - Shows mavenSteps to be executed
+   - Shows MCPs assigned for each step
+   - Spawns agents one at a time
+   - Waits for each agent to complete
+   - Runs typecheck and lint
+   - Creates git commit
+   - Marks story as complete in PRD
+5. Moves to next story automatically
+6. Continues until max iterations or all PRDs complete
+
+### `/flow status`
+Shows current status of all PRDs.
+
+**Output includes:**
+- Total PRD files found
+- Completion status for each PRD
+- List of all stories with completion status
+- Recent progress from progress files
+
+**Example output:**
+```
+Maven Flow Status: 3 PRD files found
+
+prd-task-priority.json (3/5 complete)
+  ✓ US-001: Add priority field to database
+  ✓ US-002: Display priority indicator
+  ✓ US-003: Add priority selector
+  ○ US-004: Filter tasks by priority (priority: 4)
+  ○ US-005: Add priority sorting (priority: 5)
+
+prd-user-auth.json (0/4 complete)
+  ○ US-001: Firebase authentication setup
+  ○ US-002: Supabase profile storage
+  ○ US-003: Login form UI
+  ○ US-004: Password reset flow
+
+prd-notifications.json (4/4 complete) ✅
+
+Current focus: prd-task-priority.json
+
+Recent progress:
+  [2025-01-10] prd-task-priority.json - US-003 Added priority dropdown
+```
+
+### `/flow continue [prd-name] [max-iterations]`
+Resumes flow execution from where it left off.
+
+**Parameters:**
+- `prd-name` (optional): Specific PRD to process (default: current)
+- `max-iterations` (optional): Number of stories to process
+
+**When to use:**
+- After fixing an error that stopped the flow
+- After manually editing PRD or code
+- To continue with a specific PRD
+- To process more stories than originally planned
+
+**Examples:**
+```bash
+/flow continue           # Continue with current PRD
+/flow continue 5         # Process 5 more stories
+/flow continue auth 10   # Process auth PRD for 10 stories
+```
+
+### `/flow reset [prd-name]`
+Archives current PRD run and resets for fresh start.
+
+**Parameters:**
+- `prd-name` (optional): Specific PRD to reset (prompts if omitted)
+
+**Behavior:**
+- Creates archive: `archive/YYYY-MM-DD-[feature-name]/`
+- Moves current PRD and progress file to archive
+- Resets all stories to `passes: false`
+- Creates fresh PRD and progress files
+- Prompts for confirmation before archiving
+
+**Examples:**
+```bash
+/flow reset           # Prompts to select PRD
+/flow reset auth      # Reset auth PRD specifically
+```
+
+**When to use:**
+- PRD has fundamental issues
+- Want to start over with different approach
+- Need to archive current progress before major changes
+
+---
+
+## Maven 10-Step Workflow
+
+Each story is implemented through specific steps, each handled by a specialist agent.
+
+| Step | Agent | Description | Duration |
+|------|-------|-------------|----------|
+| 1 | development-agent | Foundation - Import UI or create from scratch | ~5-10 min |
+| 2 | development-agent | Package Manager - Convert npm → pnpm | ~2-5 min |
+| 3 | refactor-agent | Feature Structure - Restructure folders | ~5-10 min |
+| 4 | refactor-agent | Modularization - Split large components | ~5-15 min |
+| 5 | quality-agent | Type Safety - Remove 'any' types, add @ aliases | ~5-10 min |
+| 6 | refactor-agent | UI Centralization - Move to @shared/ui | ~5-10 min |
+| 7 | development-agent | Data Layer - Backend setup, Supabase integration | ~10-20 min |
+| 8 | security-agent | Auth Integration - Firebase + Supabase auth | ~10-15 min |
+| 9 | development-agent | MCP Integration - Connect MCP tools | ~5-10 min |
+| 10 | security-agent | Security & Error Handling | ~10-15 min |
+| 11 | design-agent | Mobile Design - Professional UI (optional) | ~15-20 min |
+
+**Total typical story duration:** 1-2 hours depending on complexity
+
+**Step dependencies:**
+- Steps must be completed in order
+- Each step builds on previous steps
+- Quality checks run after all steps complete
+
+---
+
+## Specialist Agents
+
+### development-agent (🟢 Green)
+**Use for:** Steps 1, 2, 7, 9
+
+**Responsibilities:**
+- Import UI with mock data or create from scratch
+- Convert package manager (npm → pnpm)
+- Set up data layer (Supabase, API clients)
+- Integrate MCP tools
+- Set up project foundation
+
+**Key actions:**
+- Creates base components with mock data
+- Installs and configures Supabase client
+- Sets up API middleware
+- Connects MCP tools (web-search, web-reader, browser)
+- Commits with prefix `feat:`
+
+### refactor-agent (🔵 Blue)
+**Use for:** Steps 3, 4, 6
+
+**Responsibilities:**
+- Restructure to feature-based architecture
+- Modularize large components
+- Centralize UI components to @shared/ui
+
+**Key actions:**
+- Moves code to feature-based folders
+- Splits components >300 lines
+- Extracts reusable UI components
+- Enforces architecture rules
+- Commits with prefix `refactor:`
+
+### quality-agent (🟣 Purple)
+**Use for:** Step 5
+
+**Responsibilities:**
+- Type safety enforcement
+- Import alias verification
+- Quality standards compliance
+
+**Key actions:**
+- Removes ALL 'any' types (zero tolerance)
+- Converts relative imports to @ aliases
+- Verifies component sizes
+- Blocks on quality violations
+- Auto-fixes import paths
+- Commits with prefix `fix:`
+
+**BLOCKING Issues:**
+- 'any' types in code
+- Gradients in CSS
+- Emojis in UI components
+- Relative imports
+
+### security-agent (🔴 Red)
+**Use for:** Steps 8, 10
+
+**Responsibilities:**
+- Authentication flow implementation
+- Security vulnerability checks
+- Error handling setup
+
+**Key actions:**
+- Firebase Auth integration
+- Supabase Row-Level Security (RLS)
+- JWT validation
+- Input sanitization
+- Error boundary implementation
+- Commits with prefix `security:`
+
+### design-agent (🩷 Pink)
+**Use for:** Step 11 (optional, mobile apps only)
+
+**Responsibilities:**
+- Professional mobile UI/UX design
+- Apple design methodology application
+
+**Key actions:**
+- Applies professional visual design
+- Implements proper navigation patterns
+- Ensures touch targets (44x44pt minimum)
+- Validates in Expo preview
+- Commits with prefix `design:`
+
+### testing-agent (🟠 Orange)
+**Use for:** `/flow test` command (not part of mavenSteps)
+
+**Responsibilities:**
+- Comprehensive application testing
+- Error logging and reporting
+- Browser automation with chrome-devtools MCP
+
+**Key actions:**
+- Opens application using chrome-devtools MCP
+- Tests all completed stories (where `passes: true`)
+- Tests signup/login with standard test user
+- Checks console for errors (logs ALL errors found)
+- Tests each acceptance criterion
+- Creates error log at `docs/errors-[feature-name].md`
+- Reports testing results with error counts and severity
+
+**Required MCP:**
+- chrome-devtools (REQUIRED - cannot test without it)
+
+**Test Credentials:**
+- Email: `revccnt@gmail.com`
+- Password: `Elishiba!90`
+
+**Commit prefix:** `test:` (only commits if making test fixes)
+
+---
+
+### mobile-app-agent (🔵 Cyan)
+**Use for:** Mobile development (React Native + Expo apps)
+
+**Responsibilities:**
+- Mobile screen implementation with Expo Router
+- Offline-first data management with TanStack Query
+- Native UI patterns (swipe, pull-to-refresh, bottom sheets)
+- NativeWind styling (Tailwind for React Native)
+- Push notifications with Firebase Cloud Messaging
+- Touch-optimized interactions (44pt minimum)
+
+**Key actions:**
+- Creates mobile screens in `mobile/app/` folder
+- Implements offline support with AsyncStorage
+- Uses NativeWind utility classes for styling
+- Integrates Firebase Cloud Messaging for push notifications
+- Implements native UI patterns (pull-to-refresh, swipe actions)
+- Tests with Expo Go or device simulators
+- Uses same Supabase backend as web app
+- Commits with prefix `mobile:`
+
+**Required MCPs:**
+- supabase (REQUIRED - shared backend with web)
+- web-search-prime (Recommended - for mobile best practices)
+
+**Mobile Location:**
+- Works in `mobile/` folder
+- Mobile PRDs in `mobile/docs/prd-*.json`
+- Uses Expo Router (file-based routing)
+- TypeScript with strict mode
+
+**Server Management:**
+- Expo server runs on port 8081
+- Stop ONLY Expo process, not all Node processes
+- Use: `kill -9 $(lsof -ti:8081)`
+
+**Tech Stack:**
+- Frontend: React Native + Expo
+- Navigation: Expo Router
+- Styling: NativeWind (Tailwind)
+- State: TanStack Query + Zustand
+- Auth: Firebase Authentication
+- Backend: Supabase (shared with web)
+- Push: Firebase Cloud Messaging
+- Offline: AsyncStorage with sync
+
+
+## MCP Tool Assignment
+
+### What are MCPs?
+MCPs (Model Context Protocol) extend Claude with external tools like databases, web search, and browser automation.
+
+### How MCP Assignment Works
+
+**1. PRD specifies MCPs per step:**
+```json
+{
+  "id": "US-001",
+  "mavenSteps": [1, 7],
+  "mcpTools": {
+    "step1": ["supabase"],
+    "step7": ["supabase", "web-search-prime"]
+  }
+}
+```
+
+**2. Flow tells agent which MCPs to use:**
+```
+*** CRITICAL: MCP TOOLS INSTRUCTION ***
+You MUST use the Supabase MCP tools for ALL database operations.
+SCAN FIRST - Use MCP to list/check what exists in the database BEFORE making changes.
+Query the database DIRECTLY using Supabase MCP tools.
+
+Story: US-001, Step 1
+MCPs: supabase
+```
+
+**3. Agent uses those MCPs:**
+- Checks if MCPs are available in their tool set
+- Uses MCP tools directly to query database, run migrations, etc.
+- Falls back to standard tools only if MCPs unavailable
+
+### Available MCPs
+
+| MCP Name | Purpose | Steps Used For |
+|----------|---------|----------------|
+| supabase | Database operations | 1, 7, 8, 10 |
+| web-search-prime | Research, documentation | All steps |
+| web-reader | Read web content | All steps |
+| chrome-devtools | Browser testing | Testing phases |
+| playwright | Browser automation | Testing phases |
+| vercel | Deployment to Vercel | 9 |
+| wrangler | Deployment to Cloudflare | 9 |
+| figma | Design work | 11 |
+
+**MCP Usage Rules:**
+- **SCAN FIRST** - Always list/check what exists before making changes
+- **Query directly** - Use MCP tools, don't read migration files
+- **Verify in actual database** - Don't trust type files, verify with MCP
+- **Fall back gracefully** - Use standard tools if MCP unavailable
+
+---
 
 ## Required Files
 
@@ -390,7 +904,876 @@ src/
   }
   ```
 
+## Quality Standards
+
+### Zero Tolerance Rules
+
+**The following violations will BLOCK commits:**
+
+1. **'any' Types - ZERO TOLERANCE**
+   - No `: any`, `: any[]`, `<any>`, `Promise<any>`
+   - Use proper interfaces or `unknown` with type guards
+
+2. **Gradients in CSS - ZERO TOLERANCE**
+   - No `linear-gradient`, `radial-gradient`, `conic-gradient`
+   - Use solid professional colors only
+
+3. **Emojis in UI - ZERO TOLERANCE**
+   - No emojis anywhere in UI components
+   - Use professional icon libraries (lucide-react, heroicons)
+   - Never use emojis as icons or in text
+
+4. **Relative Imports**
+   - No `import { Foo } from './foo'` or `../bar`
+   - Use `@/` aliases for all imports
+
+### Component Size Limits
+
+- **Maximum 300 lines** per component
+- Components larger than 300 lines must be split
+- Flagged for refactoring agent to modularize
+
+### Professional Color Palette
+
+**Semantic Colors:**
+```css
+--color-primary: #3b82f6;      /* Blue */
+--color-success: #10b981;      /* Green */
+--color-warning: #f59e0b;      /* Amber */
+--color-error: #ef4444;        /* Red */
+--color-neutral: #6b7280;      /* Gray */
+```
+
+**Rules:**
+- Use semantic color names
+- No hard-coded hex values
+- No gradients (solid colors only)
+
+### Import Path Rules
+
+**✅ CORRECT:**
+```tsx
+import { Button } from '@shared/ui';
+import { useAuth } from '@features/auth/hooks';
+import { apiClient } from '@/shared/api';
+```
+
+**❌ BLOCKED:**
+```tsx
+import { Button } from '../../../shared/ui';
+import { useAuth } from '../hooks';
+```
+
+---
+
+## Browser Testing
+
+### Test User Credentials (Standard Across All Projects)
+
+**Email:** `revccnt@gmail.com`
+**Password:** `Elishiba!90`
+
+### Testing Process
+
+**For ALL web applications with browser MCPs:**
+
+1. **Start dev server:** `pnpm dev`
+2. **Navigate to application** using browser MCP
+3. **Check browser console** for errors and warnings
+4. **Check Network tab** for failed API calls
+5. **Test all user flows** with standard test user
+6. **Fix any console errors** found
+7. **Re-test** to verify clean console
+
+### Console Log Verification
+
+**ALWAYS read console logs. Common issues to fix:**
+
+| Issue | Example | Fix |
+|-------|---------|-----|
+| ReferenceError | `Uncaught ReferenceError: foo is not defined` | Import or define the variable |
+| TypeError | `Cannot read property 'x' of undefined` | Add null checks |
+| Failed to fetch | `Failed to fetch: /api/endpoint` | Check API route exists |
+| CORS | `CORS policy: No 'Access-Control-Allow-Origin'` | Configure CORS headers |
+| 404 / 500 | API returns error status | Fix backend endpoint |
+
+### Role Switching (Multi-Role Apps)
+
+**Do NOT create separate accounts for each role. Use role switching:**
+
+1. Log in as `revccnt@gmail.com`
+2. Use role switcher in application
+3. Change roles: SUPER_ADMIN → SHOP_OWNER → SHOP_EMPLOYEE
+4. Test each role's features
+5. Switch back and forth as needed
+
+---
+
+## Required MCPs
+
+### Mandatory MCPs for Maven Flow
+
+Maven Flow requires specific MCP servers to be configured for autonomous development and testing to function correctly.
+
+#### Two Mandatory MCPs
+
+**1. Supabase MCP (MANDATORY)**
+- **Purpose:** Direct database access, schema verification, migrations, type generation
+- **Why mandatory:**
+  - Agents need to QUERY the actual database (not read files)
+  - Agents need to VERIFY tables and schema exist
+  - Agents need to CREATE tables and run migrations
+  - Agents need to GENERATE TypeScript types from live schema
+- **Without Supabase MCP:**
+  - Agents will fall back to reading migration files (doesn't verify actual database)
+  - Agents will create migration scripts manually (error-prone)
+  - Agents cannot verify what's actually in the database
+
+**2. chrome-devtools MCP (MANDATORY)**
+- **Purpose:** Live browser testing, console log reading, application verification
+- **Why mandatory:**
+  - testing-agent MUST open the application to test features
+  - Agents MUST read console logs to find errors
+  - Agents MUST verify UI works in real browser
+  - Agents MUST test user flows end-to-end
+- **Without chrome-devtools MCP:**
+  - testing-agent cannot test the application
+  - Console errors go undetected
+  - Features cannot be verified in browser
+  - Testing becomes manual and incomplete
+
+#### How to Verify MCPs Are Configured
+
+**Before running `/flow start`:**
+
+1. **Check Claude Code MCP Settings:**
+   - Open Claude Code Settings
+   - Go to MCP Servers section
+   - Verify "supabase" is in the list
+   - Verify "chrome-devtools" is in the list
+
+2. **Test MCPs are working:**
+   - Start a conversation
+   - Ask agent to list tables using Supabase MCP
+   - Ask agent to open browser using chrome-devtools MCP
+
+3. **If MCPs are missing:**
+   - DO NOT start `/flow start`
+   - Configure the missing MCP first
+   - Restart Claude Code
+   - Verify again
+
+#### Optional MCPs (Recommended but Not Required)
+
+| MCP Name | Purpose | When to Include |
+|----------|---------|-----------------|
+| web-search-prime | Research documentation | All steps |
+| web-reader | Read web pages | All steps |
+| playwright | Browser automation testing | Testing phases |
+| wrangler | Cloudflare Workers deployment | Step 9 |
+| vercel | Vercel deployment | Step 9 |
+| figma | Design work | Step 11 (mobile) |
+
+**Only include these MCPs if:**
+- They are actually configured in your environment
+- The story specifically needs them
+- You've verified they're available
+
+#### Summary
+
+**MANDATORY MCPs (Must Have):**
+- ✅ supabase
+- ✅ chrome-devtools
+
+**Before running `/flow start`:**
+1. Verify supabase MCP is configured
+2. Verify chrome-devtools MCP is configured
+3. Test both MCPs work correctly
+4. Only then start the flow
+
+**Remember:** Without these MCPs, Maven Flow cannot function as designed. Agents will fall back to less reliable methods (reading files instead of querying database, manual testing instead of automated browser testing).
+
+---
+
+## Testing & Consolidation
+
+### Workflow: Test → Log → Consolidate → Fix
+
+Maven Flow includes a systematic testing and error consolidation workflow to ensure quality.
+
+### Step 1: Test (`/flow test`)
+
+**Purpose:** Comprehensive automated testing of all completed features
+
+**What happens:**
+1. Reads PRD to find completed stories (where `passes: true`)
+2. Starts dev server: `pnpm dev`
+3. Opens application using chrome-devtools MCP
+4. Tests user signup/login with standard test credentials
+5. Tests each completed feature's acceptance criteria
+6. Checks console for errors (logs ALL errors found)
+7. Tests navigation, forms, data display
+8. Creates error log at `docs/errors-[feature-name].md`
+
+**Standard Test User:**
+- Email: `revccnt@gmail.com`
+- Password: `Elishiba!90`
+
+**What gets tested:**
+- User authentication (signup, login, logout)
+- All completed stories' acceptance criteria
+- Console errors (JavaScript, network, API)
+- UI functionality
+- Navigation between pages
+- Form submissions
+- Data display
+
+**Example:**
+```bash
+/flow test task-priority
+```
+
+**Output:**
+- Shows which features are being tested
+- Reports errors in real-time
+- Creates error log markdown file
+- Summary with error counts by severity
+
+### Step 2: Review Error Log
+
+**Error log format:** `docs/errors-[feature-name].md`
+
+**Each error includes:**
+- Story ID (US-XXX)
+- Severity (Critical / High / Medium / Low)
+- Error type (Console Error / Network Error / UI Issue)
+- Error message (exact text from console)
+- Steps to reproduce
+- Expected vs actual behavior
+- Related file references
+- Suggested fixes
+
+**Example error log entry:**
+```markdown
+## Error 1
+
+**Story:** US-003 - Add priority selector
+**Feature:** Task creation form
+**Severity:** High
+
+**Error Type:** Console Error
+
+**Error Message:**
+```
+Uncaught TypeError: Cannot read property 'map' of undefined
+at PrioritySelector.tsx:24
+```
+
+**Steps to Reproduce:**
+1. Navigate to /tasks/create
+2. Click on "Priority" dropdown
+3. Observe error in console
+
+**Expected Behavior:**
+Priority dropdown shows options: Low, Medium, High, Urgent
+
+**Actual Behavior:**
+Application crashes, dropdown doesn't render
+
+**Related Files:**
+- File: src/features/tasks/components/PrioritySelector.tsx
+- Line: 24
+- Component: PrioritySelector
+
+**Suggested Fix:**
+Check that priorities prop is defined before mapping. Add default value or null check.
+```
+
+### Step 3: Consolidate (`/flow consolidate`)
+
+**Purpose:** Fix ONLY the specific errors found during testing (NOT reimplement features)
+
+**What happens:**
+1. Reads error log from `docs/errors-[feature-name].md`
+2. Parses each error to identify:
+   - Which story (US-XXX) has the error
+   - Which step/mavenStep needs to be re-run
+   - What the specific error is
+3. For each error:
+   - Spawns appropriate specialist agent (development, quality, security, etc.)
+   - Tells agent exactly what error to fix
+   - Waits for fix to be applied
+4. Re-tests ONLY the fixed item
+5. Marks error as resolved in log
+6. Continues until all errors fixed
+
+**What it does NOT do:**
+- Does NOT run full mavenSteps again
+- Does NOT re-implement completed features
+- Does NOT touch working code
+- Only fixes the specific errors identified
+
+**Example:**
+```bash
+/flow consolidate task-priority
+```
+
+**Output:**
+- Shows which errors are being fixed
+- Shows which agent is handling each fix
+- Commits each fix separately
+- Updates error log as fixes are applied
+
+### Step 4: Re-test
+
+After consolidation:
+1. Run `/flow test [prd-name]` again
+2. Verify all errors are fixed
+3. Verify console is clean
+4. If errors remain, repeat consolidation
+
+### Complete Workflow Example
+
+```bash
+# 1. Run development flow
+/flow start
+
+# 2. Test all completed features
+/flow test task-priority
+
+# Output: Testing Complete
+# Error Log: docs/errors-task-priority.md
+# Total Errors: 5
+# Critical: 1 | High: 2 | Medium: 1 | Low: 1
+
+# 3. Review error log
+cat docs/errors-task-priority.md
+
+# 4. Fix all errors
+/flow consolidate task-priority
+
+# Output:
+# Fixing Error 1: TypeError in PrioritySelector
+# Spawning quality-agent...
+# → Fixed
+# Fixing Error 2: Network error in API
+# Spawning development-agent...
+# → Fixed
+# ...
+
+# 5. Re-test to verify
+/flow test task-priority
+
+# Output: Testing Complete
+# Total Errors: 0
+# ✅ All features working correctly
+```
+
+### Key Differences: `/flow start` vs `/flow consolidate`
+
+| Aspect | `/flow start` | `/flow consolidate` |
+|--------|---------------|---------------------|
+| Purpose | Implement new features | Fix specific errors |
+| Input | PRD stories | Error log |
+| Runs | Full mavenSteps for each story | Only affected steps |
+| Scope | Entire story implementation | Specific error fixes |
+| Commits | Full feature commits | Targeted bug fixes |
+| Result | New features implemented | Errors resolved |
+
+---
+
+
+---
+
+## Mobile Development
+
+Maven Flow includes comprehensive support for React Native + Expo mobile app development with shared Supabase backend.
+
+### Quick Start for Mobile
+
+**Step 1: Setup mobile environment**
+```bash
+/flow-mobile setup
+```
+This creates the complete mobile app structure in `mobile/` folder.
+
+**Step 2: Create mobile PRDs**
+```bash
+flow-prd-mobile [feature-name]
+```
+Converts existing web PRDs to mobile-specific PRDs with offline support.
+
+**Step 3: Sync with web app**
+```bash
+/flow-mobile sync
+```
+Syncs database types and configuration from web to mobile.
+
+**Step 4: Develop mobile features**
+```bash
+/flow start
+```
+Maven Flow detects mobile PRDs and uses mobile-app-agent for implementation.
+
+### Mobile App Structure
+
+```
+mobile/
+├── app/                    # Expo Router screens (file-based routing)
+│   ├── (tabs)/            # Tab navigation screens
+│   ├── auth/              # Authentication screens
+│   └── _layout.tsx        # Root layout
+├── components/            # Mobile-specific components
+├── lib/                   # Utilities (Supabase, Firebase, Storage)
+├── hooks/                 # Custom React hooks
+├── store/                 # Zustand state management
+├── constants/             # App constants
+├── types/                 # TypeScript types (shared with web)
+├── docs/                  # Mobile PRDs
+│   ├── prd-*.json        # Mobile PRDs
+│   └── progress-*.txt    # Mobile progress files
+└── package.json
+```
+
+### Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Framework** | React Native + Expo SDK 51 |
+| **Navigation** | Expo Router (file-based routing) |
+| **Styling** | NativeWind (Tailwind for React Native) |
+| **State** | TanStack Query + Zustand |
+| **Auth** | Firebase Authentication |
+| **Backend** | Supabase (shared with web app) |
+| **Push** | Firebase Cloud Messaging |
+| **Offline** | AsyncStorage with auto-sync |
+
+### Mobile-Specific Features
+
+#### Offline-First Architecture
+All mobile features work offline with automatic sync:
+
+**Read Pattern:**
+1. Check AsyncStorage cache first
+2. If fresh (< 5 min), use cached data
+3. If missing/stale, fetch from Supabase
+4. Update cache and display
+
+**Write Pattern:**
+1. Optimistically update UI immediately
+2. If online: Execute immediately
+3. If offline: Queue in AsyncStorage
+4. When back online: Process queue automatically
+
+#### Native UI Patterns
+Use mobile-specific interactions:
+- **Pull-to-refresh** for data reload
+- **Swipe actions** for quick actions (delete, complete)
+- **Bottom sheets** for options/modals
+- **Tab bar** for main navigation
+- **Stack navigation** for drilling down
+- **Long-press** for context menus
+
+#### Touch Targets
+- **Minimum 44x44 points** for all touch targets (Apple)
+- **48x48 dp minimum** for Android
+- Adequate spacing between targets
+
+#### Push Notifications
+- Firebase Cloud Messaging for push notifications
+- Task assignments, due reminders, status changes
+- Background message handling
+- Notification channels (Android)
+
+### Commands
+
+#### `/flow-mobile setup`
+Creates complete React Native + Expo mobile app:
+- Installs all dependencies
+- Configures Expo Router
+- Sets up NativeWind styling
+- Configures Supabase client (shared with web)
+- Configures Firebase Auth + FCM
+- Implements offline storage + sync logic
+- Creates base screens and navigation
+
+#### `/flow-mobile status`
+Shows mobile app status:
+- Mobile folder existence
+- Expo configuration
+- Dependencies status
+- Supabase connection
+- Firebase configuration
+- Mobile PRDs and progress
+- Offline sync status
+
+#### `/flow-mobile sync`
+Synchronizes web and mobile:
+- Database types (from Supabase schema)
+- Environment variables
+- API endpoints
+- Auth configuration
+
+#### `flow-prd-mobile [feature-name]`
+Converts web PRD to mobile PRD:
+- Adds offline requirements
+- Adds native UI patterns
+- Adds touch interactions
+- Adds push notification specs
+- Creates `mobile/docs/prd-[feature-name].json`
+
+### Development Workflow
+
+**For Web Development:**
+```bash
+# 1. Create web PRD
+flow-prd
+# 2. Convert to JSON
+flow-convert
+# 3. Start development
+/flow start
+```
+
+**For Mobile Development:**
+```bash
+# 1. Setup mobile (one-time)
+/flow-mobile setup
+
+# 2. Create mobile PRDs from web PRDs
+flow-prd-mobile task-management
+flow-prd-mobile user-auth
+
+# 3. Sync types and config
+/flow-mobile sync
+
+# 4. Start mobile development
+/flow start
+```
+
+### Testing Mobile Apps
+
+**Test with Expo Go (quickest):**
+```bash
+cd mobile
+pnpm start
+# Scan QR code with Expo Go app on phone
+```
+
+**Test on iOS simulator:**
+```bash
+cd mobile
+pnpm ios
+```
+
+**Test on Android emulator:**
+```bash
+cd mobile
+pnpm android
+```
+
+**Test offline functionality:**
+1. Load app and data
+2. Enable Airplane mode
+3. Navigate around (data should load from cache)
+4. Create/update/delete items
+5. Disable Airplane mode
+6. Verify sync happens automatically
+
+### Building and Deploying
+
+**Build with EAS Build:**
+```bash
+cd mobile
+eas build --platform ios
+eas build --platform android
+```
+
+**Submit to stores:**
+```bash
+eas submit --platform ios
+eas submit --platform android
+```
+
+**Over-the-air updates:**
+```bash
+eas update --branch production
+```
+
+### Shared Backend
+
+Mobile app shares the same Supabase backend as web:
+- Same database schema
+- Same RLS policies
+- Same API endpoints
+- Same types (generated from schema)
+
+**Sync types:**
+```bash
+/flow-mobile sync
+```
+
+This generates `mobile/types/database.types.ts` from Supabase schema.
+
+### Mobile PRD Structure
+
+Mobile PRDs include additional fields:
+
+**Offline Requirements:**
+```json
+"offline": {
+  "required": true,
+  "cacheKey": "tasks-cache",
+  "cacheTTL": 300000,
+  "syncStrategy": "auto-on-online"
+}
+```
+
+**Native UI Patterns:**
+```json
+"uiPatterns": {
+  "navigation": "tab-bar",
+  "actions": {
+    "complete": "swipe-left",
+    "delete": "swipe-right",
+    "edit": "tap-card"
+  },
+  "refresh": "pull-to-refresh"
+}
+```
+
+**Push Notifications:**
+```json
+"notifications": {
+  "enabled": true,
+  "events": [
+    {
+      "event": "task_assigned",
+      "title": "New Task Assigned",
+      "body": "You've been assigned: {task_title}",
+      "tapAction": "navigate_to_task_details"
+    }
+  ]
+}
+```
+
+### Agent Assignments for Mobile
+
+| Maven Step | Agent | Purpose for Mobile |
+|------------|-------|-------------------|
+| 1 | mobile-app-agent | Create mobile screens with Expo Router |
+| 2 | mobile-app-agent | Mobile dependencies setup |
+| 3 | mobile-app-agent | Mobile folder structure |
+| 5 | quality-agent | Type safety (same as web) |
+| 6 | mobile-app-agent | Centralize mobile components |
+| 7 | mobile-app-agent | Supabase integration (shared) |
+| 8 | mobile-app-agent | Firebase Auth + push notifications |
+| 9 | mobile-app-agent | Mobile MCP integrations |
+| 10 | mobile-app-agent | Mobile security + error handling |
+| 11 | design-agent | Professional mobile UI/UX |
+
+### Key Differences: Web vs Mobile
+
+| Aspect | Web | Mobile |
+|--------|-----|--------|
+| **Framework** | Next.js | React Native + Expo |
+| **Routing** | Next.js App Router | Expo Router |
+| **Styling** | Tailwind CSS | NativeWind (Tailwind) |
+| **State** | TanStack Query | TanStack Query + AsyncStorage |
+| **Navigation** | Links/buttons | Tabs/stacks/gestures |
+| **Offline** | Rarely required | **Always required** |
+| **Updates** | Realtime | Queue + sync |
+| **Notifications** | In-app only | Push (FCM) |
+| **Input** | Keyboard + mouse | Touch + keyboard |
+| **Touch Targets** | N/A | 44x44pt minimum |
+
+### Server Management for Mobile
+
+**Expo server runs on port 8081.**
+
+**❌ FORBIDDEN:**
+```bash
+pkill -9 node
+killall node
+```
+
+**✅ CORRECT:**
+```bash
+# Find Expo server
+lsof -ti:8081
+# Kill ONLY that process
+kill -9 $(lsof -ti:8081)
+```
+
+## Common Workflows
+
+### Workflow 1: New Feature with Database
+
+**Story requires:** Database schema + Backend API + UI
+
+**Recommended mavenSteps:** `[1, 3, 5, 7, 10]`
+
+**What happens:**
+1. **Step 1 (dev):** Create table with Supabase MCP, generate types
+2. **Step 3 (refactor):** Structure to feature-based folders
+3. **Step 5 (quality):** Remove 'any' types, add @ aliases
+4. **Step 7 (dev):** Create API endpoints, connect to database
+5. **Step 10 (security):** Add RLS policies, error handling
+
+**Total time:** ~1-2 hours
+
+### Workflow 2: UI Component Only
+
+**Story requires:** Add new UI component to existing page
+
+**Recommended mavenSteps:** `[3, 5, 6]`
+
+**What happens:**
+1. **Step 3 (refactor):** Create in feature-based structure
+2. **Step 5 (quality):** Type safety, no 'any' types
+3. **Step 6 (refactor):** Move reusable parts to @shared/ui
+
+**Total time:** ~30-45 minutes
+
+### Workflow 3: Authentication Flow
+
+**Story requires:** User signup, login, session management
+
+**Recommended mavenSteps:** `[1, 7, 8, 10]`
+
+**What happens:**
+1. **Step 1 (dev):** Create auth UI pages
+2. **Step 7 (dev):** Set up Supabase Auth, Firebase integration
+3. **Step 8 (security):** Implement auth flow, RLS policies
+4. **Step 10 (security):** Security hardening, error handling
+
+**Total time:** ~1.5 hours
+
+### Workflow 4: Mobile App (Expo/React Native)
+
+**Story requires:** Mobile screen with professional design
+
+**Recommended mavenSteps:** `[1, 3, 5, 6, 11]`
+
+**What happens:**
+1. **Step 1 (dev):** Create base screen
+2. **Step 3 (refactor):** Structure properly
+3. **Step 5 (quality):** Type safety
+4. **Step 6 (refactor):** Centralize UI components
+5. **Step 11 (design):** Apply professional mobile design
+
+**Total time:** ~1.5-2 hours
+
+---
+
 ## Troubleshooting
+
+### Prerequisites Issues
+
+**Error: `No docs/ directory found`**
+```bash
+# Fix: Create the directory
+mkdir docs
+```
+
+**Error: `No PRD files found in docs/`**
+```bash
+# Fix: Create a PRD using flow-prd skill
+Tell me you want to create a PRD for [feature]
+```
+
+**Message: `All PRDs complete! No work to do.`**
+- All stories in all PRDs have `passes: true`
+- Create a new PRD or add more stories to existing PRD
+
+### Flow Execution Issues
+
+**Flow stops mid-story:**
+
+1. **Check progress file:**
+   ```bash
+   cat docs/progress-[feature-name].txt
+   ```
+
+2. **Review recent commits:**
+   ```bash
+   git log --oneline -10
+   ```
+
+3. **Fix the issue** (code error, typecheck fail, etc.)
+
+4. **Resume flow:**
+   ```bash
+   /flow continue
+   ```
+
+**Typecheck failing:**
+- Run `pnpm typecheck` to see specific errors
+- Fix 'any' types, missing imports, type mismatches
+- Run `/flow continue` when fixed
+
+**Quality agent blocking commit:**
+- Check for 'any' types, gradients, emojis
+- Fix all BLOCKING issues
+- Run `/flow continue`
+
+### MCP Tool Issues
+
+**Agent not using MCP tools:**
+
+1. **Verify MCP is configured:**
+   - Check Claude Code MCP settings
+   - Ensure MCP server is running
+
+2. **Check PRD mcpTools:**
+   ```json
+   "mcpTools": {
+     "step1": ["supabase"]
+   }
+   ```
+
+3. **Agent should see instruction:**
+   ```
+   Use these MCPs: supabase
+   ```
+
+4. **If still not working:**
+   - Check agent has `tools` field in frontmatter (should NOT have it)
+   - Restart Claude Code
+   - Try `/flow continue`
+
+### Architecture Issues
+
+**Import path errors:**
+- Ensure `tsconfig.json` has correct `paths` configuration
+- Use `@/` aliases, not relative imports
+- quality-agent will auto-fix most import issues
+
+**Component too large (>300 lines):**
+- refactor-agent will split it
+- Or manually split before running flow
+- Mark story as complete if acceptable
+
+### Browser Testing Issues
+
+**Console has errors:**
+- Fix all JavaScript errors before marking complete
+- Check for missing imports, undefined variables
+- Verify API endpoints exist
+
+**Test user cannot log in:**
+- Create user: `revccnt@gmail.com` / `Elishiba!90`
+- Verify signup flow works
+- Check database for user record
+
+### Getting Help
+
+**Still stuck?**
+1. Run `/flow status` for detailed diagnostics
+2. Check progress file: `docs/progress-[feature-name].txt`
+3. Review git history: `git log --oneline -20`
+4. Check agent documentation in `.claude/agents/`
+
+---
 
 **Flow not starting?**
 - Check that at least one `docs/prd-*.json` file exists

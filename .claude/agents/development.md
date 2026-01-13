@@ -257,12 +257,34 @@ pnpm install
 **Testing approach depends on the platform:**
 
 ### Web Applications:
-**If browser MCP available:** Use it for automated testing
-**If not available:** Provide manual testing instructions
+**If browser MCP (playwright, chrome-devtools) available:**
+
+**CRITICAL BROWSER TESTING REQUIREMENTS:**
+1. **ALWAYS read console logs** - Check for errors, warnings, failed requests
+2. **FIX any issues found** - Never mark complete with console errors
+3. **Use standard test credentials:**
+   - Email: `revccnt@gmail.com`
+   - Password: `Elishiba!90`
+4. **Create this user first** during signup/account testing
+5. **Use this account** for all subsequent testing
+6. **For multi-role apps:** Implement role switching, NOT separate accounts
+
+**Testing Process:**
 1. Start dev server: `pnpm dev`
-2. Navigate to the application
-3. Check console, network, DOM elements
-4. Test all user interactions
+2. Navigate to the application using browser MCP
+3. **Check browser console** for errors/warnings
+4. Check Network tab for failed API calls
+5. Test all user interactions
+6. **Fix any console errors** before completing
+7. Re-test after fixes to verify clean console
+
+**Role Switching (for multi-role apps):**
+- Log in as `revccnt@gmail.com`
+- Use role switcher to change roles (e.g., SUPER_ADMIN → SHOP_OWNER → SHOP_EMPLOYEE)
+- Test each role's features
+- Do NOT create separate accounts for each role
+
+**If browser MCP not available:** Provide manual testing instructions
 
 ### Mobile Applications:
 **If expo/mobile MCP available:** Use it for testing

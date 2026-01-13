@@ -91,6 +91,7 @@ Run after EVERY task completion (automated via hooks):
 - ✅ Check data layer usage
 - ✅ **NO gradients** (solid professional colors only)
 - ✅ **Professional color palette** enforcement
+- ✅ **NO emojis** (use professional icon libraries only)
 
 ---
 
@@ -160,6 +161,36 @@ background: linear-gradient(45deg, #f09, #30f);
 ```
 
 **See `.claude/shared/agent-patterns.md` for full color reference.**
+
+### UI Rules: NO EMOJOS (ZERO TOLERANCE)
+
+```tsx
+// ❌ BLOCKED - Emojis in any UI component
+<span>Hello 👋</span>
+<button>Delete 🗑️</button>
+<div>Status: ⏳ Processing</div>
+<Icon>🔔</Icon>
+
+// ✅ CORRECT - Professional icon libraries
+import { Trash2, Edit, Bell, Loader2 } from 'lucide-react';
+// or
+import { TrashIcon, PencilIcon, BellIcon } from '@heroicons/react/24/outline';
+
+<Trash2 className="w-4 h-4" />
+<Bell className="w-4 h-4" />
+<Loader2 className="w-4 h-4 animate-spin" />
+```
+
+**Approved Icon Libraries:**
+- `lucide-react` (recommended - lightweight, tree-shakeable)
+- `@heroicons/react` (Tailwind official icons)
+- `@radix-ui/react-icons` (Radix UI icons)
+- Custom icons in `@/shared/ui/icons`
+
+**Agent Responsibility:**
+- **BLOCK** any UI components containing emojis
+- **REPLACE** emojis with proper icons from approved libraries
+- **SEARCH** for emoji unicode patterns when reviewing code
 
 ### Import Path Rules
 
@@ -256,12 +287,31 @@ Ensure `tsconfig.json` has paths configured.
 
 ## Browser Testing
 
-For web applications:
+**CRITICAL for web applications using browser MCPs (playwright, chrome-devtools):**
+
+### Console Log Verification (REQUIRED)
+1. **ALWAYS check browser console** for errors and warnings
+2. **FIX all console errors** before marking complete
+3. Common issues to fix:
+   - JavaScript errors (ReferenceError, TypeError, etc.)
+   - Failed API calls (404, 500, CORS errors)
+   - Missing resources or imports
+   - Network errors
+
+### Standard Test Credentials
+- **Email:** `revccnt@gmail.com`
+- **Password:** `Elishiba!90`
+
+**Process:**
 1. Start dev server: `pnpm dev`
-2. Open Chrome DevTools (F12)
-3. Check Console for errors
-4. Check Network for API calls
-5. Verify DOM in Elements tab
+2. Navigate using browser MCP
+3. Create/login with test user credentials
+4. **Check console** - must be clean
+5. **Check network** - all API calls succeed
+6. Test all user flows
+7. For multi-role: use role switching, not separate accounts
+8. **Fix any issues** found
+9. Re-test to verify clean console
 
 **See `.claude/shared/agent-patterns.md` for detailed testing practices.**
 
@@ -276,10 +326,11 @@ For web applications:
    ### ❌ BLOCKING Issues: X
    1. **'any' Types**: N instances ❌ BLOCKED
    2. **Gradients**: N instances ❌ BLOCKED
-   3. **Relative Imports**: N files ⚠️ FLAGGED
+   3. **Emojis in UI**: N instances ❌ BLOCKED
+   4. **Relative Imports**: N files ⚠️ FLAGGED
    ```
-3. **Enforce ZERO TOLERANCE** - Block on 'any' and gradients
-4. **Auto-fix** - Convert imports, remove gradients
+3. **Enforce ZERO TOLERANCE** - Block on 'any', gradients, and emojis
+4. **Auto-fix** - Convert imports, remove gradients, replace emojis with icons
 5. **Flag complex issues** - Large components → Refactor agent
 
 ---
@@ -290,7 +341,10 @@ Automatically invoked by:
 1. **PostToolUse Hook** - After every file edit
 2. **Stop Hook** - Before committing
 
-Both hooks check for violations and BLOCK on 'any' types and gradients.
+Both hooks check for violations and BLOCK on:
+- 'any' types
+- Gradients
+- **Emojis in UI components**
 
 ---
 
@@ -298,11 +352,16 @@ Both hooks check for violations and BLOCK on 'any' types and gradients.
 
 - [ ] **BLOCKING**: All 'any' types removed
 - [ ] **BLOCKING**: All gradients removed
+- [ ] **BLOCKING**: All emojis replaced with professional icons
 - [ ] All relative imports → @ aliases
 - [ ] All components <300 lines (or flagged)
 - [ ] UI components use @shared/ui
+- [ ] Icons use lucide-react, heroicons, or @/shared/ui/icons
 - [ ] API calls use data layer
 - [ ] Colors use professional palette
+- [ ] **Browser tested** (if web app): Console is clean, no errors
+- [ ] **Test user created**: revccnt@gmail.com / Elishiba!90
+- [ ] **All flows tested** with test user credentials
 - [ ] TypeScript compiles
 - [ ] ESLint passes
 - [ ] **Tested in Chrome DevTools** (web apps)
