@@ -19,6 +19,13 @@ if [ -z "$PROJECT_ROOT" ]; then
   PROJECT_ROOT="$(pwd)"
 fi
 
+# Check if src directory exists
+if [ ! -d "$PROJECT_ROOT/src" ]; then
+  echo "ℹ️  No src/ directory found - skipping quality checks"
+  echo "✅ Ready to proceed!"
+  exit 0
+fi
+
 # Initialize counters
 TOTAL_ISSUES=0
 BLOCKING_ISSUES=0

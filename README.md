@@ -252,6 +252,100 @@ Archives current PRD run and starts fresh. Other PRDs remain unaffected.
 
 Displays help information.
 
+---
+
+## Terminal Commands
+
+Maven Flow includes terminal forwarder scripts in the `bin/` directory that allow you to run Maven Flow commands directly from your terminal without typing the `/` prefix.
+
+### Available Terminal Scripts
+
+| Script | Description | Usage Example |
+|--------|-------------|---------------|
+| `flow.sh` / `flow.ps1` / `flow.bat` | Main Maven Flow orchestrator | `flow start 10` |
+| `flow-prd.sh` / `flow-prd.ps1` / `flow-prd.bat` | PRD creator | `flow-prd create authentication` |
+| `flow-convert.sh` / `flow-convert.ps1` / `flow-convert.bat` | PRD to JSON converter | `flow-convert authentication` |
+
+### Installation
+
+**Option 1: Global Installation (Recommended)**
+```bash
+# Linux/macOS
+./bin/flow-install-global.sh
+source ~/.bashrc  # or restart your terminal
+
+# Windows - Add bin/ folder to your PATH manually
+```
+
+**Option 2: Local Installation**
+```bash
+# Use scripts directly from bin/ folder
+./bin/flow.sh start 10
+./bin/flow-prd.sh create authentication
+./bin/flow-convert.sh authentication
+```
+
+### Usage Examples
+
+**Start autonomous development:**
+```bash
+flow start              # Start with default 10 iterations
+flow start 20           # Start with 20 iterations
+flow status             # Check progress
+flow continue           # Resume from last iteration
+flow reset auth         # Reset specific PRD
+```
+
+**Create and convert PRDs:**
+```bash
+# Create a new PRD (markdown)
+flow-prd create user authentication system with login and signup
+
+# Convert to JSON format
+flow-convert authentication
+
+# Start development
+flow start
+```
+
+### Terminal vs Claude Code Commands
+
+The terminal scripts are simple forwarders - they just pass your input to Claude Code:
+
+| Terminal Command | Claude Code Command |
+|------------------|-------------------|
+| `flow start 10` | `/flow start 10` |
+| `flow status` | `/flow status` |
+| `flow-prd create auth` | `/flow-prd create auth` |
+| `flow-convert auth` | `/flow-convert auth` |
+
+All the actual work (agent coordination, folder creation, memory management) is handled by Claude Code commands, not the terminal scripts.
+
+### Platform-Specific Scripts
+
+**Linux/macOS (Bash):**
+```bash
+./bin/flow.sh start 10
+./bin/flow-prd.sh create authentication
+./bin/flow-convert.sh authentication
+```
+
+**Windows (PowerShell):**
+```powershell
+.\bin\flow.ps1 start 10
+.\bin\flow-prd.ps1 create authentication
+.\bin\flow-convert.ps1 authentication
+```
+
+**Windows (CMD):**
+```batch
+bin\flow.bat start 10
+bin\flow-prd.bat create authentication
+bin\flow-convert.bat authentication
+```
+
+---
+
 ## Required Files
 
 | File Pattern | Purpose | Location |

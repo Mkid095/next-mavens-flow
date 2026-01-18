@@ -70,6 +70,15 @@ When you execute `/flow start` or `/flow continue`:
 2. For each PRD, checks if all stories have `passes: true`
 3. Finds the first PRD with incomplete stories
 4. For each incomplete story (in priority order):
+
+   **MEMORY LOADING PHASE:**
+   - Read PRD's `relatedPRDs` array
+   - Load consolidated memory from each related PRD (if any)
+   - Pre-analyze and summarize relevant sections (~3-5K tokens)
+   - Load previous story memories from same PRD (~10K tokens)
+   - Create story session with proper context structure
+
+   **IMPLEMENTATION PHASE:**
    - Read story's mavenSteps array
    - Read story's mcpTools (if specified for each step)
    - **Spawn specialist agents directly:**
@@ -91,12 +100,110 @@ When you execute `/flow start` or `/flow continue`:
      ```
    - Wait for each agent to complete
    - Run quality checks (typecheck, lint)
-   - Commit changes
-   - Update PRD (set passes: true)
-   - Append to progress file
+
+   **MEMORY CREATION PHASE (MANDATORY - DO NOT SKIP!):**
+
+   This phase is CRITICAL for the memory system. You MUST execute it for EVERY completed story.
+
+   **Mandatory Steps:**
+   1. **Create feature folder:** `mkdir -p docs/[feature]/`
+   2. **Create story memory file:** `docs/[feature]/story-US-[###]-[title].txt`
+   3. **Include:**
+      - What was implemented (specific files, functions, components)
+      - Key decisions made (architecture choices, design patterns)
+      - Technical challenges encountered and how they were resolved
+      - Integration points with other features
+      - Lessons learned for future work
+   4. **Update PRD JSON:** Set `passes: true` for the completed story
+   5. **Commit changes** with proper format: `feat: [story-id] [story-title]`
+   6. **Output signal:** Output the `<STORY_COMPLETE>` signal to indicate completion
+
+   **Memory file format:**
+   ```markdown
+   ---
+   memoryVersion: 1
+   schemaVersion: 1
+   storyId: US-001
+   storyTitle: [Title]
+   feature: [Feature]
+   completedDate: [Date]
+   agents: development-agent, security-agent
+   ---
+
+   # Story US-001: [Title]
+
+   ## Implemented
+   - List what was actually implemented
+
+   ## Key Decisions
+   - Architecture decisions made
+
+   ## Challenges Resolved
+   - Problems encountered and solutions
+
+   ## Integration Points
+   - How this connects to other features
+
+   ## Lessons Learned
+   - Important takeaways for future work
+   ```
+
+   **⚠️ WARNING:** Do NOT skip or defer memory creation. The memory system depends on these files being created after each story.
+
 5. Move to next incomplete story
-6. When PRD complete, move to next incomplete PRD
-7. Continue until all PRDs are complete
+
+6. **CONSOLIDATION PHASE (when ALL stories in PRD complete):**
+
+   When ALL stories in the PRD have `passes: true`, you MUST update the consolidated memory file.
+
+   **Mandatory Steps:**
+   1. **Read all story memory files** from `docs/[feature]/story-US-*.txt`
+   2. **Update the consolidated memory file:** `docs/consolidated-[feature].txt`
+      - Read existing content first
+      - Append new consolidated information (don't overwrite)
+      - Update totals: `totalStories` and `completedStories` to actual counts
+      - Set `status: completed`
+      - Update `consolidatedDate` to current date
+   3. **Target ~15K tokens** - Aggressively summarize to stay within limit
+   4. **Focus on:** Patterns, decisions, interfaces, integration points
+   5. **Output:** `<ALL_COMPLETE>` signal
+
+   **Consolidated Memory Format:**
+   ```markdown
+   ---
+   memoryVersion: 1
+   schemaVersion: 1
+   feature: [Feature Name]
+   consolidatedDate: [Updated Date]
+   totalStories: 5
+   completedStories: 5
+   status: completed
+   ---
+
+   # [Feature Name] - Consolidated Implementation Memory
+
+   ## System Overview
+   [Brief overview of what was implemented]
+
+   ## Key Architectural Decisions
+   [All technical decisions from all stories]
+
+   ## Public Interfaces
+   [All API endpoints, UI components, integrations]
+
+   ## Integration Patterns
+   [How this feature connects to other PRDs]
+
+   ## Related PRDs
+   [Which PRDs depend on or are related to this one]
+
+   ## Consolidated From Stories
+   US-001: [Title] | US-002: [Title] | ...
+   ```
+
+   **⚠️ IMPORTANT:** This UPDATES the existing `docs/consolidated-[feature].txt` file that was created by flow-prd. Do NOT overwrite - UPDATE it by reading first, then updating the fields.
+
+7. Continue to next incomplete PRD until all PRDs complete
 8. Default: 10 iterations (stories) unless specified
 
 ### Check status
@@ -1799,4 +1906,353 @@ Tell me you want to create a PRD for [feature]
 
 ---
 
-*Maven Flow: Autonomous AI development with comprehensive quality assurance and multi-PRD support powered by Claude Code CLI*
+## Memory System Architecture
+
+### Story-Level Memory Files
+
+Each story gets a permanent memory file: `docs/[feature]/story-US-[###]-[title].txt`
+
+**Folder Structure:**
+```
+docs/
+├── authentication/              # Story memories folder (auto-created)
+│   ├── story-US-001-login.txt
+│   ├── story-US-002-signup.txt
+│   └── story-US-003-reset-password.txt
+├── prd-authentication.md       # Human-readable PRD
+├── prd-authentication.json     # Machine-readable PRD
+└── consolidated-authentication.txt  # Consolidated memory (after all stories)
+```
+
+**Memory File Format:**
+```markdown
+---
+memoryVersion: 1
+schemaVersion: 1
+storyId: US-001
+storyTitle: User Login
+feature: Authentication System
+completedDate: 2025-01-18
+agents: development-agent, security-agent
+---
+
+# Story US-001: User Login
+
+## Implemented
+- Created users table with id, email, password_hash columns
+- Built login UI with email/password fields and validation
+- Implemented authenticate() server action
+- Added session management with cookies
+
+## Database Decisions
+- Users table in Supabase with RLS policies
+- Password hashing using bcrypt (cost factor 10)
+- Session tokens stored in supabase_auth.sessions
+
+## UI/UX Patterns
+- Login form uses centralized Form component
+- Error messages display inline below fields
+- Success redirects to /dashboard
+
+## Integration Points
+- Authentication state managed via React Context (AuthContext)
+- Server actions in src/actions/auth.ts
+- Session validation middleware for protected routes
+
+## Lessons Learned
+- Always use Supabase MCP for database operations
+- Test authentication flow with real credentials
+- RLS policies must be applied before testing
+
+## Best Practices Identified
+- Server actions return { success, error, data } pattern
+- All auth-related UI components use AuthContext
+
+## Commit
+feat: add user login with email/password authentication
+```
+
+### Consolidated Memory (PRD-Level)
+
+After ALL stories in a PRD complete, consolidates into `docs/consolidated-[feature].txt` (~15K tokens max)
+
+**Consolidation Rules (HARD CAP):**
+- Summarize AGGRESSIVELY - focus on patterns, decisions, interfaces
+- AVOID repeating step-by-step details already in story files
+- Target ~15K tokens maximum
+- Story files remain the detailed source; consolidation is for cross-PRD context
+
+**Consolidation Format:**
+```markdown
+---
+memoryVersion: 1
+schemaVersion: 1
+feature: Authentication System
+consolidatedDate: 2025-01-18
+totalStories: 5
+---
+
+# Authentication System - Consolidated Implementation Memory
+
+## System Overview
+Complete user authentication supporting login, signup, password reset, and session management.
+
+## Key Architectural Decisions
+
+### Database
+- **Supabase as single source of truth** - Always use MCP for queries
+- **users table**: id, email, password_hash, created_at, updated_at
+- **RLS**: Authenticated users read/write own data only
+
+### Authentication Flow
+1. Email/password → authenticate() action
+2. Session token → HTTP-only cookie
+3. Protected routes → middleware validation
+4. Logout → clear cookie + Supabase session
+
+## Public Interfaces
+
+### Server Actions (`src/actions/auth.ts`)
+```typescript
+authenticate(email, password) → { success, error, data }
+register(email, password) → { success, error, data }
+requestPasswordReset(email) → { success, error }
+resetPassword(token, newPassword) → { success, error }
+logout() → { success }
+```
+
+## Integration Patterns
+
+### For New Features Requiring Auth
+1. Wrap with `AuthContext` provider
+2. Check `user` state before allowing access
+3. Use `authenticate()` for credential validation
+4. Apply RLS policies to new tables with `user_id` FK
+
+## Related PRDs
+- **Dashboard PRD**: Requires auth, loads this memory
+
+## Consolidated From Stories
+US-001: User login | US-002: User signup | US-003: Password reset | US-004: Session management | US-005: Logout
+```
+
+### Cross-PRD Memory Loading
+
+When implementing a PRD that depends on other PRDs:
+
+1. **Load related consolidated memory** from `relatedPRDs` array
+2. **Pre-analyze and summarize** to create focused summary (~3-5K tokens)
+3. **Inject into story context** only relevant parts
+
+**Example: Dashboard PRD depends on Authentication PRD**
+```json
+{
+  "project": "User Dashboard",
+  "consolidatedMemory": "docs/consolidated-dashboard.txt",
+  "relatedPRDs": ["docs/prd-authentication.json"]
+}
+```
+
+**Context budget per story:** ~35K tokens
+- Main prompt: ~5K
+- Previous stories in same PRD: ~10K
+- Related PRD summaries: ~15K
+- Agent definitions: referenced, not embedded
+- Buffer: ~5K
+
+---
+
+## Signal Format
+
+### Story Complete Signal
+
+After each story completes, output this signal:
+
+```xml
+<STORY_COMPLETE>
+<story_id>US-001</story_id>
+<story_title>User login</story_title>
+<feature>Authentication System</feature>
+<agents_used>development-agent, security-agent</agents_used>
+<commit>feat: add user login with email/password authentication</commit>
+<memory_file>docs/authentication/story-US-001-login.txt</memory_file>
+</STORY_COMPLETE>
+```
+
+**Signal triggers:**
+1. Create/update `docs/[feature]/story-US-[###]-[title].txt`
+2. Update PRD JSON: `passes: true`
+3. Commit changes with proper format
+4. Output signal to indicate completion
+
+### All Complete Signal
+
+After ALL stories in a PRD complete, output this signal:
+
+```xml
+<ALL_COMPLETE>
+<feature>Authentication System</feature>
+<total_stories>5</total_stories>
+<completed_stories>5</completed_stories>
+<consolidated_memory>docs/consolidated-authentication.txt</consolidated_memory>
+</ALL_COMPLETE>
+```
+
+**Signal triggers:**
+1. Spawn consolidation agent
+2. Consolidate all story memories into `docs/consolidated-[feature].txt`
+3. Hard cap at ~15K tokens (aggressive summarization)
+4. Output signal with consolidation path
+
+---
+
+## Enhanced Story Processing Flow
+
+### With Memory System and Signals
+
+When processing each story:
+
+```markdown
+## Story: US-001 - User Login
+
+**From PRD:**
+- Feature: Authentication System
+- mavenSteps: [1, 7, 10]
+- mcpTools: { step1: ["supabase"], step7: ["supabase"], step10: [] }
+- relatedPRDs: []
+
+**Loading Context:**
+- Previous stories in this PRD: 0
+- Related PRD memories: 0
+
+**Processing:**
+
+1. [Step 1 - Foundation]
+   Spawning development agent...
+   → [Agent completed successfully]
+
+2. [Step 7 - Data Layer]
+   Spawning development agent...
+   → [Agent completed successfully]
+
+3. [Step 10 - Security & Error Handling]
+   Spawning security agent...
+   → [Agent completed successfully]
+
+4. Running quality checks...
+   pnpm run typecheck
+   → Passed
+
+5. Committing changes...
+   git commit -m "feat: add user login with email/password authentication"
+   → Committed
+
+6. Creating story memory...
+   Writing docs/authentication/story-US-001-login.txt
+   → Created
+
+7. Updating PRD...
+   Setting passes: true for US-001
+   → Updated
+
+<STORY_COMPLETE>
+<story_id>US-001</story_id>
+<story_title>User login</story_title>
+<feature>Authentication System</feature>
+<agents_used>development-agent, development-agent, security-agent</agents_used>
+<commit>feat: add user login with email/password authentication</commit>
+<memory_file>docs/authentication/story-US-001-login.txt</memory_file>
+</STORY_COMPLETE>
+
+✅ Story US-001 complete
+```
+
+### Consolidation Flow (When All Stories Complete)
+
+```markdown
+## All Stories Complete - Consolidating
+
+**Feature:** Authentication System
+**Total Stories:** 5
+**Completed Stories:** 5
+
+1. Spawning consolidation agent...
+   → Reading all story memory files
+   → Summarizing patterns, decisions, interfaces
+   → Target: ~15K tokens (hard cap)
+   → [Agent completed successfully]
+
+2. Creating consolidated memory...
+   Writing docs/consolidated-authentication.txt
+   → Created (14,234 tokens)
+
+<ALL_COMPLETE>
+<feature>Authentication System</feature>
+<total_stories>5</total_stories>
+<completed_stories>5</completed_stories>
+<consolidated_memory>docs/consolidated-authentication.txt</consolidated_memory>
+</ALL_COMPLETE>
+
+✅ All stories complete for Authentication System
+```
+
+---
+
+## Folder Creation and Memory Management
+
+### Automatic Folder Creation
+
+The flow automatically creates the `docs/[feature]/` folder when processing the first story of a PRD:
+
+```bash
+# First story of authentication PRD
+docs/authentication/                    # Auto-created
+├── story-US-001-login.txt            # Created after US-001 complete
+├── story-US-002-signup.txt           # Created after US-002 complete
+└── story-US-003-reset-password.txt   # Created after US-003 complete
+```
+
+### Memory File Updates
+
+When a story is re-run (e.g., after consolidation):
+1. Read existing memory file
+2. Append new learnings
+3. Update `memoryVersion` if format changes
+4. Keep full history of iterations
+
+### Memory Versioning
+
+Each memory file includes version info for future compatibility:
+
+```yaml
+---
+memoryVersion: 1
+schemaVersion: 1
+---
+```
+
+**Benefits:**
+- System evolution: Old memories won't be misinterpreted
+- Backward compatibility: Agents can adapt behavior based on version
+- Migration support: Clear path for upgrading memory formats
+- Debugging: Version mismatches immediately visible
+
+---
+
+## Terminal Command Integration
+
+The terminal forwarder scripts (`bin/flow.sh`, `bin/flow-prd.sh`, `bin/flow-convert.sh`) invoke these Claude Code commands directly.
+
+**Terminal → Claude Code mapping:**
+```bash
+flow start           → /flow start
+flow status          → /flow status
+flow-prd create ...  → /flow-prd create ...
+flow-convert auth    → /flow-convert auth
+```
+
+The terminal scripts are minimal - they just forward user input to Claude Code which handles all the actual work.
+
+---
+
+*Maven Flow: Autonomous AI development with comprehensive quality assurance, multi-PRD support, and intelligent memory management powered by Claude Code CLI*

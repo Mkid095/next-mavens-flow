@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash maven-flow/hooks/post-tool-use-quality.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/maven-flow/hooks/post-tool-use-quality.sh\"",
             "once": false
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash maven-flow/hooks/stop-comprehensive-check.sh",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/maven-flow/hooks/stop-comprehensive-check.sh\"",
             "once": false
           }
         ]

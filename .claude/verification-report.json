@@ -1,0 +1,32 @@
+{
+  "story_id": "TEST-001",
+  "timestamp": "2025-01-16T22:00:00Z",
+  "verified": true,
+  "criteria": [
+    {
+      "criterion": "Function exists and is named greet",
+      "passed": true,
+      "evidence": "File exists at src/utils/greet.ts",
+      "notes": "Function exported correctly"
+    },
+    {
+      "criterion": "Function accepts name parameter",
+      "passed": true,
+      "evidence": "Code review shows name parameter",
+      "notes": "Parameter is properly typed"
+    },
+    {
+      "criterion": "Function returns greeting message",
+      "passed": true,
+      "evidence": "Returns Hello, name! format",
+      "notes": "Format is correct"
+    },
+    {
+      "criterion": "TypeScript types are correct",
+      "passed": true,
+      "evidence": "Type annotations present",
+      "notes": "Uses string return type"
+    }
+  ],
+  "summary": "All acceptance criteria verified successfully"
+}

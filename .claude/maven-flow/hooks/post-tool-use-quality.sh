@@ -6,7 +6,7 @@
 # Automatically spawns quality-agent if violations found
 # ============================================================================
 
-set -e
+# Don't use set -e - we want to handle errors gracefully
 
 # Only run on Write/Edit tools
 if [[ ! "$TOOL_NAME" =~ ^(Write|Edit|MultiEdit)$ ]]; then
@@ -16,7 +16,24 @@ fi
 # Get file path
 FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty' 2>/dev/null || echo "")
 
+# Skip if no file path
 if [ -z "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# Check if file exists (may not exist for Write operations creating new files)
+if [ ! -f "$FILE_PATH" ]; then
+  # New file being created - skip quality checks
+  exit 0
+fi
+
+# Only check source files (not node_modules, .git, config files, etc.)
+if [[ "$FILE_PATH" =~ node_modules/|\.git/|\.claude/|dist/|build/|coverage/|\.min\.(js|css)$|package-lock\.json|pnpm-lock\.yaml ]]; then
+  exit 0
+fi
+
+# Only check TypeScript/TSX/CSS/SCSS files
+if [[ ! "$FILE_PATH" =~ \.(ts|tsx|js|jsx|css|scss|sass|less)$ ]]; then
   exit 0
 fi
 
@@ -26,6 +43,8 @@ echo "🔍 Quality check: $FILE_PATH"
 NEEDS_QUALITY_CHECK=false
 VIOLATIONS=()
 BLOCKING_VIOLATIONS=()
+
+# All checks should use rg (ripgrep) with proper error handling
 
 # ============================================================================
 # CHECK 1: Relative Imports (should use @ aliases)

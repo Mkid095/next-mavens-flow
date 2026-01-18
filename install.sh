@@ -1,426 +1,191 @@
 #!/bin/bash
 # ============================================================================
-# Maven Flow Installation Script
-# Installs Maven Flow autonomous development system for Claude Code CLI
+# Maven Flow Safe Installer (Manifest-Based, Idempotent)
 # ============================================================================
-
+# - Creates missing files
+# - Overwrites managed files
+# - Removes obsolete managed files ONLY
+# - Never deletes anything outside the manifest
+# ============================================================================
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# -------------------------
+# CONFIG
+# -------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DRY_RUN=false   # Set to true to preview actions
 
-# Print with color
-print_header() {
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}  $1${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-}
+HOME_CLAUDE="$HOME/.claude"
+if [ -d "$HOME_CLAUDE" ]; then
+    TARGET_DIR="$HOME_CLAUDE"
+else
+    TARGET_DIR="$SCRIPT_DIR/.claude/maven-flow"
+fi
 
-print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
-print_error() {
-    echo -e "${RED}❌ $1${NC}"
-}
-
-print_info() {
-    echo -e "${CYAN}ℹ️  $1${NC}"
-}
-
-print_step() {
-    echo -e "${YELLOW}▶ $1${NC}"
-}
-
-# ============================================================================
-# Installation Options
-# ============================================================================
-INSTALL_MODE=""
-PROJECT_DIR=""
-GLOBAL_INSTALL=false
-
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --local)
-            INSTALL_MODE="local"
-            PROJECT_DIR="$2"
-            shift 2
-            ;;
-        --global)
-            INSTALL_MODE="global"
-            shift
-            ;;
-        --help|-h)
-            echo "Maven Flow Installation Script"
-            echo ""
-            echo "Usage:"
-            echo "  ./install.sh --local <project-dir>    # Install for specific project"
-            echo "  ./install.sh --global                 # Install globally for all projects"
-            echo ""
-            echo "Examples:"
-            echo "  ./install.sh --local /path/to/project"
-            echo "  ./install.sh --global"
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
+# -------------------------
+# UI HELPERS
+# -------------------------
+log() {
+    local color=$2
+    case $color in
+        red)    echo -e "\033[0;31m$1\033[0m" ;;
+        green)  echo -e "\033[0;32m$1\033[0m" ;;
+        yellow) echo -e "\033[1;33m$1\033[0m" ;;
+        blue)   echo -e "\033[0;34m$1\033[0m" ;;
+        cyan)   echo -e "\033[0;36m$1\033[0m" ;;
+        *)      echo "$1" ;;
     esac
+}
+
+ensure_dir() {
+    local path="$1"
+    if [ ! -d "$path" ]; then
+        if [ "$DRY_RUN" = false ]; then
+            mkdir -p "$path"
+        fi
+        log "  [CREATE DIR] $path" yellow
+    fi
+}
+
+safe_copy() {
+    local src="$1"
+    local dst="$2"
+    ensure_dir "$(dirname "$dst")"
+    if [ "$DRY_RUN" = false ]; then
+        cp -f "$src" "$dst"
+    fi
+    log "  [SYNC FILE] $dst" green
+}
+
+safe_delete() {
+    local path="$1"
+    if [ "$DRY_RUN" = false ]; then
+        rm -f "$path"
+    fi
+    log "  [REMOVE] $path" red
+}
+
+# -------------------------
+# MANIFEST (THE SOURCE OF TRUTH)
+# -------------------------
+MANIFEST_DIRS=(
+    "agents"
+    "commands"
+    "maven-flow/hooks"
+    "maven-flow/config"
+    "maven-flow/.claude"
+    "skills"
+)
+
+declare -A MANIFEST_FILES
+MANIFEST_FILES["agents"]=".claude/agents/*.md"
+MANIFEST_FILES["commands"]=".claude/commands/*.md"
+MANIFEST_FILES["maven-flow/hooks"]=".claude/maven-flow/hooks/*.sh"
+MANIFEST_FILES["maven-flow/config"]=".claude/maven-flow/config/*.mjs"
+MANIFEST_FILES["maven-flow/.claude/settings.json"]=".claude/maven-flow/.claude/settings.json"
+
+# -------------------------
+# START
+# -------------------------
+log ""
+log "=============================================" blue
+log " Maven Flow Safe Installation" blue
+log "=============================================" blue
+log "Target: $TARGET_DIR" cyan
+log "Dry Run: $DRY_RUN" cyan
+log ""
+
+# -------------------------
+# STEP 1: ENSURE DIRECTORIES
+# -------------------------
+log "[STEP 1] Ensuring directories..." yellow
+for dir in "${MANIFEST_DIRS[@]}"; do
+    ensure_dir "$TARGET_DIR/$dir"
 done
 
-# ============================================================================
-# Preflight Checks
-# ============================================================================
-print_header "Maven Flow Installation"
+# -------------------------
+# STEP 2: SYNC FILES (CREATE + OVERWRITE)
+# -------------------------
+log "[STEP 2] Syncing managed files..." yellow
 
-# Check if Maven Flow directory exists
-MAVEN_FLOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MANAGED_FILES=()
 
-if [ ! -d "$MAVEN_FLOW_DIR" ]; then
-    print_error "Maven Flow directory not found"
-    exit 1
-fi
+for target_rel in "${!MANIFEST_FILES[@]}"; do
+    source_glob="$SCRIPT_DIR/${MANIFEST_FILES[$target_rel]}"
 
-print_info "Maven Flow source: $MAVEN_FLOW_DIR"
+    if ls $source_glob 1> /dev/null 2>&1; then
+        for src in $source_glob; do
+            if [ -f "$src" ]; then
+                if [[ "$target_rel" == *.json ]]; then
+                    dest="$TARGET_DIR/$target_rel"
+                else
+                    dest="$TARGET_DIR/$target_rel/$(basename "$src")"
+                fi
 
-# Check for required commands
-print_step "Checking requirements..."
-
-MISSING_CMDS=()
-for cmd in rg jq; do
-    if ! command -v $cmd &> /dev/null; then
-        MISSING_CMDS+=($cmd)
+                safe_copy "$src" "$dest"
+                MANAGED_FILES+=("$(cd "$dest" && pwd)")
+            fi
+        done
     fi
 done
 
-if [ ${#MISSING_CMDS[@]} -gt 0 ]; then
-    print_error "Missing required commands: ${MISSING_CMDS[*]}"
-    print_info "Install with: apt-get install ripgrep jq (Linux)"
-    print_info "               brew install ripgrep jq (macOS)"
-    exit 1
-fi
-
-print_success "All requirements met"
-
-# ============================================================================
-# Determine Install Mode
-# ============================================================================
-if [ -z "$INSTALL_MODE" ]; then
-    echo ""
-    echo "Select installation mode:"
-    echo "  1) Local - Install for current project only"
-    echo "  2) Global - Install globally (~/.claude/)"
-    echo ""
-    read -p "Choose [1-2]: " -n 1 -r
-    echo ""
-
-    if [[ $REPLY =~ ^[1]$ ]]; then
-        INSTALL_MODE="local"
-        PROJECT_DIR="$(pwd)"
-    elif [[ $REPLY =~ ^[2]$ ]]; then
-        INSTALL_MODE="global"
-    else
-        print_error "Invalid choice"
-        exit 1
+# Make shell scripts executable
+for file in "${MANAGED_FILES[@]}"; do
+    if [[ "$file" == *.sh ]]; then
+        if [ "$DRY_RUN" = false ]; then
+            chmod +x "$file"
+        fi
     fi
-fi
+done
 
-# ============================================================================
-# Installation Functions
-# ============================================================================
+# -------------------------
+# STEP 3: REMOVE OBSOLETE MANAGED FILES
+# -------------------------
+log "[STEP 3] Cleaning obsolete managed files..." yellow
 
-install_local() {
-    local project_dir="$1"
-    local target_dir="$project_dir/.claude/maven-flow"
-    local skills_dir="$project_dir/.claude/skills"
+for dir in "${MANIFEST_DIRS[@]}"; do
+    full_dir="$TARGET_DIR/$dir"
+    if [ ! -d "$full_dir" ]; then
+        continue
+    fi
 
-    print_header "Local Installation"
-    print_info "Target: $project_dir"
+    for file in "$full_dir"/*; do
+        if [ -f "$file" ]; then
+            real_path="$(cd "$file" && pwd)"
+            # Check if file is in managed list
+            is_managed=false
+            for managed in "${MANAGED_FILES[@]}"; do
+                if [ "$managed" = "$real_path" ]; then
+                    is_managed=true
+                    break
+                fi
+            done
 
-    # Create target directory
-    print_step "Creating directory structure..."
-    mkdir -p "$target_dir"/{agents,commands,hooks,config,.claude}
-    mkdir -p "$skills_dir"
-    print_success "Directory structure created"
-
-    # Copy agents (use -n to not overwrite existing)
-    print_step "Installing agents..."
-    local agents_installed=0
-    for agent_file in "$MAVEN_FLOW_DIR/agents/"*.md; do
-        local agent_name=$(basename "$agent_file")
-        if [ ! -f "$target_dir/agents/$agent_name" ]; then
-            cp "$agent_file" "$target_dir/agents/"
-            ((agents_installed++))
-        else
-            print_info "  (skipped existing: $agent_name)"
-        fi
-    done
-    print_success "Agents installed ($agents_installed new files)"
-
-    # Copy commands (use -n to not overwrite existing)
-    print_step "Installing commands..."
-    local commands_installed=0
-    for cmd_file in "$MAVEN_FLOW_DIR/commands/"*.md; do
-        local cmd_name=$(basename "$cmd_file")
-        if [ ! -f "$target_dir/commands/$cmd_name" ]; then
-            cp "$cmd_file" "$target_dir/commands/"
-            ((commands_installed++))
-        else
-            print_info "  (skipped existing: $cmd_name)"
-        fi
-    done
-    print_success "Commands installed ($commands_installed new files)"
-
-    # Copy skills to .claude/skills/ (official location) - preserve existing
-    print_step "Installing skills..."
-    local skills_installed=0
-    for skill_dir in "$MAVEN_FLOW_DIR/skills"/*; do
-        if [ -d "$skill_dir" ]; then
-            local skill_name=$(basename "$skill_dir")
-            mkdir -p "$skills_dir/$skill_name"
-
-            # Copy SKILL.md only if not exists
-            if [ -f "$skill_dir/SKILL.md" ] && [ ! -f "$skills_dir/$skill_name/SKILL.md" ]; then
-                cp "$skill_dir/SKILL.md" "$skills_dir/$skill_name/"
-                ((skills_installed++))
-            elif [ -f "$skills_dir/$skill_name/SKILL.md" ]; then
-                print_info "  (skipped existing: $skill_name/SKILL.md)"
+            if [ "$is_managed" = false ]; then
+                safe_delete "$file"
             fi
         fi
     done
-    print_success "Skills installed ($skills_installed new skills)"
+done
 
-    # Copy hooks
-    print_step "Installing hooks..."
-    cp "$MAVEN_FLOW_DIR/hooks/"*.sh "$target_dir/hooks/"
-    chmod +x "$target_dir/hooks/"*.sh
-    print_success "Hooks installed and made executable"
+# -------------------------
+# DONE
+# -------------------------
+log ""
+log "=============================================" blue
+log "[OK] Maven Flow Installation Complete" green
+log "=============================================" blue
+log ""
 
-    # Copy config
-    print_step "Installing configuration..."
-    cp "$MAVEN_FLOW_DIR/config/"*.mjs "$target_dir/config/"
-    print_success "Configuration installed"
-
-    # Copy settings.json
-    print_step "Installing settings.json..."
-    cp "$MAVEN_FLOW_DIR/.claude/settings.json" "$target_dir/.claude/"
-    print_success "Settings configured"
-
-    # Create docs directory
-    print_step "Creating docs directory..."
-    mkdir -p "$project_dir/docs"
-
-    # Create placeholder files
-    if [ ! -f "$project_dir/docs/prd.json" ]; then
-        cat > "$project_dir/docs/prd.json" << 'EOF'
-{
-  "projectName": "My Project",
-  "branchName": "main",
-  "stories": []
-}
-EOF
-        print_info "Created docs/prd.json"
-    fi
-
-    if [ ! -f "$project_dir/docs/progress.txt" ]; then
-        cat > "$project_dir/docs/progress.txt" << 'EOF'
-# Maven Flow Progress
-
-## Codebase Patterns
-<!-- Add reusable patterns discovered during development -->
-
-## Iteration Log
-<!-- Progress from each iteration will be appended here -->
-EOF
-        print_info "Created docs/progress.txt"
-    fi
-
-    print_success "Documentation structure created"
-
-    # Update settings.json path for local install
-    sed -i "s|bash maven-flow/hooks/|bash .claude/maven-flow/hooks/|g" "$target_dir/.claude/settings.json"
-    print_success "Settings paths updated for local installation"
-}
-
-install_global() {
-    local target_dir="$HOME/.claude/maven-flow"
-    local skills_dir="$HOME/.claude/skills"
-
-    print_header "Global Installation"
-    print_info "Target: $target_dir"
-
-    # Create target directory
-    print_step "Creating directory structure..."
-    mkdir -p "$target_dir"/{agents,commands,hooks,config,.claude}
-    mkdir -p "$skills_dir"
-    print_success "Directory structure created"
-
-    # Copy agents (preserve existing)
-    print_step "Installing agents..."
-    local agents_installed=0
-    for agent_file in "$MAVEN_FLOW_DIR/agents/"*.md; do
-        local agent_name=$(basename "$agent_file")
-        if [ ! -f "$target_dir/agents/$agent_name" ]; then
-            cp "$agent_file" "$target_dir/agents/"
-            ((agents_installed++))
-        else
-            print_info "  (skipped existing: $agent_name)"
-        fi
-    done
-    print_success "Agents installed ($agents_installed new files)"
-
-    # Copy commands (preserve existing)
-    print_step "Installing commands..."
-    local commands_installed=0
-    for cmd_file in "$MAVEN_FLOW_DIR/commands/"*.md; do
-        local cmd_name=$(basename "$cmd_file")
-        if [ ! -f "$target_dir/commands/$cmd_name" ]; then
-            cp "$cmd_file" "$target_dir/commands/"
-            ((commands_installed++))
-        else
-            print_info "  (skipped existing: $cmd_name)"
-        fi
-    done
-    print_success "Commands installed ($commands_installed new files)"
-
-    # Copy skills to ~/.claude/skills/ (preserve existing)
-    print_step "Installing skills..."
-    local skills_installed=0
-    for skill_dir in "$MAVEN_FLOW_DIR/skills"/*; do
-        if [ -d "$skill_dir" ]; then
-            local skill_name=$(basename "$skill_dir")
-            mkdir -p "$skills_dir/$skill_name"
-
-            # Copy SKILL.md only if not exists
-            if [ -f "$skill_dir/SKILL.md" ] && [ ! -f "$skills_dir/$skill_name/SKILL.md" ]; then
-                cp "$skill_dir/SKILL.md" "$skills_dir/$skill_name/"
-                ((skills_installed++))
-            elif [ -f "$skills_dir/$skill_name/SKILL.md" ]; then
-                print_info "  (skipped existing: $skill_name/SKILL.md)"
-            fi
-        fi
-    done
-    print_success "Skills installed ($skills_installed new skills)"
-
-    # Copy hooks
-    print_step "Installing hooks..."
-    cp "$MAVEN_FLOW_DIR/hooks/"*.sh "$target_dir/hooks/"
-    chmod +x "$target_dir/hooks/"*.sh
-    print_success "Hooks installed and made executable"
-
-    # Copy config
-    print_step "Installing configuration..."
-    cp "$MAVEN_FLOW_DIR/config/"*.mjs "$target_dir/config/"
-    print_success "Configuration installed"
-
-    # Copy settings.json
-    print_step "Installing settings.json..."
-    cp "$MAVEN_FLOW_DIR/.claude/settings.json" "$target_dir/.claude/"
-    print_success "Settings configured"
-
-    # Update settings.json path for global install
-    sed -i "s|bash maven-flow/hooks/|bash ~/.claude/maven-flow/hooks/|g" "$target_dir/.claude/settings.json"
-    print_success "Settings paths updated for global installation"
-}
-
-# ============================================================================
-# Execute Installation
-# ============================================================================
-
-if [ "$INSTALL_MODE" = "local" ]; then
-    install_local "$PROJECT_DIR"
-elif [ "$INSTALL_MODE" = "global" ]; then
-    install_global
+if [ "$DRY_RUN" = true ]; then
+    log "NOTE: Dry-run mode enabled. No changes were made." yellow
 fi
 
-# ============================================================================
-# Verification
-# ============================================================================
-print_header "Installation Verification"
-
-# Check if files exist
-print_step "Verifying installation..."
-
-if [ "$INSTALL_MODE" = "local" ]; then
-    TARGET_DIR="$PROJECT_DIR/.claude/maven-flow"
-else
-    TARGET_DIR="$HOME/.claude/maven-flow"
-fi
-
-# Count installed files
-AGENT_COUNT=$(ls -1 "$TARGET_DIR/agents/"*.md 2>/dev/null | wc -l)
-COMMAND_COUNT=$(ls -1 "$TARGET_DIR/commands/"*.md 2>/dev/null | wc -l)
-if [ "$INSTALL_MODE" = "local" ]; then
-    SKILL_COUNT=$(find "$PROJECT_DIR/.claude/skills/" -name "SKILL.md" 2>/dev/null | wc -l)
-else
-    SKILL_COUNT=$(find "$HOME/.claude/skills/" -name "SKILL.md" 2>/dev/null | wc -l)
-fi
-HOOK_COUNT=$(ls -1 "$TARGET_DIR/hooks/"*.sh 2>/dev/null | wc -l)
-
-print_success "Verification complete"
-echo ""
-echo "  Agents:   $AGENT_COUNT/5"
-echo "  Commands: $COMMAND_COUNT/1"
-echo "  Skills:   $SKILL_COUNT/3"
-echo "  Hooks:    $HOOK_COUNT/2"
-echo ""
-
-# ============================================================================
-# Summary
-# ============================================================================
-print_header "Installation Complete"
-
-echo ""
-echo -e "${PURPLE}┌─────────────────────────────────────────────────────────┐${NC}"
-echo -e "${PURPLE}│                    Maven Flow                           │${NC}"
-echo -e "${PURPLE}│              Autonomous AI Development                │${NC}"
-echo -e "${PURPLE}└─────────────────────────────────────────────────────────┘${NC}"
-echo ""
-
-if [ "$INSTALL_MODE" = "local" ]; then
-    echo -e "${GREEN}✓ Installed locally for:${NC} $PROJECT_DIR"
-    echo ""
-    echo -e "${CYAN}Next steps:${NC}"
-    echo "  1. Create a PRD: /flow-prd"
-    echo "  2. Convert to JSON: /flow-convert"
-    echo "  3. Start development: /flow start"
-    echo ""
-    echo -e "${CYAN}Files created:${NC}"
-    echo "  • .claude/maven-flow/    (Maven Flow system)"
-    echo "  • docs/prd.json          (Product requirements)"
-    echo "  • docs/progress.txt      (Progress tracking)"
-else
-    echo -e "${GREEN}✓ Installed globally:${NC} ~/.claude/maven-flow/"
-    echo ""
-    echo -e "${CYAN}Next steps for each project:${NC}"
-    echo "  1. cd to your project directory"
-    echo "  2. Create docs/ directory with prd.json and progress.txt"
-    echo "  3. Run: /flow start"
-    echo ""
-    echo -e "${CYAN}Available commands:${NC}"
-    echo "  • /flow start          - Start autonomous development"
-    echo "  • /flow status         - Check progress"
-    echo "  • /flow continue       - Resume from last iteration"
-    echo "  • /flow-prd            - Create Product Requirements Document"
-    echo "  • /flow-convert        - Convert PRD to JSON format"
-fi
-
-echo ""
-echo -e "${CYAN}Documentation:${NC}"
-echo "  README.md: $MAVEN_FLOW_DIR/README.md"
-echo ""
-
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}  🚀 Maven Flow is ready! Start building with AI autonomy.${NC}"
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+# Show usage hints
+log "" cyan
+log "Usage:" cyan
+log "  Claude Code Commands:" cyan
+log "    /flow start              # Start autonomous development" gray
+log "    /flow status             # Check progress" gray
+log "    /flow-prd create ...     # Create PRD" gray
+log "    /flow-convert <feature>  # Convert PRD to JSON" gray
