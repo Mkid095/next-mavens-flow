@@ -446,7 +446,8 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     }
 
     # Build story prompt - simple and direct like Ralph
-    $prompt = @"You are Maven Flow, an autonomous development agent. Execute ONE user story per iteration.
+    $prompt = @"
+You are Maven Flow, an autonomous development agent. Execute ONE user story per iteration.
 
 ## Current Story to Implement
 
