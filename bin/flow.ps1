@@ -445,84 +445,61 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         $memoryContent = Get-Content $memoryFile -Raw -Encoding UTF8
     }
 
-    # Check MCP server availability (agent must reason from actual environment)
-    $mcpList = & claude mcp list 2>&1 | Out-String
+    # Build story prompt - simple and direct like Ralph
+    $prompt = @"You are Maven Flow, an autonomous development agent. Execute ONE user story per iteration.
 
-    # Build story prompt - using bullet points instead of numbered lists
-    $prompt = @"
-# Maven Flow - Story Execution
+## Current Story to Implement
 
-## Current Story
-**Story ID:** $storyId
-**Feature:** $featureName
-**PRD:** $currentPrd
+Story ID: $storyId
+Feature: $featureName
 
-## Story Data
-```json
+Story Data:
 $currentStory
-```
 
-## Previous Progress (Learnings)
+## Progress Context (Learn from previous attempts)
+
 $progressContent
 
-## Consolidated Memory
-$memoryContent
+## Consolidated Memory (if available)
 
-## Available MCP Servers
-$mcpList
+$memoryContent
 
 ## Your Task
 
-Execute this story through ALL its mavenSteps:
+1. Read the story's mavenSteps array
+2. Execute ALL steps in order:
+   - Steps 1,2,7,9 → development-agent
+   - Steps 3,4,6 → refactor-agent
+   - Step 5 → quality-agent
+   - Steps 8,10 → security-agent
+3. Use MCPs listed in mcpTools
+4. Run tests after completion
 
-* Read the mavenSteps array from the story
-* For each step, spawn the appropriate specialist agent:
-  * Steps 1, 2, 7, 9 → development-agent
-  * Steps 3, 4, 6 → refactor-agent
-  * Step 5 → quality-agent
-  * Steps 8, 10 → security-agent
-* Tell each agent which MCPs to use (from mcpTools in story)
-* Wait for agent completion before spawning next
-* Run quality checks after all steps complete
-* Commit changes: feat: $storyId - [title]
-* Output completion signal
+## Completion Rules (STRICT)
 
-## Critical Requirements
+ONLY mark complete if ALL pass:
+- Code implemented
+- Tests pass
+- Typecheck passes (run: pnpm run typecheck)
+- Changes committed: \`feat: $storyId - [title]\`
 
-* DO NOT ask questions - EXECUTE directly
-* Use MCP tools for database operations (supabase, etc.)
-* Run typecheck: pnpm run typecheck
-* Update progress after completion
-
-## Completion Signal
-
-After completing the story successfully, output EXACTLY:
-
+Then output EXACTLY:
 <STORY_COMPLETE>
 <story_id>$storyId</story_id>
 <feature>$featureName</feature>
 <maven_steps_completed>all</maven_steps_completed>
 </STORY_COMPLETE>
 
-If the story FAILS (tests do not pass, errors occur), do NOT output the signal.
-Instead, append failure details to progress file for next iteration to learn from.
-"@
+## If Failed
 
-    # Execute Claude - write prompt to temp file for reliable handling
-    Write-Host "  [EXEC] Calling Claude to execute story..." -ForegroundColor Yellow
+- Do NOT output the signal
+- Append failure to progress file for next iteration to learn from"@
 
-    # Create temp file with prompt
-    $tempFile = [System.IO.Path]::GetTempFileName()
-    $prompt | Out-File -FilePath $tempFile -Encoding UTF8 -NoNewline
+    # Execute Claude - use -p directly like Ralph
+    Write-Host "  [EXEC] Calling Claude..." -ForegroundColor Yellow
 
-    try {
-        # Use Get-Content to read file and pipe to claude (more reliable than direct pipe)
-        $result = Get-Content $tempFile -Raw -Encoding UTF8 | & claude --dangerously-skip-permissions 2>&1 | Out-String
-        $exitCode = $LASTEXITCODE
-    } finally {
-        # Clean up temp file
-        Remove-Item $tempFile -ErrorAction SilentlyContinue
-    }
+    $result = & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
+    $exitCode = $LASTEXITCODE
 
     # Display result
     Write-Host ""
