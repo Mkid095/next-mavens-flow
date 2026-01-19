@@ -159,11 +159,11 @@ if ($Command -eq "status") {
 
                 # Show Acceptance Criteria
                 $acceptanceCriteria = $currentStoryData | jq -r '.acceptanceCriteria // "[]"' 2>$null
-                $criteriaCount = $acceptanceCriteria | jq '.length' 2>$null
+                $criteriaCount = $currentStoryData | jq '.acceptanceCriteria | length' 2>$null
                 if ($criteriaCount -gt 0) {
                     Write-Host "  │ Criteria:" -ForegroundColor Gray
                     for ($k = 0; $k -lt [math]::Min(3, [int]$criteriaCount); $k++) {
-                        $criterion = $acceptanceCriteria | jq -r ".[$k]" 2>$null
+                        $criterion = $currentStoryData | jq -r ".acceptanceCriteria[$k]" 2>$null
                         $criterionTruncated = if ($criterion.Length -gt 56) { $criterion.Substring(0, 53) + "..." } else { $criterion }
                         Write-Host "  │   • " -NoNewline -ForegroundColor Gray
                         Write-Host $criterionTruncated.PadRight(60) -NoNewline -ForegroundColor White
