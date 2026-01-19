@@ -1,5 +1,14 @@
-﻿@echo off
-setlocal enabledelayedexpansion
-set COMMAND=%1
-set "ARGS=%*"
-claude -q --dangerously-skip-permissions -p "/flow %COMMAND% %ARGS%"
+@echo off
+REM ============================================================================
+REM Maven Flow - Windows Batch Wrapper
+REM ============================================================================
+
+setlocal
+
+set BIN_DIR=%~dp0
+set PS_SCRIPT=%BIN_DIR%flow.ps1
+
+rem Pass all arguments to PowerShell
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" %*
+
+endlocal
