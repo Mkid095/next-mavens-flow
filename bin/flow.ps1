@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Parse command
-$Command = "start"
+$Command = "status"
 foreach ($arg in $ArgsArray) {
     switch ($arg) {
         "status" { $Command = "status"; break }
@@ -26,19 +26,28 @@ foreach ($arg in $ArgsArray) {
     }
 }
 
-Write-Host ""
-Write-Host "==============================================================================" -ForegroundColor Cyan
-Write-Host "         Maven Flow - Autonomous AI Development System               " -ForegroundColor Cyan
-Write-Host "==============================================================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Starting Maven Flow - Max $MaxIterations iterations" -ForegroundColor Yellow
-Write-Host ""
-
 # Check for jq
 $null = jq --version 2>$null
 if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host "         Maven Flow - Autonomous AI Development System               " -ForegroundColor Cyan
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host ""
     Write-Host "  [ERROR] jq is required. Install from: https://jqlang.github.io/" -ForegroundColor Red
+    Write-Host ""
     exit 1
+}
+
+# Show header only for start command
+if ($Command -eq "start") {
+    Write-Host ""
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host "         Maven Flow - Autonomous AI Development System               " -ForegroundColor Cyan
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Starting Maven Flow - Max $MaxIterations iterations" -ForegroundColor Yellow
+    Write-Host ""
 }
 
 # STATUS COMMAND
