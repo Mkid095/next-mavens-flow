@@ -1,4 +1,4 @@
-﻿﻿# Maven Flow - Orchestrator wrapper (loop until complete)
+﻿# Maven Flow - Orchestrator wrapper (loop until complete)
 param(
     [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
@@ -444,7 +444,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     if (Test-Path $memoryFile) {
         $memoryContent = Get-Content $memoryFile -Raw -Encoding UTF8
     }
-}
+
     # Build story prompt - simple and direct like Ralph
     $prompt = @"
 You are Maven Flow, an autonomous development agent. Execute ONE user story per iteration.
@@ -494,8 +494,9 @@ Then output EXACTLY:
 ## If Failed
 
 - Do NOT output the signal
-- Append failure to progress file for next iteration to learn from"@
+- Append failure to progress file for next iteration to learn from
 "@
+
     # Execute Claude - use -p directly like Ralph
     Write-Host "  [EXEC] Calling Claude..." -ForegroundColor Yellow
 
@@ -593,7 +594,7 @@ Then output EXACTLY:
     Write-Host "  Sleeping ${SleepSeconds}s before next iteration..." -ForegroundColor Gray
     Write-Host ""
     Start-Sleep -Seconds $SleepSeconds
-
+}
 
 Write-Host "===========================================" -ForegroundColor Yellow
 Write-Host "  Reached max iterations ($MaxIterations)" -ForegroundColor Yellow
