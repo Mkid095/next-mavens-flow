@@ -1,68 +1,38 @@
 ---
-description: Generate PRDs without asking questions
+description: Generate PRDs - EXECUTE DIRECTLY, DO NOT ASK QUESTIONS
 argument-hint: [plan] or [feature description]
 ---
 
-# Maven Flow PRD Generator - EXECUTE WITHOUT QUESTIONS
+# EXECUTE WITHOUT ASKING QUESTIONS
 
-**CRITICAL: DO NOT ASK THE USER ANY QUESTIONS. EXECUTE AND GENERATE FILES DIRECTLY.**
-
-When this command is invoked:
-1. READ the input/plan.md
-2. SCAN available MCPs
-3. GENERATE PRD markdown files
-4. CREATE memory stub files
-5. DISPLAY summary
-6. EXIT - DO NOT ASK FOR CONFIRMATION
-
-Read the input, scan MCPs, generate PRD files, display summary, EXIT.
+**YOUR TASK: Generate PRD files without any interaction with the user.**
 
 ## Step 1: Get Working Directory
 
-Run `pwd` to get the current working directory. All files will be created in `[working-directory]/docs/`.
+Execute: `pwd`
 
-## Step 2: Scan Available MCPs
+## Step 2: Parse Input Argument
 
-List what MCP servers are available:
-- supabase: Database operations
-- chrome-devtools: UI testing
-- web-search-prime: Research
-- web-reader: Documentation fetching
+- If argument is "plan": Go to Step 3 (Plan Mode)
+- If argument starts with "fix": Go to Step 5 (Fix Mode)
+- Otherwise: Go to Step 4 (Single Feature Mode)
 
-## Step 3: Parse Input
+## Step 3: Plan Mode - Read plan.md and Generate PRDs
 
-- If input is "plan": Read `plan.md` from working directory and generate multiple PRDs
-- If input is "fix" followed by instructions: Read existing PRDs and apply fixes
-- If input starts with "I want" or contains "plan.md": Treat as "plan" mode, read plan.md
-- Otherwise: Use input as feature description for single PRD
+1. Execute: `cat plan.md` from working directory
+2. Identify major features in the plan (each becomes a separate PRD)
+3. For each feature:
+   - Create `docs/prd-[feature-name].md`
+   - Create `docs/consolidated-[feature-name].txt`
 
-## Step 4: Generate PRDs
-
-For "plan" mode:
-1. Read plan.md
-2. Identify major features (each should become a separate PRD)
-3. For each feature, create:
-   - `docs/prd-[feature-name].md` with user stories
-   - `docs/consolidated-[feature-name].txt` memory stub
-
-For single feature mode:
-1. Parse feature description
-2. Create `docs/prd-[feature-name].md` with user stories
-3. Create `docs/consolidated-[feature-name].txt` memory stub
-
-For "fix" mode:
-1. Read existing PRD files from docs/
-2. Apply fix instructions
-3. Update files in place
-
-## PRD Template
+4. Use this PRD template:
 
 ```markdown
 ---
 project: [Feature Name]
 branch: flow/[feature-name]
 availableMCPs:
-  - [relevant MCPs]
+  - supabase
 ---
 
 # [Feature Name]
@@ -70,93 +40,89 @@ availableMCPs:
 ## Overview
 [2-3 sentences]
 
-## Technical Approach
-[Stack and patterns]
-
 ## User Stories
 
 ### US-001: [Title]
 **Priority:** 1
 **Maven Steps:** [1, 3, 7, 10]
-**MCP Tools:**
-- step1: []
+**MCP Tools:** []
 
 As a [user], I want to [action] so that [benefit].
 
 **Acceptance Criteria:**
-- [criteria 1]
-- [criteria 2]
-- [criteria 3]
+- [criteria]
 - Typecheck passes
 
 **Status:** false
 ```
 
-**Story Guidelines:**
-- Focused and atomic (1-2 hours each)
-- Order by dependency: database → backend → UI
-- Max 10 stories per PRD
+5. Go to Step 6
 
-## Memory Stub Template
+## Step 4: Single Feature Mode - Create One PRD
 
-```markdown
----
-memoryVersion: 1
-schemaVersion: 1
-feature: [Feature Name]
-consolidatedDate: [Current Date]
-totalStories: [Count]
-completedStories: 0
-status: initialized
----
+1. Parse the feature description
+2. Create `docs/prd-[feature-name].md`
+3. Create `docs/consolidated-[feature-name].txt`
+4. Go to Step 6
 
-# [Feature Name] - Consolidated Implementation Memory
+## Step 5: Fix Mode - Update Existing PRDs
 
-## System Overview
-[From PRD]
+1. Read existing PRD files from `docs/prd-*.md`
+2. Apply fix instructions
+3. Update files in place
+4. Go to Step 6
 
-## Current Status
-PRD created, waiting for execution.
-
-## Stories to Implement
-- US-001: [Title]
-- US-002: [Title]
-...
-```
-
-## Step 5: Display Summary and EXIT
+## Step 6: Display Summary and EXIT
 
 ```
 ==============================================================================
 PRD Generation Complete
 ==============================================================================
 
-Available MCPs:
-- [list]
-
 Created PRDs:
-- docs/prd-[feature].md ([N] stories)
+- docs/prd-[feature].md
 
 Memory files:
 - docs/consolidated-[feature].txt
 
 Next: flow-convert --all
+==============================================================================
 ```
 
-**Then EXIT. Do NOT ask questions. Do NOT wait for confirmation.**
+**THEN EXIT. DO NOT ASK ANY QUESTIONS.**
 
 ---
 
-## EXECUTION CHECKLIST
+## RULES - YOU MUST FOLLOW THESE
 
-When `/flow-prd` is invoked:
+1. **DO NOT ASK THE USER ANY QUESTIONS**
+2. **DO NOT REQUEST CLARIFICATION**
+3. **DO NOT ASK FOR CONFIRMATION**
+4. **EXECUTE THE STEPS ABOVE**
+5. **CREATE THE FILES**
+6. **DISPLAY SUMMARY**
+7. **EXIT**
 
-1. [ ] Get working directory with `pwd`
-2. [ ] List available MCPs
-3. [ ] Parse input (plan/fix/feature)
-4. [ ] Create PRD markdown files
-5. [ ] Create memory stub files
-6. [ ] Display summary
-7. [ ] EXIT immediately
+---
 
-**NEVER ASK QUESTIONS.**
+## MCP Mapping
+
+| Feature | Use MCP |
+|---------|---------|
+| Database operations | supabase |
+| UI testing | chrome-devtools |
+| Research | web-search-prime |
+| Documentation | web-reader |
+
+---
+
+## Story Guidelines
+
+- Keep stories atomic (1-2 hours each)
+- Order: database → backend → UI → integration
+- Max 10 stories per PRD
+- Each story: title, priority, maven steps, acceptance criteria
+
+---
+
+**EXECUTE NOW. DO NOT ASK QUESTIONS.**
