@@ -176,8 +176,23 @@ Instead, append failure details to progress file for next iteration to learn fro
     Write-Host $result
     Write-Host ""
 
-    # Check for completion signal
+    # Check for completion - look for success indicators or the XML signal
+    $isComplete = $false
+
+    # Check for XML signal
     if ($result -match "<STORY_COMPLETE>") {
+        $isComplete = $true
+    }
+    # Check for textual completion indicators (case-insensitive)
+    elseif ($result -match "(?i)passed|completed successfully|execution complete") {
+        $isComplete = $true
+    }
+    # Check for story ID with PASSED status
+    elseif ($result -match "US-\d+.*PASSED" -or $result -match "\*\*.*PASSED") {
+        $isComplete = $true
+    }
+
+    if ($isComplete) {
         Write-Host "  [OK] Story complete - Updating PRD..." -ForegroundColor Green
 
         # Update JSON: passes: true using simpler jq
