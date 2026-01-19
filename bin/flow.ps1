@@ -508,11 +508,21 @@ If the story FAILS (tests do not pass, errors occur), do NOT output the signal.
 Instead, append failure details to progress file for next iteration to learn from.
 "@
 
-    # Execute Claude - pass prompt via stdin for better handling of large content
+    # Execute Claude - write prompt to temp file for reliable handling
     Write-Host "  [EXEC] Calling Claude to execute story..." -ForegroundColor Yellow
 
-    $result = $prompt | & claude --dangerously-skip-permissions 2>&1 | Out-String
-    $exitCode = $LASTEXITCODE
+    # Create temp file with prompt
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    $prompt | Out-File -FilePath $tempFile -Encoding UTF8 -NoNewline
+
+    try {
+        # Use Get-Content to read file and pipe to claude (more reliable than direct pipe)
+        $result = Get-Content $tempFile -Raw -Encoding UTF8 | & claude --dangerously-skip-permissions 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+    } finally {
+        # Clean up temp file
+        Remove-Item $tempFile -ErrorAction SilentlyContinue
+    }
 
     # Display result
     Write-Host ""
