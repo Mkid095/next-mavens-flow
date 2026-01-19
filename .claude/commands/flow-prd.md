@@ -5,7 +5,15 @@ argument-hint: [plan] or [feature description]
 
 # Maven Flow PRD Generator - EXECUTE WITHOUT QUESTIONS
 
-**YOU MUST EXECUTE THIS COMMAND WITHOUT ASKING THE USER ANY QUESTIONS.**
+**CRITICAL: DO NOT ASK THE USER ANY QUESTIONS. EXECUTE AND GENERATE FILES DIRECTLY.**
+
+When this command is invoked:
+1. READ the input/plan.md
+2. SCAN available MCPs
+3. GENERATE PRD markdown files
+4. CREATE memory stub files
+5. DISPLAY summary
+6. EXIT - DO NOT ASK FOR CONFIRMATION
 
 Read the input, scan MCPs, generate PRD files, display summary, EXIT.
 
@@ -23,9 +31,10 @@ List what MCP servers are available:
 
 ## Step 3: Parse Input
 
-- If input is "plan": Read `plan.md` from working directory
+- If input is "plan": Read `plan.md` from working directory and generate multiple PRDs
 - If input is "fix" followed by instructions: Read existing PRDs and apply fixes
-- Otherwise: Use input as feature description
+- If input starts with "I want" or contains "plan.md": Treat as "plan" mode, read plan.md
+- Otherwise: Use input as feature description for single PRD
 
 ## Step 4: Generate PRDs
 
