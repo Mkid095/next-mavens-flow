@@ -1,4 +1,4 @@
-﻿# Maven Flow - Orchestrator wrapper (loop until complete)
+﻿﻿# Maven Flow - Orchestrator wrapper (loop until complete)
 param(
     [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
@@ -45,7 +45,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($Command -eq "status") {
     Write-Host ""
     Write-Host "==============================================================================" -ForegroundColor Cyan
-    Write-Host "         Maven Flow Status" -ForegroundColor Cyan
+    Write-Host "                    Maven Flow - Project Status                     " -ForegroundColor Cyan
     Write-Host "==============================================================================" -ForegroundColor Cyan
     Write-Host ""
 
@@ -56,41 +56,146 @@ if ($Command -eq "status") {
         exit 1
     }
 
-    Write-Host "  Found $($prdFiles.Count) PRD file(s)" -ForegroundColor Cyan
-    Write-Host ""
+    $totalStories = 0
+    $totalCompleted = 0
 
     foreach ($prd in $prdFiles | Sort-Object Name) {
         $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
         $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+        $totalStories += [int]$storyCount
+
         $completedCount = 0
-        $currentStoryId = $null
-        $currentStoryTitle = $null
+        $currentStoryIndex = $null
+        $currentStoryData = $null
 
         for ($j = 0; $j -lt [int]$storyCount; $j++) {
             $passesOutput = jq ".userStories[$j].passes" $prd.FullName 2>$null
             $isComplete = -not (($passesOutput -match "false") -and ($passesOutput -notmatch "true"))
             if ($isComplete) {
                 $completedCount++
+                $totalCompleted++
             } else {
-                if ($null -eq $currentStoryId) {
-                    $currentStoryId = jq -r ".userStories[$j].id" $prd.FullName 2>$null
-                    $currentStoryTitle = jq -r ".userStories[$j].title" $prd.FullName 2>$null
+                if ($null -eq $currentStoryIndex) {
+                    $currentStoryIndex = $j
+                    $currentStoryData = jq -r ".userStories[$j]" $prd.FullName 2>$null
                 }
             }
         }
 
+        # Feature header
+        $progressPct = if ([int]$storyCount -gt 0) { [math]::Round(($completedCount / [int]$storyCount) * 100) } else { 0 }
+
         if ($completedCount -eq [int]$storyCount) {
-            Write-Host "  $featureName ($completedCount/$storyCount) " -NoNewline -ForegroundColor Green
-            Write-Host "✓" -ForegroundColor Green
+            Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Green
+            Write-Host "│ " -NoNewline -ForegroundColor Green
+            Write-Host "✓ $featureName" -NoNewline -ForegroundColor Green
+            Write-Host " " -NoNewline
+            $statusText = "COMPLETE ($completedCount/$storyCount) "
+            Write-Host $statusText.PadRight(58) -NoNewline -ForegroundColor Green
+            Write-Host "│" -ForegroundColor Green
+            Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Green
         } else {
-            Write-Host "  $featureName ($completedCount/$storyCount)" -ForegroundColor Yellow
-            if ($currentStoryId) {
-                Write-Host "    Current: $currentStoryId - $currentStoryTitle" -ForegroundColor Gray
+            $barLength = 30
+            $filled = [math]::Floor($barLength * $completedCount / [int]$storyCount)
+            $empty = $barLength - $filled
+            $progressBar = "█" * $filled + "░" * $empty
+
+            Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Cyan
+            Write-Host "│ " -NoNewline -ForegroundColor Cyan
+            Write-Host "$featureName" -NoNewline -ForegroundColor White
+            Write-Host " " -NoNewline
+            Write-Host "[$progressBar]" -NoNewline -ForegroundColor Yellow
+            Write-Host " " -NoNewline
+            Write-Host "$progressPct%" -NoNewline -ForegroundColor Cyan
+            Write-Host " (" -NoNewline -ForegroundColor Gray
+            Write-Host "$completedCount/$storyCount" -NoNewline -ForegroundColor Gray
+            Write-Host ")" -NoNewline -ForegroundColor Gray
+            Write-Host (" " * (12 - "$completedCount/$storyCount".Length)) -NoNewline
+            Write-Host "│" -ForegroundColor Cyan
+            Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
+
+            # Show current story details if incomplete
+            if ($currentStoryData) {
+                $storyId = $currentStoryData | jq -r '.id' 2>$null
+                $storyTitle = $currentStoryData | jq -r '.title' 2>$null
+                $storyDesc = $currentStoryData | jq -r '.description' 2>$null
+
+                Write-Host ""
+                Write-Host "  CURRENT STORY:" -ForegroundColor Yellow
+                Write-Host "  ┌──────────────────────────────────────────────────────────────────┐" -ForegroundColor Gray
+                Write-Host "  │ ID:     " -NoNewline -ForegroundColor Gray
+                Write-Host $storyId.PadRight(62) -NoNewline -ForegroundColor Cyan
+                Write-Host "│" -ForegroundColor Gray
+                Write-Host "  │ Title:  " -NoNewline -ForegroundColor Gray
+                Write-Host ($storyTitle.Substring(0, [math]::Min(58, $storyTitle.Length))).PadRight(62) -NoNewline -ForegroundColor White
+                Write-Host "│" -ForegroundColor Gray
+
+                if ($storyDesc -and $storyDesc -ne "null" -and $storyDesc.Length -gt 0) {
+                    $descTruncated = if ($storyDesc.Length -gt 58) { $storyDesc.Substring(0, 55) + "..." } else { $storyDesc }
+                    Write-Host "  │ " -NoNewline -ForegroundColor Gray
+                    Write-Host $descTruncated.PadRight(62) -NoNewline -ForegroundColor Gray
+                    Write-Host "│" -ForegroundColor Gray
+                }
+
+                # Show Maven Steps
+                $mavenSteps = $currentStoryData | jq -r '.mavenSteps // "[]"' 2>$null
+                $stepArray = $mavenSteps | jq -r '.[]' 2>$null
+                if ($stepArray) {
+                    Write-Host "  │ Steps:  " -NoNewline -ForegroundColor Gray
+                    $stepsString = $stepArray -join ", "
+                    $stepsTruncated = if ($stepsString.Length -gt 55) { $stepsString.Substring(0, 52) + "..." } else { $stepsString }
+                    Write-Host $stepsTruncated.PadRight(62) -NoNewline -ForegroundColor Cyan
+                    Write-Host "│" -ForegroundColor Gray
+                }
+
+                # Show Acceptance Criteria
+                $acceptanceCriteria = $currentStoryData | jq -r '.acceptanceCriteria // "[]"' 2>$null
+                $criteriaCount = $acceptanceCriteria | jq '.length' 2>$null
+                if ($criteriaCount -gt 0) {
+                    Write-Host "  │ Criteria:" -ForegroundColor Gray
+                    for ($k = 0; $k -lt [math]::Min(3, [int]$criteriaCount); $k++) {
+                        $criterion = $acceptanceCriteria | jq -r ".[$k]" 2>$null
+                        $criterionTruncated = if ($criterion.Length -gt 56) { $criterion.Substring(0, 53) + "..." } else { $criterion }
+                        Write-Host "  │   • " -NoNewline -ForegroundColor Gray
+                        Write-Host $criterionTruncated.PadRight(60) -NoNewline -ForegroundColor White
+                        Write-Host "│" -ForegroundColor Gray
+                    }
+                    if ([int]$criteriaCount -gt 3) {
+                        Write-Host "  │   " -NoNewline -ForegroundColor Gray
+                        Write-Host "...and ($([int]$criteriaCount - 3)) more criteria".PadRight(60) -NoNewline -ForegroundColor Gray
+                        Write-Host "│" -ForegroundColor Gray
+                    }
+                }
+
+                Write-Host "  └──────────────────────────────────────────────────────────────────┘" -ForegroundColor Gray
             }
         }
 
         Write-Host ""
     }
+
+    # Overall progress summary
+    $overallPct = if ($totalStories -gt 0) { [math]::Round(($totalCompleted / $totalStories) * 100) } else { 0 }
+    $overallBar = "█" * [math]::Floor(30 * $totalCompleted / [math]::Max(1, $totalStories))
+    $overallBar += "░" * (30 - [math]::Floor(30 * $totalCompleted / [math]::Max(1, $totalStories)))
+
+    Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Cyan
+    Write-Host "│ " -NoNewline -ForegroundColor Cyan
+    Write-Host "OVERALL PROGRESS" -NoNewline -ForegroundColor White
+    Write-Host " " * 38 -NoNewline
+    Write-Host "[$overallBar]" -NoNewline -ForegroundColor Green
+    Write-Host " " -NoNewline
+    Write-Host "$overallPct%" -NoNewline -ForegroundColor Cyan
+    Write-Host " (" -NoNewline -ForegroundColor Gray
+    Write-Host "$totalCompleted/$totalStories" -NoNewline -ForegroundColor Gray
+    Write-Host ")" -NoNewline -ForegroundColor Gray
+    Write-Host (" " * (12 - "$totalCompleted/$totalStories".Length)) -NoNewline
+    Write-Host "│" -ForegroundColor Cyan
+    Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
+
+    Write-Host ""
+    Write-Host "  Run 'flow continue' to resume, or 'flow help' for more commands" -ForegroundColor Gray
+    Write-Host ""
 
     exit 0
 }
