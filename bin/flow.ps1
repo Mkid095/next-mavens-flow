@@ -16,6 +16,8 @@ foreach ($arg in $ArgsArray) {
         "test" { $Command = "test" }
         "consolidate" { $Command = "consolidate" }
         "help" { $Command = "help" }
+        "--help" { $Command = "help" }
+        "-h" { $Command = "help" }
         default {
             if ($arg -match "^\d+$") {
                 $MaxIterations = [int]$arg
@@ -32,6 +34,32 @@ Write-Host "====================================================================
 Write-Host "         Maven Flow - Autonomous AI Development System               " -ForegroundColor Cyan
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Handle help command
+if ($Command -eq "help") {
+    Write-Host "  Usage:" -ForegroundColor Yellow
+    Write-Host "    flow [command] [options]" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Commands:" -ForegroundColor Yellow
+    Write-Host "    start [iterations]  Start autonomous development (default: 100)" -ForegroundColor White
+    Write-Host "    status             Show current flow status" -ForegroundColor White
+    Write-Host "    continue [iterations] Resume flow execution" -ForegroundColor White
+    Write-Host "    reset              Reset flow state" -ForegroundColor White
+    Write-Host "    test               Run flow tests" -ForegroundColor White
+    Write-Host "    consolidate        Consolidate completed stories" -ForegroundColor White
+    Write-Host "    help, --help, -h   Show this help message" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Examples:" -ForegroundColor Yellow
+    Write-Host "    flow start          Start with 100 iterations" -ForegroundColor Gray
+    Write-Host "    flow start 50       Start with 50 iterations" -ForegroundColor Gray
+    Write-Host "    flow continue        Resume flow execution" -ForegroundColor Gray
+    Write-Host "    flow status          Check current status" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "==============================================================================" -ForegroundColor Gray
+    Write-Host ""
+    exit 0
+}
+
 Write-Host "  Command: /flow $Command" -ForegroundColor Yellow
 Write-Host "  Max iterations: $MaxIterations" -ForegroundColor Gray
 Write-Host ""
