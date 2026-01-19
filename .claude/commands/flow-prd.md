@@ -144,9 +144,9 @@ This file will be updated as stories complete, containing:
 
 ## Commands
 
-### Generate PRDs from Plan
+### Generate PRDs from Plan (NO QUESTIONS)
 ```
-/flow-prd plan
+flow-prd plan
 ```
 
 1. Reads `plan.md` from working directory
@@ -154,18 +154,37 @@ This file will be updated as stories complete, containing:
 3. Analyzes plan for features
 4. Generates multiple `docs/prd-*.md` files
 5. Creates `docs/consolidated-*.txt` stubs for each
+6. Displays summary - NO QUESTIONS ASKED
 
-### Generate Single PRD
+**User then reviews files manually**
+
+### Generate Single PRD (NO QUESTIONS)
 ```
-/flow-prd [feature description]
+flow-prd [feature description]
 ```
 
-Example: `/flow-prd user authentication with login and signup`
+Example: `flow-prd user authentication with login and signup`
 
 1. Scans available MCPs
 2. Parses feature description
 3. Generates single `docs/prd-[feature].md`
 4. Creates `docs/consolidated-[feature].txt` stub
+5. Displays summary - NO QUESTIONS ASKED
+
+**User then reviews files manually**
+
+### Fix/Update PRDs (NO QUESTIONS)
+```
+flow-prd fix [instructions]
+```
+
+Example: `flow-prd fix add 2FA to authentication, split dashboard into separate components`
+
+1. Reads existing PRD files
+2. Applies the fix instructions
+3. Updates PRD files in place
+4. Updates consolidated memory files
+5. Displays summary - NO QUESTIONS ASKED
 
 ---
 
@@ -237,18 +256,24 @@ Next steps:
 
 ## Implementation Instructions for the Command
 
+**CRITICAL: This command MUST NEVER ASK QUESTIONS when invoked from terminal.**
+
 When invoked, the command should:
 
 1. **Get working directory:** Run `pwd`
 2. **Scan MCPs:** List available MCPs with purposes
 3. **Read input:**
    - If "plan": Read plan.md
-   - Otherwise: Use user prompt
+   - If "fix": Apply fix instructions to existing PRDs
+   - Otherwise: Use user prompt to generate new PRD
 4. **Analyze requirements:** Identify features, components, stories
 5. **Create PRD files:**
    - For each feature: `docs/prd-[feature].md`
    - For each PRD: `docs/consolidated-[feature].txt`
 6. **Report results:** Show what was created
+7. **EXIT** - Do not ask for confirmation, do not ask questions
+
+**User reviews files manually, then runs `flow-prd fix [instructions]` if needed.**
 
 ---
 
@@ -269,8 +294,22 @@ flow-prd plan
 6. Create `docs/prd-dashboard.md` with 3 stories
 7. Create `docs/consolidated-dashboard.txt` stub
 8. Display summary
+9. **EXIT - No questions**
 
-**User then:**
+**User reviews files manually:**
+```bash
+cat docs/prd-authentication.md
+cat docs/prd-dashboard.md
+```
+
+**User needs changes:**
+```bash
+flow-prd fix add 2FA to authentication stories, make dashboard responsive
+```
+
+**Command updates PRDs in place and exits.**
+
+**User satisfied, proceeds:**
 ```bash
 flow-convert --all  # Markdown → JSON
 flow start          # Begin execution
