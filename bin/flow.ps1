@@ -1,4 +1,4 @@
-# Maven Flow - Orchestrator wrapper (loop until complete)
+﻿# Maven Flow - Orchestrator wrapper (loop until complete)
 param(
     [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
@@ -41,6 +41,169 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# STATUS COMMAND
+if ($Command -eq "status") {
+    Write-Host ""
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host "         Maven Flow Status" -ForegroundColor Cyan
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
+    if ($prdFiles.Count -eq 0) {
+        Write-Host "  [ERROR] No PRD JSON files found in docs/" -ForegroundColor Red
+        Write-Host "  Run: flow-prd" -ForegroundColor Yellow
+        exit 1
+    }
+
+    Write-Host "  Found $($prdFiles.Count) PRD file(s)" -ForegroundColor Cyan
+    Write-Host ""
+
+    foreach ($prd in $prdFiles | Sort-Object Name) {
+        $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
+        $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+        $completedCount = 0
+        $currentStoryId = $null
+        $currentStoryTitle = $null
+
+        for ($j = 0; $j -lt [int]$storyCount; $j++) {
+            $passesOutput = jq ".userStories[$j].passes" $prd.FullName 2>$null
+            $isComplete = -not (($passesOutput -match "false") -and ($passesOutput -notmatch "true"))
+            if ($isComplete) {
+                $completedCount++
+            } else {
+                if ($null -eq $currentStoryId) {
+                    $currentStoryId = jq -r ".userStories[$j].id" $prd.FullName 2>$null
+                    $currentStoryTitle = jq -r ".userStories[$j].title" $prd.FullName 2>$null
+                }
+            }
+        }
+
+        if ($completedCount -eq [int]$storyCount) {
+            Write-Host "  $featureName ($completedCount/$storyCount) " -NoNewline -ForegroundColor Green
+            Write-Host "✓" -ForegroundColor Green
+        } else {
+            Write-Host "  $featureName ($completedCount/$storyCount)" -ForegroundColor Yellow
+            if ($currentStoryId) {
+                Write-Host "    Current: $currentStoryId - $currentStoryTitle" -ForegroundColor Gray
+            }
+        }
+
+        Write-Host ""
+    }
+
+    exit 0
+}
+
+# HELP COMMAND
+if ($Command -eq "help") {
+    Write-Host ""
+    Write-Host "Maven Flow Commands:" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  flow start [iterations]  Start autonomous flow (default: 100 iterations)" -ForegroundColor White
+    Write-Host "  flow status              Show all PRDs and completion status" -ForegroundColor White
+    Write-Host "  flow continue [prd]     Continue from last incomplete story" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Examples:" -ForegroundColor Cyan
+    Write-Host "  flow start              Start flow" -ForegroundColor White
+    Write-Host "  flow start 50           Start with max 50 iterations" -ForegroundColor White
+    Write-Host "  flow continue           Continue current PRD" -ForegroundColor White
+    Write-Host "  flow continue database    Continue specific PRD" -ForegroundColor White
+    Write-Host "  flow status             Show all PRD status" -ForegroundColor White
+    Write-Host ""
+    exit 0
+}
+
+# CONTINUE COMMAND
+if ($Command -eq "continue") {
+    Write-Host ""
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host "         Maven Flow - Continue" -ForegroundColor Cyan
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
+    if ($prdFiles.Count -eq 0) {
+        Write-Host "  [ERROR] No PRD JSON files found in docs/" -ForegroundColor Red
+        exit 1
+    }
+
+    # Check if specific PRD requested
+    $targetPrd = $null
+    foreach ($arg in $ArgsArray) {
+        if ($arg -ne "continue" -and $arg -notmatch "^\d+$") {
+            $targetPrd = $arg
+            break
+        }
+    }
+
+    $selectedPrd = $null
+    if ($targetPrd) {
+        $selectedPrd = $prdFiles | Where-Object { $_.Name -like "prd-$targetPrd.json" } | Select-Object -First 1
+        if (-not $selectedPrd) {
+            Write-Host "  [ERROR] PRD '$targetPrd' not found" -ForegroundColor Red
+            Write-Host "  Available PRDs:" -ForegroundColor Yellow
+            foreach ($prd in $prdFiles) {
+                Write-Host "    - $($prd.Name -replace 'prd-', '' -replace '.json', '')" -ForegroundColor Gray
+            }
+            exit 1
+        }
+    } else {
+        # Auto-select first incomplete PRD
+        foreach ($prd in $prdFiles | Sort-Object Name) {
+            $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+            for ($j = 0; $j -lt [int]$storyCount; $j++) {
+                $passesOutput = jq ".userStories[$j].passes" $prd.FullName 2>$null
+                $isIncomplete = ($passesOutput -match "false") -and ($passesOutput -notmatch "true")
+                if ($isIncomplete) {
+                    $selectedPrd = $prd
+                    break
+                }
+            }
+            if ($selectedPrd) { break }
+        }
+
+        if (-not $selectedPrd) {
+            Write-Host "  [INFO] All PRDs are complete!" -ForegroundColor Green
+            Write-Host "  Run 'flow start' to verify and run consolidation" -ForegroundColor Yellow
+            exit 0
+        }
+    }
+
+    $featureName = $selectedPrd.Name -replace "prd-", "" -replace ".json", ""
+    Write-Host "  Continuing: $featureName" -ForegroundColor Yellow
+    Write-Host ""
+
+    # Find first incomplete story
+    $storyCount = jq '.userStories | length' $selectedPrd.FullName 2>$null
+    $storyIndex = $null
+    for ($j = 0; $j -lt [int]$storyCount; $j++) {
+        $passesOutput = jq ".userStories[$j].passes" $selectedPrd.FullName 2>$null
+        $isIncomplete = ($passesOutput -match "false") -and ($passesOutput -notmatch "true")
+        if ($isIncomplete) {
+            $storyIndex = $j
+            break
+        }
+    }
+
+    if ($null -eq $storyIndex) {
+        Write-Host "  [INFO] PRD '$featureName' is already complete!" -ForegroundColor Green
+        exit 0
+    }
+
+    $storyId = jq -r ".userStories[$storyIndex].id" $selectedPrd.FullName 2>$null
+    $storyTitle = jq -r ".userStories[$storyIndex].title" $selectedPrd.FullName 2>$null
+    $mavenSteps = jq -r ".userStories[$storyIndex].mavenSteps" $selectedPrd.FullName 2>$null
+
+    Write-Host "  Next story: $storyId - $storyTitle" -ForegroundColor Cyan
+    Write-Host "  Maven Steps: $mavenSteps" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  Starting flow for this story..." -ForegroundColor Yellow
+    Write-Host ""
+
+    # Continue to main loop (the loop will pick up this PRD)
+}
+
 # MAIN LOOP
 for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host "===========================================" -ForegroundColor Gray
@@ -49,7 +212,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host ""
 
     # Scan for incomplete story using jq
-    $prdFiles = Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue
+    $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
     if ($prdFiles.Count -eq 0) {
         Write-Host "  [ERROR] No PRD JSON files found in docs/" -ForegroundColor Red
         Write-Host "  Run: flow-prd plan" -ForegroundColor Yellow
@@ -76,7 +239,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
 
         if ($null -ne $storyIndex) {
             $currentPrd = $prd.FullName
-            $currentStory = jq -r ".userStories[$storyIndex]" $prd.FullName 2>$null
+            $currentStory = jq ".userStories[$storyIndex]" $prd.FullName 2>$null
             $storyId = jq -r ".userStories[$storyIndex].id" $prd.FullName 2>$null
             $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
             break
@@ -114,7 +277,10 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         $memoryContent = Get-Content $memoryFile -Raw -Encoding UTF8
     }
 
-    # Build story prompt
+    # Check MCP server availability (agent must reason from actual environment)
+    $mcpList = & claude mcp list 2>&1 | Out-String
+
+    # Build story prompt - using bullet points instead of numbered lists
     $prompt = @"
 # Maven Flow - Story Execution
 
@@ -124,7 +290,9 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
 **PRD:** $currentPrd
 
 ## Story Data
+```json
 $currentStory
+```
 
 ## Previous Progress (Learnings)
 $progressContent
@@ -132,28 +300,31 @@ $progressContent
 ## Consolidated Memory
 $memoryContent
 
+## Available MCP Servers
+$mcpList
+
 ## Your Task
 
 Execute this story through ALL its mavenSteps:
 
-1. Read the mavenSteps array from the story
-2. For each step, spawn the appropriate specialist agent:
-   - Steps 1, 2, 7, 9 → development-agent
-   - Steps 3, 4, 6 → refactor-agent
-   - Step 5 → quality-agent
-   - Steps 8, 10 → security-agent
-3. Tell each agent which MCPs to use (from mcpTools in story)
-4. Wait for agent completion before spawning next
-5. Run quality checks after all steps complete
-6. Commit changes: \`feat: $storyId - [title]\`
-7. Output completion signal
+* Read the mavenSteps array from the story
+* For each step, spawn the appropriate specialist agent:
+  * Steps 1, 2, 7, 9 → development-agent
+  * Steps 3, 4, 6 → refactor-agent
+  * Step 5 → quality-agent
+  * Steps 8, 10 → security-agent
+* Tell each agent which MCPs to use (from mcpTools in story)
+* Wait for agent completion before spawning next
+* Run quality checks after all steps complete
+* Commit changes: feat: $storyId - [title]
+* Output completion signal
 
 ## Critical Requirements
 
-- DO NOT ask questions - EXECUTE directly
-- Use MCP tools for database operations (supabase, etc.)
-- Run typecheck: \`pnpm run typecheck\`
-- Update progress after completion
+* DO NOT ask questions - EXECUTE directly
+* Use MCP tools for database operations (supabase, etc.)
+* Run typecheck: pnpm run typecheck
+* Update progress after completion
 
 ## Completion Signal
 
@@ -161,11 +332,11 @@ After completing the story successfully, output EXACTLY:
 
 <STORY_COMPLETE>
 <story_id>$storyId</story_id>
-<feature>$featureName</feature_id>
+<feature>$featureName</feature>
 <maven_steps_completed>all</maven_steps_completed>
 </STORY_COMPLETE>
 
-If the story FAILS (tests don't pass, errors occur), do NOT output the signal.
+If the story FAILS (tests do not pass, errors occur), do NOT output the signal.
 Instead, append failure details to progress file for next iteration to learn from.
 "@
 
@@ -176,21 +347,8 @@ Instead, append failure details to progress file for next iteration to learn fro
     Write-Host $result
     Write-Host ""
 
-    # Check for completion - look for success indicators or the XML signal
-    $isComplete = $false
-
-    # Check for XML signal
-    if ($result -match "<STORY_COMPLETE>") {
-        $isComplete = $true
-    }
-    # Check for textual completion indicators (case-insensitive)
-    elseif ($result -match "(?i)passed|completed successfully|execution complete") {
-        $isComplete = $true
-    }
-    # Check for story ID with PASSED status
-    elseif ($result -match "US-\d+.*PASSED" -or $result -match "\*\*.*PASSED") {
-        $isComplete = $true
-    }
+    # Check for completion - ONLY accept XML signal (deterministic, machine-safe)
+    $isComplete = $result -match "<STORY_COMPLETE>"
 
     if ($isComplete) {
         Write-Host "  [OK] Story complete - Updating PRD..." -ForegroundColor Green
