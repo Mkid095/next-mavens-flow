@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Parse command
-$Command = "status"
+$Command = "start"
 foreach ($arg in $ArgsArray) {
     switch ($arg) {
         "status" { $Command = "status"; break }
@@ -371,10 +371,64 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         exit 0
     }
 
-    Write-Host "  Feature: " -NoNewline -ForegroundColor Cyan
-    Write-Host $featureName -ForegroundColor Yellow
-    Write-Host "  Story: " -NoNewline -ForegroundColor Cyan
-    Write-Host "$storyId" -ForegroundColor Yellow
+    # Parse story data for display
+    $storyData = $currentStory | jq -r '.' 2>$null
+    $storyTitle = $storyData | jq -r '.title' 2>$null
+    $storyDesc = $storyData | jq -r '.description' 2>$null
+    $mavenStepsArray = $storyData | jq -r '.mavenSteps[]?' 2>$null
+    $acceptanceCriteria = $storyData | jq -r '.acceptanceCriteria[]?' 2>$null
+
+    # Enhanced story display
+    Write-Host ""
+    Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Cyan
+    Write-Host "│ WORKING ON: $featureName" -NoNewline -ForegroundColor Cyan
+    $padding = 63 - $featureName.Length
+    Write-Host (" " * $padding) -NoNewline
+    Write-Host "│" -ForegroundColor Cyan
+    Write-Host "├────────────────────────────────────────────────────────────────────┤" -ForegroundColor Gray
+    Write-Host "│ Story: $storyId" -NoNewline -ForegroundColor White
+    $padding = 58 - $storyId.Length
+    Write-Host (" " * $padding) -NoNewline
+    Write-Host "│" -ForegroundColor Gray
+    Write-Host "│ Title: " -NoNewline -ForegroundColor Gray
+    Write-Host $storyTitle.Substring(0, [math]::Min(54, $storyTitle.Length)).PadRight(54) -NoNewline -ForegroundColor White
+    Write-Host "    │" -ForegroundColor Gray
+
+    if ($storyDesc -and $storyDesc -ne "null" -and $storyDesc.Length -gt 0) {
+        $descTruncated = if ($storyDesc.Length -gt 54) { $storyDesc.Substring(0, 51) + "..." } else { $storyDesc }
+        Write-Host "│ " -NoNewline -ForegroundColor Gray
+        Write-Host $descTruncated.PadRight(62) -NoNewline -ForegroundColor Gray
+        Write-Host "│" -ForegroundColor Gray
+    }
+
+    # Show Maven Steps
+    if ($mavenStepsArray) {
+        $stepsList = $mavenStepsArray -join ", "
+        $stepsTruncated = if ($stepsList.Length -gt 51) { $stepsList.Substring(0, 48) + "..." } else { $stepsList }
+        Write-Host "│ Steps: " -NoNewline -ForegroundColor Gray
+        Write-Host $stepsTruncated.PadRight(58) -NoNewline -ForegroundColor Yellow
+        Write-Host "│" -ForegroundColor Gray
+    }
+
+    # Show first 2 Acceptance Criteria
+    if ($acceptanceCriteria) {
+        $criteriaList = @($acceptanceCriteria)
+        Write-Host "│ Criteria:" -ForegroundColor Gray
+        for ($k = 0; $k -lt [math]::Min(2, $criteriaList.Count); $k++) {
+            $criterion = $criteriaList[$k]
+            $criterionTruncated = if ($criterion.Length -gt 54) { $criterion.Substring(0, 51) + "..." } else { $criterion }
+            Write-Host "│   • " -NoNewline -ForegroundColor Gray
+            Write-Host $criterionTruncated.PadRight(56) -NoNewline -ForegroundColor White
+            Write-Host "│" -ForegroundColor Gray
+        }
+        if ($criteriaList.Count -gt 2) {
+            Write-Host "│   ...and ($($criteriaList.Count - 2)) more" -NoNewline -ForegroundColor Gray
+            Write-Host (" " * (57 - "...and ($($criteriaList.Count - 2)) more".Length)) -NoNewline
+            Write-Host "│" -ForegroundColor Gray
+        }
+    }
+
+    Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
     Write-Host ""
 
     # Load progress file for context
