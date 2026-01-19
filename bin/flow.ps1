@@ -63,10 +63,19 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $featureName = $null
 
     foreach ($prd in $prdFiles | Sort-Object Name) {
-        $incomplete = jq '[.userStories | select(.passes == false)] | length' $prd.FullName 2>$null
-        if ([int]$incomplete -gt 0) {
+        # Get first incomplete story index
+        $storyIndex = $null
+        $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+        for ($j = 0; $j -lt [int]$storyCount; $j++) {
+            $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
+            if ($passes -eq "false") {
+                $storyIndex = $j
+                break
+            }
+        }
+
+        if ($null -ne $storyIndex) {
             $currentPrd = $prd.FullName
-            $storyIndex = jq '[.userStories | to_entries | select(.value.passes == false) | .key | tonumber] | .[0]' $prd.FullName 2>$null
             $currentStory = jq -r ".userStories[$storyIndex]" $prd.FullName 2>$null
             $storyId = jq -r ".userStories[$storyIndex].id" $prd.FullName 2>$null
             $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
@@ -171,8 +180,10 @@ Instead, append failure details to progress file for next iteration to learn fro
     if ($result -match "<STORY_COMPLETE>") {
         Write-Host "  [OK] Story complete - Updating PRD..." -ForegroundColor Green
 
-        # Update JSON: passes: true
-        $null = jq "(.userStories[$storyIndex] | .passes = true) | {userStories: .} | del(.userStories) | . + {userStories}" $currentPrd 2>$null | Out-File -FilePath $currentPrd -Encoding UTF8
+        # Update JSON: passes: true using simpler jq
+        $prdContent = Get-Content $currentPrd -Raw -Encoding UTF8
+        $updatedJson = $prdContent | jq ".userStories[$storyIndex].passes = true"
+        $updatedJson | Out-File -FilePath $currentPrd -Encoding UTF8
 
         # Update progress file
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -197,11 +208,15 @@ Instead, append failure details to progress file for next iteration to learn fro
     # Check if should continue
     $allComplete = $true
     foreach ($prd in $prdFiles) {
-        $incomplete = jq '[.userStories | select(.passes == false)] | length' $prd.FullName 2>$null
-        if ([int]$incomplete -gt 0) {
-            $allComplete = $false
-            break
+        $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+        for ($j = 0; $j -lt [int]$storyCount; $j++) {
+            $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
+            if ($passes -eq "false") {
+                $allComplete = $false
+                break
+            }
         }
+        if (-not $allComplete) { break }
     }
 
     if ($allComplete) {
