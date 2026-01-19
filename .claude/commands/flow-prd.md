@@ -1,31 +1,52 @@
 ---
-description: Generate PRDs - EXECUTE DIRECTLY, DO NOT ASK QUESTIONS
-argument-hint: [plan] or [feature description]
+description: Parse plan.md and create multiple PRDs - NO QUESTIONS
+argument-hint: [plan]
 ---
 
-# EXECUTE WITHOUT ASKING QUESTIONS
+# FLOW-PRD: PARSE PLAN.MD, CREATE MULTIPLE PRDS, EXIT
 
-**YOUR TASK: Generate PRD files without any interaction with the user.**
+**DO NOT ASK QUESTIONS. EXECUTE STEPS. CREATE FILES. EXIT.**
 
-## Step 1: Get Working Directory
+---
+
+## STEP 1: Get Working Directory
 
 Execute: `pwd`
 
-## Step 2: Parse Input Argument
+---
 
-- If argument is "plan": Go to Step 3 (Plan Mode)
-- If argument starts with "fix": Go to Step 5 (Fix Mode)
-- Otherwise: Go to Step 4 (Single Feature Mode)
+## STEP 2: Read plan.md
 
-## Step 3: Plan Mode - Read plan.md and Generate PRDs
+Execute: `cat plan.md`
 
-1. Execute: `cat plan.md` from working directory
-2. Identify major features in the plan (each becomes a separate PRD)
-3. For each feature:
-   - Create `docs/prd-[feature-name].md`
-   - Create `docs/consolidated-[feature-name].txt`
+---
 
-4. Use this PRD template:
+## STEP 3: Parse plan.md Structure
+
+The plan.md contains TWO complete PRDs:
+1. **Web Version** (lines 1-237) - "Next Mavens Artboard System (NNMA)"
+2. **Desktop Edition** (lines 237-522) - "NNMA – Desktop Edition"
+
+For EACH PRD, extract major features from these sections:
+- ### 3.1 Workspace (Dashboard) → `prd-workspace.md`
+- ### 3.2 Vector Engine (Canvas) → `prd-vector-canvas.md`
+- ### 3.3 Property System → `prd-property-system.md`
+- Typography → `prd-typography.md`
+- System Architecture → `prd-technical-architecture.md`
+- Performance → `prd-performance.md`
+- UI/UX → `prd-ui-ux.md`
+- Documentation → `prd-documentation.md`
+- Keyboard/Commands → `prd-keyboard-shortcuts.md`
+- Export → `prd-export-documentation.md`
+- AI Integration → `prd-ai-analysis-integration.md`
+
+---
+
+## STEP 4: Create PRD Files
+
+For EACH feature identified:
+
+### Create: `docs/prd-[feature-name].md`
 
 ```markdown
 ---
@@ -33,96 +54,139 @@ project: [Feature Name]
 branch: flow/[feature-name]
 availableMCPs:
   - supabase
+  - chrome-devtools
+  - web-search-prime
 ---
 
 # [Feature Name]
 
 ## Overview
-[2-3 sentences]
+[Extracted from plan.md - 2-3 sentences]
+
+## Technical Approach
+[Extracted from plan.md]
 
 ## User Stories
 
-### US-001: [Title]
+### US-001: [Story from feature]
 **Priority:** 1
 **Maven Steps:** [1, 3, 7, 10]
 **MCP Tools:** []
 
-As a [user], I want to [action] so that [benefit].
+As a [user type from plan.md], I want to [action] so that [benefit].
 
 **Acceptance Criteria:**
-- [criteria]
+- [Extract from plan.md requirements]
 - Typecheck passes
 
 **Status:** false
+
+[Add more stories as needed - max 10 per PRD]
 ```
 
-5. Go to Step 6
+---
 
-## Step 4: Single Feature Mode - Create One PRD
+## STEP 5: Create Memory Files
 
-1. Parse the feature description
-2. Create `docs/prd-[feature-name].md`
-3. Create `docs/consolidated-[feature-name].txt`
-4. Go to Step 6
+For EACH PRD created:
 
-## Step 5: Fix Mode - Update Existing PRDs
+### Create: `docs/consolidated-[feature-name].txt`
 
-1. Read existing PRD files from `docs/prd-*.md`
-2. Apply fix instructions
-3. Update files in place
-4. Go to Step 6
+```markdown
+---
+memoryVersion: 1
+schemaVersion: 1
+feature: [Feature Name]
+consolidatedDate: [Current Date]
+totalStories: [Count from PRD]
+completedStories: 0
+status: initialized
+---
 
-## Step 6: Display Summary and EXIT
+# [Feature Name] - Consolidated Implementation Memory
+
+## System Overview
+[From PRD overview]
+
+## Current Status
+PRD created, waiting for execution.
+
+## Technical Approach
+[From PRD technical approach]
+
+## Related PRDs
+[List other PRDs this integrates with]
+
+## Stories to Implement
+[List all story IDs and titles from PRD]
+
+## Memory Structure
+This file will be updated as stories complete.
+```
+
+---
+
+## STEP 6: Display Summary
 
 ```
 ==============================================================================
 PRD Generation Complete
 ==============================================================================
 
-Created PRDs:
-- docs/prd-[feature].md
+Working Directory: [from pwd]
 
-Memory files:
-- docs/consolidated-[feature].txt
+Analyzed: plan.md (2 PRDs - Web + Desktop)
+
+Created PRDs:
+- docs/prd-workspace.md
+- docs/prd-vector-canvas.md
+- docs/prd-property-system.md
+- docs/prd-typography.md
+- docs/prd-technical-architecture.md
+- docs/prd-ui-ux.md
+- docs/prd-performance.md
+- docs/prd-documentation.md
+- docs/prd-keyboard-shortcuts.md
+- docs/prd-export-documentation.md
+- docs/prd-ai-analysis-integration.md
+
+Memory Files:
+- docs/consolidated-workspace.txt
+- docs/consolidated-vector-canvas.txt
+- docs/consolidated-property-system.txt
+- docs/consolidated-typography.txt
+- docs/consolidated-technical-architecture.txt
+- docs/consolidated-ui-ux.txt
+- docs/consolidated-performance.txt
+- docs/consolidated-documentation.txt
+- docs/consolidated-keyboard-shortcuts.txt
+- docs/consolidated-export-documentation.txt
+- docs/consolidated-ai-analysis-integration.txt
+
+Total: 11 PRDs + 11 Memory Files
 
 Next: flow-convert --all
 ==============================================================================
 ```
 
-**THEN EXIT. DO NOT ASK ANY QUESTIONS.**
+---
+
+## STEP 7: EXIT
+
+**DO NOT ASK QUESTIONS. DO NOT REQUEST INPUT. EXIT IMMEDIATELY.**
 
 ---
 
-## RULES - YOU MUST FOLLOW THESE
+## EXECUTION RULES
 
-1. **DO NOT ASK THE USER ANY QUESTIONS**
-2. **DO NOT REQUEST CLARIFICATION**
-3. **DO NOT ASK FOR CONFIRMATION**
-4. **EXECUTE THE STEPS ABOVE**
-5. **CREATE THE FILES**
-6. **DISPLAY SUMMARY**
-7. **EXIT**
-
----
-
-## MCP Mapping
-
-| Feature | Use MCP |
-|---------|---------|
-| Database operations | supabase |
-| UI testing | chrome-devtools |
-| Research | web-search-prime |
-| Documentation | web-reader |
+1. Read plan.md completely
+2. Parse BOTH PRDs (Web + Desktop)
+3. Extract ALL major features (### 3.x sections)
+4. Create PRD file for EACH feature
+5. Create memory file for EACH PRD
+6. Display summary
+7. EXIT
 
 ---
 
-## Story Guidelines
-
-- Keep stories atomic (1-2 hours each)
-- Order: database → backend → UI → integration
-- Max 10 stories per PRD
-- Each story: title, priority, maven steps, acceptance criteria
-
----
-
-**EXECUTE NOW. DO NOT ASK QUESTIONS.**
+**EXECUTE NOW.**
