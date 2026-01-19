@@ -508,12 +508,43 @@ If the story FAILS (tests do not pass, errors occur), do NOT output the signal.
 Instead, append failure details to progress file for next iteration to learn from.
 "@
 
-    # Execute Claude
-    $result = & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
+    # Execute Claude - pass prompt via stdin for better handling of large content
+    Write-Host "  [EXEC] Calling Claude to execute story..." -ForegroundColor Yellow
+
+    $result = $prompt | & claude --dangerously-skip-permissions 2>&1 | Out-String
+    $exitCode = $LASTEXITCODE
 
     # Display result
+    Write-Host ""
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host "  CLAUDE RESPONSE:" -ForegroundColor Gray
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host ""
     Write-Host $result
     Write-Host ""
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host ""
+
+    # Check if Claude command itself failed
+    if ($exitCode -ne 0) {
+        Write-Host "  [ERROR] Claude command failed with exit code: $exitCode" -ForegroundColor Red
+        Write-Host "  [ERROR] Check that Claude Code CLI is installed and accessible" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "  Logging failure and will retry on next iteration..." -ForegroundColor Yellow
+
+        # Log failure to progress
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        Add-Content -Path $progressFile -Value "`n## Iteration $i - $storyId (COMMAND FAILED)`n- Timestamp: $timestamp`n- Exit Code: $exitCode`n- Error: Claude command failed" -Encoding UTF8
+
+        # Continue to next iteration instead of exiting
+        if ($i -lt $MaxIterations) {
+            Write-Host ""
+            Write-Host "  Sleeping ${SleepSeconds}s before retry..." -ForegroundColor Gray
+            Write-Host ""
+            Start-Sleep -Seconds $SleepSeconds
+            continue
+        }
+    }
 
     # Check for completion - ONLY accept XML signal (deterministic, machine-safe)
     $isComplete = $result -match "<STORY_COMPLETE>"
