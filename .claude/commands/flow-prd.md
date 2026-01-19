@@ -1,106 +1,94 @@
 ---
-description: Generate PRDs from plan.md with MCP scanning
+description: Generate PRDs without asking questions
 argument-hint: [plan] or [feature description]
 ---
 
-# Maven Flow PRD Generator
+# Maven Flow PRD Generator - EXECUTE WITHOUT QUESTIONS
 
-Generate Product Requirements Documents (PRDs) with MCP scanning and memorial integration.
+**YOU MUST EXECUTE THIS COMMAND WITHOUT ASKING THE USER ANY QUESTIONS.**
 
-**CRITICAL: Always work in the current working directory.**
-- Use `$PWD` or `$(pwd)` to get current working directory
-- Create ALL files in `[working-directory]/docs/`
+Read the input, scan MCPs, generate PRD files, display summary, EXIT.
 
-## Workflow
+## Step 1: Get Working Directory
 
-### Step 1: Scan Available MCPs
+Run `pwd` to get the current working directory. All files will be created in `[working-directory]/docs/`.
 
-First, identify what MCP servers are available in the current environment:
+## Step 2: Scan Available MCPs
 
-```bash
-# Check Claude Code settings for configured MCPs
-# Common MCPs:
-# - supabase: Database operations, schema management
-# - chrome-devtools: UI testing, browser automation
-# - web-search-prime: Web research, documentation lookup
-# - web-reader: Fetch and read web content
-# - filesystem: File system operations
-```
+List what MCP servers are available:
+- supabase: Database operations
+- chrome-devtools: UI testing
+- web-search-prime: Research
+- web-reader: Documentation fetching
 
-**Output:** List available MCPs with their purposes:
-```
-Available MCPs:
-- supabase: Database schema, queries, migrations
-- chrome-devtools: UI testing, screenshot validation
-- web-search-prime: Research, find examples
-```
+## Step 3: Parse Input
 
-### Step 2: Read User Prompt
+- If input is "plan": Read `plan.md` from working directory
+- If input is "fix" followed by instructions: Read existing PRDs and apply fixes
+- Otherwise: Use input as feature description
 
-Get the feature description from:
-- User input after `/flow-prd` command
-- OR `plan.md` file if argument is "plan"
+## Step 4: Generate PRDs
 
-### Step 3: Analyze and Create PRDs
+For "plan" mode:
+1. Read plan.md
+2. Identify major features (each should become a separate PRD)
+3. For each feature, create:
+   - `docs/prd-[feature-name].md` with user stories
+   - `docs/consolidated-[feature-name].txt` memory stub
 
-Using the MCP list + user prompt, create PRD markdown files:
+For single feature mode:
+1. Parse feature description
+2. Create `docs/prd-[feature-name].md` with user stories
+3. Create `docs/consolidated-[feature-name].txt` memory stub
 
-1. **Parse the requirements** - Identify features, components, user stories
-2. **Split into focused PRDs** - One PRD per major feature
-3. **For each PRD, create:**
-   - `docs/prd-[feature-name].md` - Main PRD with user stories
-   - `docs/consolidated-[feature-name].txt` - Memory stub file
+For "fix" mode:
+1. Read existing PRD files from docs/
+2. Apply fix instructions
+3. Update files in place
 
-### Step 4: PRD Structure (Markdown)
-
-Each PRD markdown file follows this structure:
+## PRD Template
 
 ```markdown
 ---
 project: [Feature Name]
 branch: flow/[feature-name]
 availableMCPs:
-  - [scanned MCPs relevant to this feature]
+  - [relevant MCPs]
 ---
 
 # [Feature Name]
 
 ## Overview
-[2-3 sentences describing what this feature does and why]
+[2-3 sentences]
 
 ## Technical Approach
-[Brief technical approach - what stack, what patterns]
+[Stack and patterns]
 
 ## User Stories
 
-### US-001: [Story Title]
+### US-001: [Title]
 **Priority:** 1
 **Maven Steps:** [1, 3, 7, 10]
 **MCP Tools:**
-- step1: [supabase]
-- step3: []
+- step1: []
 
 As a [user], I want to [action] so that [benefit].
 
 **Acceptance Criteria:**
-- [Specific, testable criteria 1]
-- [Specific, testable criteria 2]
-- [Specific, testable criteria 3]
+- [criteria 1]
+- [criteria 2]
+- [criteria 3]
 - Typecheck passes
 
 **Status:** false
 ```
 
-**Key Guidelines:**
-- Keep stories **focused and atomic** - one clear objective
-- Each story completable in 1-2 hours
-- Order by dependency: database → backend → UI → integration
-- Assign relevant MCPs to each step
+**Story Guidelines:**
+- Focused and atomic (1-2 hours each)
+- Order by dependency: database → backend → UI
 - Max 10 stories per PRD
 
-### Step 5: Consolidated Memory Stub
-
-Create `docs/consolidated-[feature-name].txt`:
+## Memory Stub Template
 
 ```markdown
 ---
@@ -108,7 +96,7 @@ memoryVersion: 1
 schemaVersion: 1
 feature: [Feature Name]
 consolidatedDate: [Current Date]
-totalStories: [Count from PRD]
+totalStories: [Count]
 completedStories: 0
 status: initialized
 ---
@@ -116,205 +104,50 @@ status: initialized
 # [Feature Name] - Consolidated Implementation Memory
 
 ## System Overview
-[Copy from PRD overview]
+[From PRD]
 
 ## Current Status
-PRD created, waiting for story execution.
-
-## Technical Approach
-[Copy from PRD technical approach]
-
-## Related PRDs
-[List other PRDs this depends on or integrates with]
+PRD created, waiting for execution.
 
 ## Stories to Implement
-- US-001: [Story Title]
-- US-002: [Story Title]
+- US-001: [Title]
+- US-002: [Title]
 ...
-
-## Memory Structure
-This file will be updated as stories complete, containing:
-- Architectural decisions made
-- Integration patterns established
-- Public interfaces created
-- Lessons learned
 ```
 
----
-
-## Commands
-
-### Generate PRDs from Plan (NO QUESTIONS)
-```
-flow-prd plan
-```
-
-1. Reads `plan.md` from working directory
-2. Scans available MCPs
-3. Analyzes plan for features
-4. Generates multiple `docs/prd-*.md` files
-5. Creates `docs/consolidated-*.txt` stubs for each
-6. Displays summary - NO QUESTIONS ASKED
-
-**User then reviews files manually**
-
-### Generate Single PRD (NO QUESTIONS)
-```
-flow-prd [feature description]
-```
-
-Example: `flow-prd user authentication with login and signup`
-
-1. Scans available MCPs
-2. Parses feature description
-3. Generates single `docs/prd-[feature].md`
-4. Creates `docs/consolidated-[feature].txt` stub
-5. Displays summary - NO QUESTIONS ASKED
-
-**User then reviews files manually**
-
-### Fix/Update PRDs (NO QUESTIONS)
-```
-flow-prd fix [instructions]
-```
-
-Example: `flow-prd fix add 2FA to authentication, split dashboard into separate components`
-
-1. Reads existing PRD files
-2. Applies the fix instructions
-3. Updates PRD files in place
-4. Updates consolidated memory files
-5. Displays summary - NO QUESTIONS ASKED
-
----
-
-## MCP Assignment Guidelines
-
-| MCP | When to Use | Maven Steps |
-|-----|-------------|-------------|
-| **supabase** | Database schema, queries, migrations | Step 1, 2, 7 |
-| **chrome-devtools** | UI testing, visual validation | Step 6, 10 |
-| **web-search-prime** | Research, find examples | Step 1, 8 |
-| **web-reader** | Read documentation | Step 1, 8 |
-| **filesystem** | File operations | Step 1, 5 |
-
----
-
-## Story Size and Scope
-
-**GOOD Story (Focused):**
-```
-US-001: Create users table
-- Define schema with id, email, password_hash
-- Add RLS policies
-- Run migration
-```
-
-**BAD Story (Too Large):**
-```
-US-001: Build entire authentication system
-- Database, backend, UI, testing, docs
-```
-
-**Split large stories into:**
-1. Database schema
-2. Backend API
-3. UI components
-4. Integration
-5. Testing
-
----
-
-## Output Format
-
-After generating PRDs, display:
+## Step 5: Display Summary and EXIT
 
 ```
 ==============================================================================
 PRD Generation Complete
 ==============================================================================
 
-Available MCPs detected:
-- supabase (database)
-- chrome-devtools (testing)
+Available MCPs:
+- [list]
 
 Created PRDs:
-- docs/prd-user-authentication.md (5 stories)
-- docs/prd-user-dashboard.md (3 stories)
+- docs/prd-[feature].md ([N] stories)
 
-Memory files created:
-- docs/consolidated-user-authentication.txt
-- docs/consolidated-user-dashboard.txt
+Memory files:
+- docs/consolidated-[feature].txt
 
-Next steps:
-1. Review PRDs: cat docs/prd-*.md
-2. Convert to JSON: flow-convert --all
-3. Start flow: flow start
+Next: flow-convert --all
 ```
+
+**Then EXIT. Do NOT ask questions. Do NOT wait for confirmation.**
 
 ---
 
-## Implementation Instructions for the Command
+## EXECUTION CHECKLIST
 
-**CRITICAL: This command MUST NEVER ASK QUESTIONS when invoked from terminal.**
+When `/flow-prd` is invoked:
 
-When invoked, the command should:
+1. [ ] Get working directory with `pwd`
+2. [ ] List available MCPs
+3. [ ] Parse input (plan/fix/feature)
+4. [ ] Create PRD markdown files
+5. [ ] Create memory stub files
+6. [ ] Display summary
+7. [ ] EXIT immediately
 
-1. **Get working directory:** Run `pwd`
-2. **Scan MCPs:** List available MCPs with purposes
-3. **Read input:**
-   - If "plan": Read plan.md
-   - If "fix": Apply fix instructions to existing PRDs
-   - Otherwise: Use user prompt to generate new PRD
-4. **Analyze requirements:** Identify features, components, stories
-5. **Create PRD files:**
-   - For each feature: `docs/prd-[feature].md`
-   - For each PRD: `docs/consolidated-[feature].txt`
-6. **Report results:** Show what was created
-7. **EXIT** - Do not ask for confirmation, do not ask questions
-
-**User reviews files manually, then runs `flow-prd fix [instructions]` if needed.**
-
----
-
-## Example: Full Workflow
-
-**User runs:**
-```bash
-cd /path/to/project
-flow-prd plan
-```
-
-**Command does:**
-1. `pwd` → `/path/to/project`
-2. Scan MCPs → `supabase, chrome-devtools`
-3. Read `plan.md` → Finds features: auth, dashboard, settings
-4. Create `docs/prd-authentication.md` with 5 stories
-5. Create `docs/consolidated-authentication.txt` stub
-6. Create `docs/prd-dashboard.md` with 3 stories
-7. Create `docs/consolidated-dashboard.txt` stub
-8. Display summary
-9. **EXIT - No questions**
-
-**User reviews files manually:**
-```bash
-cat docs/prd-authentication.md
-cat docs/prd-dashboard.md
-```
-
-**User needs changes:**
-```bash
-flow-prd fix add 2FA to authentication stories, make dashboard responsive
-```
-
-**Command updates PRDs in place and exits.**
-
-**User satisfied, proceeds:**
-```bash
-flow-convert --all  # Markdown → JSON
-flow start          # Begin execution
-```
-
----
-
-*Generate focused PRDs with MCP integration and memorial structure*
+**NEVER ASK QUESTIONS.**
