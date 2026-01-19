@@ -1,11 +1,30 @@
 # Maven Flow - Orchestrator wrapper (loop until complete)
 param(
+    [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
     [int]$SleepSeconds = 2
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Parse command
+$Command = "start"
+foreach ($arg in $ArgsArray) {
+    switch ($arg) {
+        "status" { $Command = "status"; break }
+        "continue" { $Command = "continue"; break }
+        "reset" { $Command = "reset"; break }
+        "test" { $Command = "test"; break }
+        "consolidate" { $Command = "consolidate"; break }
+        "help" { $Command = "help"; break }
+        "--help" { $Command = "help"; break }
+        "-h" { $Command = "help"; break }
+        default {
+            if ($arg -match "^\d+$") { $MaxIterations = [int]$arg }
+        }
+    }
+}
 
 Write-Host ""
 Write-Host "==============================================================================" -ForegroundColor Cyan
