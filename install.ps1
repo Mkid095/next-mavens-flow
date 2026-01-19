@@ -5,6 +5,7 @@
 # - Overwrites managed files
 # - Removes obsolete managed files ONLY
 # - Never deletes anything outside the manifest
+# - Files installed directly to Claude folders (no maven-flow subfolder)
 # ============================================================================
 
 #Requires -Version 5.0
@@ -21,7 +22,7 @@ $HomeClaude = Join-Path $env:USERPROFILE ".claude"
 $TargetDir = if (Test-Path $HomeClaude) {
     $HomeClaude
 } else {
-    Join-Path $ScriptDir ".claude\maven-flow"
+    Join-Path $ScriptDir ".claude"
 }
 
 # -------------------------
@@ -62,23 +63,41 @@ function Safe-Delete {
 # -------------------------
 # MANIFEST (THE SOURCE OF TRUTH)
 # -------------------------
+# Files are installed DIRECTLY to Claude folders, NOT in a maven-flow subfolder
 $Manifest = @{
     Directories = @(
         "agents",
         "commands",
-        "maven-flow\hooks",
-        "maven-flow\config",
-        "maven-flow\.claude",
-        "skills"
+        "hooks",
+        "skills",
+        "skills\workflow",
+        "skills\flow-prd",
+        "skills\flow-convert",
+        "bin"
     )
 
     Files = @{
         "agents" = ".claude\agents\*.md"
         "commands" = ".claude\commands\*.md"
-        "maven-flow\hooks" = ".claude\maven-flow\hooks\*.sh"
-        "maven-flow\config" = ".claude\maven-flow\config\*.mjs"
-        "maven-flow\.claude\settings.json" = ".claude\maven-flow\.claude\settings.json"
+        "skills" = ".claude\skills\*.md"
+        "skills\workflow" = ".claude\skills\workflow\*.md"
+        "skills\flow-prd" = ".claude\skills\flow-prd\*.md"
+        "skills\flow-convert" = ".claude\skills\flow-convert\*.md"
+        "hooks" = ".claude\hooks\*"
+        "bin" = @("bin\*.sh", "bin\*.ps1")
     }
+}
+
+# -------------------------
+# CLEANUP OLD INSTALLATION
+# -------------------------
+$OldMavenFlowDir = Join-Path $TargetDir "maven-flow"
+if (Test-Path $OldMavenFlowDir) {
+    Log "[CLEANUP] Removing old maven-flow subfolder..." "Yellow"
+    if (-not $DryRun) {
+        Remove-Item $OldMavenFlowDir -Recurse -Force
+    }
+    Log "  [REMOVE DIR] $OldMavenFlowDir" "Red"
 }
 
 # -------------------------
@@ -109,22 +128,27 @@ $ManagedFiles = @()
 
 foreach ($entry in $Manifest.Files.GetEnumerator()) {
     $targetRel = $entry.Key
-    $sourceGlob = Join-Path $ScriptDir $entry.Value
+    $sourcePatterns = $entry.Value
 
-    if (Test-Path $sourceGlob) {
-        $files = Get-ChildItem $sourceGlob
-        foreach ($file in $files) {
-            if ($targetRel.EndsWith(".json")) {
-                $dest = Join-Path -Path $TargetDir -ChildPath $targetRel
-            } else {
+    # Handle both single string and array of patterns
+    if ($sourcePatterns -is [string]) {
+        $sourcePatterns = @($sourcePatterns)
+    }
+
+    foreach ($pattern in $sourcePatterns) {
+        $sourceGlob = Join-Path $ScriptDir $pattern
+
+        if (Test-Path $sourceGlob) {
+            $files = Get-ChildItem $sourceGlob
+            foreach ($file in $files) {
                 $subPath = Join-Path -Path $targetRel -ChildPath $file.Name
                 $dest = Join-Path -Path $TargetDir -ChildPath $subPath
-            }
 
-            Safe-Copy $file.FullName $dest
-            $realDest = Resolve-Path $dest -ErrorAction SilentlyContinue
-            if ($realDest) {
-                $ManagedFiles += $realDest.Path
+                Safe-Copy $file.FullName $dest
+                $realDest = Resolve-Path $dest -ErrorAction SilentlyContinue
+                if ($realDest) {
+                    $ManagedFiles += $realDest.Path
+                }
             }
         }
     }
@@ -160,6 +184,56 @@ foreach ($dir in $Manifest.Directories) {
 }
 
 # -------------------------
+# STEP 4: ADD TO POWERSHELL PATH
+# -------------------------
+Log "[STEP 4] Adding to PowerShell PATH..." "Yellow"
+
+$BinDir = Join-Path $TargetDir "bin"
+$ProfilePath = $PROFILE
+$PathEntry = "`$env:Path += `";$BinDir`""
+
+# Ensure profile exists
+if (-not (Test-Path $ProfilePath)) {
+    if (-not $DryRun) {
+        New-Item -ItemType File -Path $ProfilePath -Force | Out-Null
+    }
+    Log "  [CREATE] PowerShell profile: $ProfilePath" "Yellow"
+}
+
+# Check if PATH entry already exists
+if (Test-Path $ProfilePath) {
+    $content = Get-Content $ProfilePath -Raw -ErrorAction SilentlyContinue
+    if ($content -and $content -match [regex]::Escape($BinDir)) {
+        Log "  [SKIP] Already in PowerShell PATH" "Gray"
+    } else {
+        if (-not $DryRun) {
+            Add-Content $ProfilePath ""
+            Add-Content $ProfilePath "# Maven Flow - Added by install.ps1"
+            Add-Content $ProfilePath $PathEntry
+        }
+        Log "  [ADD] Added to PowerShell PATH in $ProfilePath" "Green"
+    }
+}
+
+# Also add to .bashrc for Git Bash/WSL users
+$BashrcPath = Join-Path $env:USERPROFILE ".bashrc"
+$BashPathEntry = "export PATH=`"$BinDir`:`$PATH`""
+
+if (Test-Path $BashrcPath) {
+    $bashContent = Get-Content $BashrcPath -Raw -ErrorAction SilentlyContinue
+    if ($bashContent -and $bashContent -match "Maven Flow") {
+        Log "  [SKIP] Already in .bashrc" "Gray"
+    } else {
+        if (-not $DryRun) {
+            Add-Content $BashrcPath ""
+            Add-Content $BashrcPath "# Maven Flow - Added by install.ps1"
+            Add-Content $BashrcPath $BashPathEntry
+        }
+        Log "  [ADD] Added to .bashrc PATH" "Green"
+    }
+}
+
+# -------------------------
 # DONE
 # -------------------------
 Log ""
@@ -174,9 +248,28 @@ if ($DryRun) {
 
 # Show usage hints
 Log ""
+Log "Installed Components:" "Cyan"
+Log "  Agents    -> ~/.claude/agents/" "Gray"
+Log "  Commands  -> ~/.claude/commands/" "Gray"
+Log "  Skills    -> ~/.claude/skills/" "Gray"
+Log "  Hooks     -> ~/.claude/hooks/" "Gray"
+Log "  Scripts   -> ~/.claude/bin/" "Gray"
+Log ""
 Log "Usage:" "Cyan"
-Log "  Claude Code Commands:" "Cyan"
+Log "  Claude Code Commands (in Claude Code):" "Cyan"
 Log "    /flow start              # Start autonomous development" "Gray"
 Log "    /flow status             # Check progress" "Gray"
 Log "    /flow-prd create ...     # Create PRD" "Gray"
 Log "    /flow-convert <feature>  # Convert PRD to JSON" "Gray"
+Log "    /flow-update sync        # Update Maven Flow" "Gray"
+Log ""
+Log "  Terminal Commands (in PowerShell/terminal):" "Cyan"
+Log "    flow start               # Start autonomous development" "Gray"
+Log "    flow status              # Check progress" "Gray"
+Log "    flow-prd <description>   # Generate PRD" "Gray"
+Log "    flow-convert <feature>   # Convert PRD to JSON" "Gray"
+Log "    flow-update              # Update Maven Flow" "Gray"
+Log ""
+Log "[!] Action Required:" "Yellow"
+Log "  Run:  . `$PROFILE  (or restart your terminal)" "Gray"
+Log ""

@@ -25,16 +25,16 @@ Checks if there are updates available from the GitHub repository.
 **Example output:**
 ```
 Checking for updates...
-✅ Connected to GitHub
-✅ Fetched latest changes
+Connected to GitHub
+Fetched latest changes
 Status: Your repository is up to date
 ```
 
 Or:
 ```
 Checking for updates...
-✅ Connected to GitHub
-✅ Fetched latest changes
+Connected to GitHub
+Fetched latest changes
 Status: Updates available!
   - 3 new commits ahead
   - Last update: Add memory system to flow.md
@@ -47,24 +47,25 @@ Run: /flow-update sync to apply updates
 /flow-update sync
 ```
 
-Fetches changes from GitHub and syncs with both global and local installations.
+Fetches changes from GitHub and syncs with your global installation.
 
 **What happens:**
 1. Runs `git pull` to fetch latest changes
-2. Detects installation type (global at ~/.claude/, local in project)
+2. Detects global installation at ~/.claude/
 3. Copies updated files to installation locations:
-   - Agents (~/.claude/agents/ or .claude/maven-flow/agents/)
-   - Commands (~/.claude/commands/ or .claude/maven-flow/commands/)
-   - Hooks (~/.claude/maven-flow/hooks/)
-   - Terminal scripts (bin/)
+   - Agents (~/.claude/agents/)
+   - Commands (~/.claude/commands/)
+   - Skills (~/.claude/skills/)
+   - Hooks (~/.claude/hooks/)
+   - Shell scripts (~/.claude/bin/)
 4. Preserves user configurations (settings.local.json, custom modifications)
 5. Reports what was updated
 
 **Example output:**
 ```
 Syncing Maven Flow updates...
-✅ Fetched from GitHub
-✅ 3 new commits pulled
+Fetched from GitHub
+3 new commits pulled
 
 Syncing to global installation...
   Updated: flow.md (added memory system)
@@ -72,12 +73,7 @@ Syncing to global installation...
   Updated: post-tool-use-quality.sh (fixed new file handling)
   Updated: bin/flow.sh (improved error handling)
 
-✅ Global installation synced
-
-Syncing to local installation...
-  Skipped: No local installation found in current project
-
-✅ Sync complete!
+Sync complete!
 ```
 
 ### Force update
@@ -93,9 +89,9 @@ Forces a sync even if no updates are detected. Useful for:
 **Example output:**
 ```
 Force syncing Maven Flow...
-✅ Running forced sync
-✅ All files reinstalled from current repository
-✅ Sync complete!
+Running forced sync
+All files reinstalled from current repository
+Sync complete!
 ```
 
 ### Help
@@ -113,24 +109,21 @@ Displays help information about updating Maven Flow.
 
 ```
 GitHub Repository (next-mavens-flow)
-    ↓ git pull
+    git pull
 Local Repository
-    ↓ Copy files
+    Copy files
 Global Installation (~/.claude/)
-    ↓ Copy files
-Local Installation (if exists)
 ```
 
 ### What Gets Updated
 
-| File Type | Global Location | Local Location |
-|-----------|-----------------|----------------|
-| Agents | ~/.claude/agents/ | .claude/maven-flow/agents/ |
-| Commands | ~/.claude/commands/ | .claude/maven-flow/commands/ |
-| Hooks | ~/.claude/maven-flow/hooks/ | .claude/maven-flow/hooks/ |
-| Config | ~/.claude/maven-flow/config/ | .claude/maven-flow/config/ |
-| Settings | ~/.claude/maven-flow/.claude/ | .claude/maven-flow/.claude/ |
-| Terminal Scripts | N/A | bin/ |
+| File Type | Global Location |
+|-----------|-----------------|
+| Agents | ~/.claude/agents/ |
+| Commands | ~/.claude/commands/ |
+| Skills | ~/.claude/skills/ |
+| Hooks | ~/.claude/hooks/ |
+| Shell Scripts | ~/.claude/bin/ |
 
 ### What Gets Preserved
 
@@ -159,12 +152,6 @@ Checks: ~/.claude/ exists
 If yes: Syncs to ~/.claude/
 ```
 
-**Local Installation:**
-```
-Checks: .claude/maven-flow/ exists in current directory
-If yes: Syncs to .claude/maven-flow/
-```
-
 ---
 
 ## File Sync Strategy
@@ -183,9 +170,9 @@ If yes: Syncs to .claude/maven-flow/
 - **settings.local.json:** NEVER touched (your settings)
 - **User modifications:** Detected and prompted before overwriting
 
-### Terminal Scripts
+### Shell Scripts
 - **Always regenerate:** Scripts are recreated from current code
-- **Location:** bin/ folder in Maven Flow repository
+- **Location:** ~/.claude/bin/ folder
 
 ---
 
@@ -224,13 +211,12 @@ git reset --hard HEAD
 
 **Sync fails:**
 - Check write permissions to ~/.claude/
-- Check write permissions to current directory
 - Close any Claude Code sessions using the files
 - Run `/flow-update force` to retry
 
 **Settings reset:**
 - Your settings are preserved in `settings.local.json`
-- If settings.json was overwritten, check `~/.claude/maven-flow/.claude/settings.json.backup`
+- If settings.json was overwritten, check `~/.claude/settings.json.backup`
 
 **Hooks still failing:**
 - After update, hooks are updated to latest versions

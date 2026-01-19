@@ -42,6 +42,11 @@ Before starting, the command validates:
    - If all PRDs complete: `✅ All PRDs complete! No work to do.`
    - Fix: Create a new PRD or add stories to existing PRD
 
+4. **Maven Flow wrapper script** (optional, for local execution)
+   - The flow can create `maven-flow.sh` locally for direct execution
+   - This wrapper is created automatically when needed
+   - If you encounter syntax errors, delete `maven-flow.sh` and let flow recreate it
+
 ---
 
 When you execute `/flow start` or `/flow continue`:
