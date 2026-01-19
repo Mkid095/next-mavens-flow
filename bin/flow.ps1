@@ -1,4 +1,4 @@
-﻿# Maven Flow - Orchestrator wrapper (loop until complete)
+﻿﻿# Maven Flow - Orchestrator wrapper (loop until complete)
 param(
     [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
@@ -341,7 +341,6 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
 
     foreach ($prd in $prdFiles | Sort-Object Name) {
         # Get first incomplete story index
-        $storyIndex = $null
         $storyCount = jq '.userStories | length' $prd.FullName 2>$null
         for ($j = 0; $j -lt [int]$storyCount; $j++) {
             $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
