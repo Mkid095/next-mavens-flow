@@ -124,9 +124,10 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         Write-Host ""
         Write-Host "  Pausing ${SleepSeconds}s before next iteration..." -ForegroundColor DarkGray
         for ($s = $SleepSeconds; $s -gt 0; $s--) {
-            Write-Host -NoNewline "`r    [$s] "
+            Write-Host "    [$s] " -NoNewline
             Start-Sleep -Seconds 1
         }
+        Write-Host ""
         Write-Host ""
     }
 }
