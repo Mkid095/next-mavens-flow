@@ -20,6 +20,7 @@ $totalCompleted = 0
 foreach ($prd in $prdFiles | Sort-Object Name) {
     $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
     $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+    if (-not $storyCount -or $storyCount -match 'error|Error') { continue }
     $totalStories += [int]$storyCount
 
     $completedCount = 0
@@ -27,7 +28,9 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
 
     for ($j = 0; $j -lt [int]$storyCount; $j++) {
         $passesOutput = jq ".userStories[$j].passes" $prd.FullName 2>$null
-        $isComplete = -not (($passesOutput -match "false") -and ($passesOutput -notmatch "true"))
+        $passesTrimmed = if ($passesOutput) { $passesOutput.Trim() } else { "" }
+        # Story is complete if passes is NOT "false" (matches Get-IncompleteStory logic)
+        $isComplete = -not ($passesTrimmed -eq "false" -or $passesTrimmed -eq "false`n" -or $passesTrimmed -match "^false")
         if ($isComplete) {
             $completedCount++
             $totalCompleted++
@@ -43,10 +46,12 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
 
     if ($completedCount -eq [int]$storyCount) {
         $statusText = "COMPLETE ($completedCount/$storyCount) "
+        $featureDisplay = if ($featureName.Length -gt 48) { $featureName.Substring(0, 45) + "..." } else { $featureName }
+        $countDisplay = "$completedCount/$storyCount"
         Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Green
         Write-Host "│ " -NoNewline -ForegroundColor Green
-        Write-Host "✓ $featureName" -NoNewline -ForegroundColor Green
-        Write-Host (" " * (63 - $featureName.Length)) -NoNewline
+        Write-Host "✓ $featureDisplay" -NoNewline -ForegroundColor Green
+        Write-Host (" " * [math]::Max(0, 51 - $featureDisplay.Length)) -NoNewline
         Write-Host $statusText.PadRight(58) -NoNewline -ForegroundColor Green
         Write-Host "│" -ForegroundColor Green
         Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Green
@@ -66,7 +71,7 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
         Write-Host " (" -NoNewline -ForegroundColor Gray
         Write-Host "$completedCount/$storyCount" -NoNewline -ForegroundColor Gray
         Write-Host ")" -NoNewline -ForegroundColor Gray
-        Write-Host (" " * (12 - "$completedCount/$storyCount".Length)) -NoNewline
+        Write-Host (" " * [math]::Max(0, 12 - "$completedCount/$storyCount".Length)) -NoNewline
         Write-Host "│" -ForegroundColor Cyan
         Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
 
@@ -74,6 +79,9 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
         if ($currentStoryData) {
             $storyId = $currentStoryData | jq -r '.id' 2>$null
             $storyTitle = $currentStoryData | jq -r '.title' 2>$null
+            # Null safety for display
+            if (-not $storyId -or $storyId -eq "null") { $storyId = "UNKNOWN" }
+            if (-not $storyTitle -or $storyTitle -eq "null") { $storyTitle = "No title" }
 
             Write-Host ""
             Write-Host "  CURRENT STORY: $storyId - $storyTitle" -ForegroundColor Yellow
@@ -85,8 +93,9 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
 
 # Overall progress
 $overallPct = if ($totalStories -gt 0) { [math]::Round(($totalCompleted / $totalStories) * 100) } else { 0 }
-$overallBar = "█" * [math]::Floor(30 * $totalCompleted / [math]::Max(1, $totalStories))
-$overallBar += "░" * (30 - [math]::Floor(30 * $totalCompleted / [math]::Max(1, $totalStories)))
+$overallFilled = [math]::Floor(30 * $totalCompleted / [math]::Max(1, $totalStories))
+$overallBar = "█" * $overallFilled + "░" * (30 - $overallFilled)
+$overallCountDisplay = "$totalCompleted/$totalStories"
 
 Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Cyan
 Write-Host "│ " -NoNewline -ForegroundColor Cyan
@@ -98,7 +107,7 @@ Write-Host "$overallPct%" -NoNewline -ForegroundColor Cyan
 Write-Host " (" -NoNewline -ForegroundColor Gray
 Write-Host "$totalCompleted/$totalStories" -NoNewline -ForegroundColor Gray
 Write-Host ")" -NoNewline -ForegroundColor Gray
-Write-Host (" " * (12 - "$totalCompleted/$totalStories".Length)) -NoNewline
+Write-Host (" " * [math]::Max(0, 12 - $overallCountDisplay.Length)) -NoNewline
 Write-Host "│" -ForegroundColor Cyan
 Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
 

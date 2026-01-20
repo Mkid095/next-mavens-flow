@@ -2,7 +2,6 @@
 # Self-contained script with all logic inline (like Ralph but with Maven Flow features)
 
 param(
-    [string[]]$ArgsArray,
     [int]$MaxIterations = 100,
     [int]$BaseCooldownSeconds = 30
 )
@@ -91,11 +90,15 @@ function Get-IncompleteStory {
 
     foreach ($prd in $prdFiles | Sort-Object Name) {
         $storyCount = jq '.userStories | length' $prd.FullName 2>$null
+        if (-not $storyCount -or $storyCount -match 'error|Error') { continue }
         for ($j = 0; $j -lt [int]$storyCount; $j++) {
             $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
-            if ($passes -eq "false") {
+            $passesTrimmed = if ($passes) { $passes.Trim() } else { "" }
+            if ($passesTrimmed -eq "false" -or $passesTrimmed -eq "false`n" -or $passesTrimmed -match "^false") {
                 $storyData = jq ".userStories[$j]" $prd.FullName 2>$null
                 $storyId = jq -r ".userStories[$j].id" $prd.FullName 2>$null
+                # Null safety for storyId
+                if (-not $storyId -or $storyId -eq "null") { $storyId = "UNKNOWN" }
                 $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
                 return @{
                     StoryId = $storyId
@@ -117,19 +120,28 @@ function Show-StoryDisplay {
     $mavenStepsArray = $storyData | jq -r '.mavenSteps[]?' 2>$null
     $acceptanceCriteria = $storyData | jq -r '.acceptanceCriteria[]?' 2>$null
 
+    # Null safety for title
+    if (-not $storyTitle -or $storyTitle -eq "null") { $storyTitle = "No title" }
+
+    # Truncate FeatureName and StoryId for display
+    $featureDisplay = if ($FeatureName.Length -gt 55) { $FeatureName.Substring(0, 52) + "..." } else { $FeatureName }
+    $storyDisplay = if ($StoryId.Length -gt 50) { $StoryId.Substring(0, 47) + "..." } else { $StoryId }
+
     Write-Host ""
     Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Cyan
-    Write-Host "│ WORKING ON: $FeatureName" -NoNewline -ForegroundColor Cyan
-    Write-Host (" " * (63 - $FeatureName.Length)) -NoNewline
+    Write-Host "│ WORKING ON: $featureDisplay" -NoNewline -ForegroundColor Cyan
+    Write-Host (" " * [math]::Max(0, 63 - $featureDisplay.Length)) -NoNewline
     Write-Host "│" -ForegroundColor Cyan
     Write-Host "├────────────────────────────────────────────────────────────────────┤" -ForegroundColor Gray
-    Write-Host "│ Story: $StoryId" -NoNewline -ForegroundColor White
-    Write-Host (" " * (58 - $StoryId.Length)) -NoNewline
+    Write-Host "│ Story: $storyDisplay" -NoNewline -ForegroundColor White
+    Write-Host (" " * [math]::Max(0, 58 - $storyDisplay.Length)) -NoNewline
     Write-Host "│" -ForegroundColor Gray
     Write-Host "│ Title: " -NoNewline -ForegroundColor Gray
-    Write-Host $storyTitle.Substring(0, [math]::Min(54, $storyTitle.Length)).PadRight(54) -NoNewline -ForegroundColor White
+    $titleTruncated = $storyTitle.Substring(0, [math]::Min(54, $storyTitle.Length)).PadRight(54)
+    Write-Host $titleTruncated -NoNewline -ForegroundColor White
     Write-Host "    │" -ForegroundColor Gray
 
+    # Null safety for description
     if ($storyDesc -and $storyDesc.Length -gt 0 -and $storyDesc -ne "null") {
         $descTruncated = if ($storyDesc.Length -gt 54) { $storyDesc.Substring(0, 51) + "..." } else { $storyDesc }
         Write-Host "│ " -NoNewline -ForegroundColor Gray
@@ -150,6 +162,8 @@ function Show-StoryDisplay {
         Write-Host "│ Criteria:" -ForegroundColor Gray
         for ($k = 0; $k -lt [math]::Min(2, $criteriaList.Count); $k++) {
             $criterion = $criteriaList[$k]
+            # Null safety for criterion
+            if (-not $criterion) { $criterion = "No description" }
             $criterionTruncated = if ($criterion.Length -gt 54) { $criterion.Substring(0, 51) + "..." } else { $criterion }
             Write-Host "│   • " -NoNewline -ForegroundColor Gray
             Write-Host $criterionTruncated.PadRight(56) -NoNewline -ForegroundColor White
