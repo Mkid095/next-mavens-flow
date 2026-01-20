@@ -119,7 +119,6 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $taskStart = Get-Date
     
     # Start Claude in background and show timer
-    $result = ""
     $job = Start-Job -ScriptBlock {
         param($prompt)
         & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
@@ -127,11 +126,14 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     
     # Show running timer
     while ($job.State -eq 'Running') {
-        $elapsed = (Get-Date) - $taskStart
-        $elapsedStr = if ($elapsed.TotalMinutes -gt 0) {
-            "$($elapsed.TotalMinutes)m $($elapsed.Seconds)s"
+        $totalSeconds = [math]::Floor((Get-Date) - $taskStart).TotalSeconds)
+        $minutes = [math]::Floor($totalSeconds / 60)
+        $seconds = $totalSeconds % 60
+        
+        if ($minutes -gt 0) {
+            $elapsedStr = "${minutes}m ${seconds}s"
         } else {
-            "$($elapsed.Seconds)s"
+            $elapsedStr = "${seconds}s"
         }
         Write-Host -NoNewline "`r  [$elapsedStr elapsed] "
         Start-Sleep -Seconds 1
