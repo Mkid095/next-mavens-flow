@@ -4,7 +4,8 @@
 
 param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
 
-$ErrorActionPreference = 'Stop'
+# Don't stop on errors - let Claude handle them
+$ErrorActionPreference = 'Continue'
 
 Write-Host ""
 Write-Host "===========================================" -ForegroundColor Cyan
