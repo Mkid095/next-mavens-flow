@@ -113,10 +113,11 @@ Do NOT output the signal. Just end your response.
 for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-IterationHeader -Current $i -Total $MaxIterations
 
-    Write-Host "  Executing Claude..." -ForegroundColor Gray
+    Write-Host "  Starting Claude..." -ForegroundColor Gray
     Write-Host ""
 
     $taskStart = Get-Date
+    $claudeStarted = $false
     
     # Start Claude in background and show timer
     $job = Start-Job -ScriptBlock {
@@ -124,7 +125,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
     } -ArgumentList $PROMPT
     
-    # Show running timer
+    # Show running timer with status
     while ($job.State -eq 'Running') {
         $totalSeconds = [math]::Floor((Get-Date) - $taskStart).TotalSeconds)
         $minutes = [math]::Floor($totalSeconds / 60)
@@ -135,7 +136,19 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         } else {
             $elapsedStr = "${seconds}s"
         }
-        Write-Host -NoNewline "`r  [$elapsedStr elapsed] "
+        
+        # Update status after first few seconds
+        if ($totalSeconds -gt 3 -and -not $claudeStarted) {
+            $claudeStarted = $true
+        }
+        
+        if ($claudeStarted) {
+            $status = "[Working]"
+        } else {
+            $status = "[Starting]"
+        }
+        
+        Write-Host -NoNewline "`r  $status [$elapsedStr] "
         Start-Sleep -Seconds 1
     }
     Write-Host ""
