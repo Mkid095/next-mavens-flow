@@ -1,5 +1,11 @@
-﻿# Maven Flow - Main Orchestrator
-# Self-contained script with all logic inline (like Ralph but with Maven Flow features)
+﻿# Maven Flow Continue Command
+# Runs the orchestrator to continue from where it stopped
+
+# Import the main orchestrator logic
+# (This is a wrapper that runs flow.ps1 with a "continue" header)
+
+# But actually, we should just call the main flow.ps1 with a flag
+# For now, let's make it identical to flow.ps1 but with different header text
 
 param(
     [string[]]$ArgsArray,
@@ -179,10 +185,10 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "==============================================================================" -ForegroundColor Cyan
-Write-Host "         Maven Flow - Autonomous AI Development System               " -ForegroundColor Cyan
+Write-Host "         Maven Flow - Continuing Autonomous Development          " -ForegroundColor Cyan
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Starting Maven Flow - Max $MaxIterations iterations" -ForegroundColor Yellow
+Write-Host "  Resuming Maven Flow - Max $MaxIterations iterations" -ForegroundColor Yellow
 Write-Host "  Base cooldown: ${BaseCooldownSeconds}s (adaptive backoff enabled)" -ForegroundColor Gray
 Write-Host ""
 
@@ -257,13 +263,13 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     $claudeResponse = Invoke-ClaudeWithRetry -Prompt $prompt
 
     Write-Host ""
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
     Write-Host "  CLAUDE RESPONSE:" -ForegroundColor Gray
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
     Write-Host ""
     Write-Host $claudeResponse.Result
     Write-Host ""
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
     Write-Host ""
 
     # Handle result
