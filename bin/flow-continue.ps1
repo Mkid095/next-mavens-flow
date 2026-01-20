@@ -127,7 +127,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     
     # Show running timer with status
     while ($job.State -eq 'Running') {
-        $totalSeconds = [math]::Floor((Get-Date) - $taskStart).TotalSeconds)
+        $totalSeconds = [math]::Floor(((Get-Date) - $taskStart).TotalSeconds)
         $minutes = [math]::Floor($totalSeconds / 60)
         $seconds = $totalSeconds % 60
         
