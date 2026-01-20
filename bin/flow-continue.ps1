@@ -48,6 +48,9 @@ function Invoke-ProcessCleanup {
 function Invoke-ClaudeWithRetry {
     param([string]$Prompt)
 
+    $result = ""
+    $exitCode = 1
+
     for ($retry = 1; $retry -le $MaxRetries; $retry++) {
         try {
             Write-Host "  [EXEC] Calling Claude (attempt $retry/$MaxRetries)..." -ForegroundColor Yellow
@@ -74,6 +77,9 @@ function Invoke-ClaudeWithRetry {
             }
         } catch {
             Write-Host "  [RETRY] Exception: $_" -ForegroundColor Yellow
+            $result = "Exception: $_"
+            $exitCode = 1
+
             if ($retry -lt $MaxRetries) {
                 Invoke-ProcessCleanup
                 Write-Host "  [RETRY] Waiting ${RetryDelay}s..." -ForegroundColor Gray
