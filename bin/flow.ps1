@@ -101,6 +101,13 @@ When ALL stories are complete, output EXACTLY:
 ## If Not Complete
 
 Do NOT output the signal. Just end your response.
+
+## Important: Output Formatting
+
+- Use ASCII characters only - no Unicode symbols like checkmarks, arrows, etc.
+- Use [OK] or [X] instead of checkmarks
+- Use * or - for bullets instead of Unicode symbols
+- Keep formatting simple and compatible with all terminals
 '@
 
 for ($i = 1; $i -le $MaxIterations; $i++) {
