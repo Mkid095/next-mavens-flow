@@ -9,16 +9,22 @@ $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 $sessionId = "$projectName-" + (New-Guid).Guid.Substring(0, 8)
 $sessionFile = ".flow-session"
+$claudeSessionId = $null
 
 # Save session ID to file
 $sessionId | Out-File -FilePath $sessionFile -Encoding UTF8
 
-# Cleanup session file on exit
-Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
-    if (Test-Path $sessionFile) {
-        Remove-Item $sessionFile -Force
+# Get or create Claude session
+try {
+    $sessionList = claude session list 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        # Parse the session list to find active sessions
+        # We'll create a new session for this flow run
+        $claudeSessionId = "flow-$sessionId"
     }
-} | Out-Null
+} catch {
+    # Ignore errors, will proceed without explicit session tracking
+}
 
 function Get-StoryStats {
     $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
@@ -49,6 +55,9 @@ function Write-Header {
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  Project: $projectName" -ForegroundColor Cyan
     Write-Host "  Session: $sessionId" -ForegroundColor Magenta
+    if ($claudeSessionId) {
+        Write-Host "  Claude Session: $claudeSessionId" -ForegroundColor Magenta
+    }
     Write-Host "  Started: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
     Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - $($stats.Progress)% complete" -ForegroundColor Green
     Write-Host "  Max Iterations: $MaxIterations" -ForegroundColor Gray
@@ -99,6 +108,35 @@ function Write-MaxReached {
 function Remove-SessionFile {
     if (Test-Path $sessionFile) {
         Remove-Item $sessionFile -Force
+    }
+}
+
+function Stop-ClaudeSession {
+    param([string]$SessionId)
+
+    if (-not $SessionId) {
+        return
+    }
+
+    Write-Host "  [INFO] Stopping Claude session..." -ForegroundColor DarkGray
+
+    # Try to stop sessions by filtering for our session
+    try {
+        $sessions = claude session list 2>&1
+        if ($LASTEXITCODE -eq 0 -and $sessions) {
+            # Parse and stop our session
+            $sessions | ForEach-Object {
+                if ($_ -match $SessionId) {
+                    $sessionParts = $_ -split '\s+'
+                    if ($sessionParts.Length -gt 0) {
+                        $actualSessionId = $sessionParts[0]
+                        claude session stop $actualSessionId 2>&1 | Out-Null
+                    }
+                }
+            }
+        }
+    } catch {
+        # Ignore errors stopping session
     }
 }
 
@@ -185,6 +223,7 @@ try {
         if ($result -match "<promise>COMPLETE</promise>") {
             $duration = (Get-Date) - $startTime
             Write-Complete -Iterations $i -Duration $duration
+            Stop-ClaudeSession -SessionId $sessionId
             Remove-SessionFile
             exit 0
         }
@@ -198,9 +237,11 @@ try {
     }
 
     Write-MaxReached -Max $MaxIterations
+    Stop-ClaudeSession -SessionId $sessionId
     Remove-SessionFile
     exit 0
 } finally {
-    # Always cleanup session file
+    # Always cleanup
+    Stop-ClaudeSession -SessionId $sessionId
     Remove-SessionFile
 }
