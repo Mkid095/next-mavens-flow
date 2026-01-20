@@ -6,7 +6,6 @@ param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
 
 $ErrorActionPreference = 'Continue'
 
-# Get project name from directory
 $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 
@@ -74,7 +73,7 @@ function Write-MaxReached {
     Write-Host ""
     Write-Host "┌─────────────────────────────────────────────────────────────────┐" -ForegroundColor Yellow
     Write-Host "│" -NoNewline -ForegroundColor Yellow
-    Write-Host (" ⚠ MAX ITERATIONS REACHED{0,48} " -f "") -NoNewline -ForegroundColor Yellow
+    Write-Host (" [!] MAX ITERATIONS REACHED{0,43} " -f "") -NoNewline -ForegroundColor Yellow
     Write-Host "│" -ForegroundColor Yellow
     Write-Host "│" -NoNewline -ForegroundColor Yellow
     Write-Host (" Run 'flow-continue' to resume{0,48} " -f "") -NoNewline -ForegroundColor Gray
@@ -83,10 +82,9 @@ function Write-MaxReached {
     Write-Host ""
 }
 
-# Main Header
 Write-Header -Title "[CONTINUE] Maven Flow - Continuing"
 
-$PROMPT = @"
+$PROMPT = @'
 You are Maven Flow, an autonomous development agent.
 
 ## Your Task
@@ -105,7 +103,7 @@ When ALL stories are complete, output EXACTLY:
 ## If Not Complete
 
 Do NOT output the signal. Just end your response.
-"@
+'@
 
 for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-IterationHeader -Current $i -Total $MaxIterations

@@ -6,7 +6,6 @@ param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
 
 $ErrorActionPreference = 'Continue'
 
-# Get project name from directory
 $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 
@@ -51,27 +50,6 @@ function Write-IterationHeader {
     Write-Host ""
 }
 
-function Write-Spinner {
-    param([string]$Message, [scriptblock]$Script)
-    $spinners = @('/', '-', '\', '|')
-    $idx = 0
-
-    $job = Start-Job -ScriptBlock $Script
-
-    while ($job.State -eq 'Running') {
-        Write-Host -NoNewline "`r$($spinners[$idx % 4]) $Message "
-        $idx++
-        Start-Sleep -Milliseconds 100
-    }
-
-    Write-Host -NoNewline "`r[OK] $Message "
-    Write-Host ""
-
-    $result = Receive-Job $job
-    Remove-Job $job
-    return $result
-}
-
 function Write-Complete {
     param([int]$Iterations, [timespan]$Duration)
     Write-Host ""
@@ -95,7 +73,7 @@ function Write-MaxReached {
     Write-Host ""
     Write-Host "┌─────────────────────────────────────────────────────────────────┐" -ForegroundColor Yellow
     Write-Host "│" -NoNewline -ForegroundColor Yellow
-    Write-Host (" ⚠ MAX ITERATIONS REACHED{0,48} " -f "") -NoNewline -ForegroundColor Yellow
+    Write-Host (" [!] MAX ITERATIONS REACHED{0,43} " -f "") -NoNewline -ForegroundColor Yellow
     Write-Host "│" -ForegroundColor Yellow
     Write-Host "│" -NoNewline -ForegroundColor Yellow
     Write-Host (" Run 'flow-continue' to resume{0,48} " -f "") -NoNewline -ForegroundColor Gray
@@ -104,10 +82,9 @@ function Write-MaxReached {
     Write-Host ""
 }
 
-# Main Header
 Write-Header -Title "[START] Maven Flow - Starting"
 
-$PROMPT = @"
+$PROMPT = @'
 You are Maven Flow, an autonomous development agent.
 
 ## Your Task
@@ -126,7 +103,7 @@ When ALL stories are complete, output EXACTLY:
 ## If Not Complete
 
 Do NOT output the signal. Just end your response.
-"@
+'@
 
 for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-IterationHeader -Current $i -Total $MaxIterations
