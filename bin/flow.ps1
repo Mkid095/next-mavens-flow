@@ -117,6 +117,10 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host ""
 
     $result = & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | Out-String
+    # Filter out pre-flight warnings and clean up output
+    $result = $result -replace 'node\.exe.*?NativeCommandError[\r\n]*', ''
+    $result = $result -replace '\[BashTool\].*?pre-flight check.*?[\r\n]+', '' -replace 'ΓÜá∩╕Å.*?[\r\n]+', ''
+    $result = $result -replace 'WARNING.*?pre-flight check.*?[\r\n]+', ''
     Write-Host $result
 
     if ($result -match "<promise>COMPLETE</promise>") {
