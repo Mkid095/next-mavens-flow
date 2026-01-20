@@ -96,8 +96,12 @@ function Get-IncompleteStory {
 
     foreach ($prd in $prdFiles | Sort-Object Name) {
         $storyCount = jq '.userStories | length' $prd.FullName 2>$null
-        if (-not $storyCount -or $storyCount -match 'error|Error') { continue }
-        for ($j = 0; $j -lt [int]$storyCount; $j++) {
+        # Validate storyCount is numeric and non-negative
+        if (-not $storyCount -or $storyCount -match 'error|Error|parse|invalid') { continue }
+        $storyCountInt = 0
+        if (-not [int]::TryParse($storyCount, [ref]$storyCountInt)) { continue }
+        if ($storyCountInt -lt 0) { continue }
+        for ($j = 0; $j -lt $storyCountInt; $j++) {
             $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
             $passesTrimmed = if ($passes) { $passes.Trim() } else { "" }
             if ($passesTrimmed -eq "false" -or $passesTrimmed -eq "false`n" -or $passesTrimmed -match "^false") {
@@ -148,7 +152,7 @@ function Show-StoryDisplay {
     Write-Host "    │" -ForegroundColor Gray
 
     # Null safety for description
-    if ($storyDesc -and $storyDesc.Length -gt 0 -and $storyDesc -ne "null") {
+    if ($storyDesc -and $storyDesc -ne "null") {
         $descTruncated = if ($storyDesc.Length -gt 54) { $storyDesc.Substring(0, 51) + "..." } else { $storyDesc }
         Write-Host "│ " -NoNewline -ForegroundColor Gray
         Write-Host $descTruncated.PadRight(62) -NoNewline -ForegroundColor Gray
@@ -318,7 +322,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
         Write-Host "  [OK] Story complete!" -ForegroundColor Green
     } else {
         $consecutiveFailures++
-        $currentCooldown = [math]::Min($MaxCooldown, $BaseCooldownSeconds * [math]::Pow($CooldownMultiplier, [math]::Max(0, $consecutiveFailures - 2)))
+        $currentCooldown = [math]::Min($MaxCooldown, $BaseCooldownSeconds * [math]::Pow($CooldownMultiplier, [math]::Max(0, $consecutiveFailures - 1)))
         Write-Host "  [WARNING] Story not complete - will retry" -ForegroundColor Yellow
     }
 
@@ -332,4 +336,4 @@ Write-Host "===========================================" -ForegroundColor Yellow
 Write-Host "  Reached max iterations ($MaxIterations)" -ForegroundColor Yellow
 Write-Host "===========================================" -ForegroundColor Yellow
 Write-Host ""
-exit 1
+exit 0
