@@ -148,8 +148,9 @@ try {
         }
         $result = $claudeOutput -join "`n"
 
-        # Check for completion signal - multiple patterns
-        if ($result -match "<promise>COMPLETE</promise>" -or $result -match "All PRD user stories are complete" -or $result -match "36/36.*100% complete") {
+        # Check for completion - use story stats instead of hardcoded patterns
+        $stats = Get-StoryStats
+        if ($stats.Completed -eq $stats.Total -and $stats.Total -gt 0) {
             $duration = (Get-Date) - $startTime
             Write-Complete -Iterations $i -Duration $duration
             Remove-SessionFile
