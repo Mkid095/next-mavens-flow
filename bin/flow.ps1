@@ -7,6 +7,18 @@ $ErrorActionPreference = 'Continue'
 
 $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
+$sessionId = "$projectName-" + (New-Guid).Guid.Substring(0, 8)
+$sessionFile = ".flow-session"
+
+# Save session ID to file
+$sessionId | Out-File -FilePath $sessionFile -Encoding UTF8
+
+# Cleanup session file on exit
+Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+    if (Test-Path $sessionFile) {
+        Remove-Item $sessionFile -Force
+    }
+} | Out-Null
 
 function Get-StoryStats {
     $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
@@ -36,6 +48,7 @@ function Write-Header {
     Write-Host "  $Title" -ForegroundColor $Color
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  Project: $projectName" -ForegroundColor Cyan
+    Write-Host "  Session: $sessionId" -ForegroundColor Magenta
     Write-Host "  Started: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
     Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - $($stats.Progress)% complete" -ForegroundColor Green
     Write-Host "  Max Iterations: $MaxIterations" -ForegroundColor Gray
@@ -50,6 +63,7 @@ function Write-IterationHeader {
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host "  Iteration $Current of $Total ($iterPercent%)" -ForegroundColor Yellow
+    Write-Host "  Session: $sessionId" -ForegroundColor Magenta
     Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - Project: $($stats.Progress)%" -ForegroundColor Cyan
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host ""
@@ -61,6 +75,7 @@ function Write-Complete {
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Green
     Write-Host "  [OK] ALL TASKS COMPLETE" -ForegroundColor Green
+    Write-Host "  Session: $sessionId" -ForegroundColor Magenta
     Write-Host "  Stories: $($stats.Total)/$($stats.Total) - 100% complete" -ForegroundColor White
     Write-Host "  Iterations: $Iterations" -ForegroundColor White
     Write-Host "  Duration: $($duration.ToString('hh\:mm\:ss'))" -ForegroundColor White
@@ -74,10 +89,17 @@ function Write-MaxReached {
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host "  [!] MAX ITERATIONS REACHED" -ForegroundColor Yellow
+    Write-Host "  Session: $sessionId" -ForegroundColor Magenta
     Write-Host "  Progress: $($stats.Progress)% ($($stats.Remaining) stories remaining)" -ForegroundColor Cyan
     Write-Host "  Run 'flow-continue' to resume" -ForegroundColor Gray
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host ""
+}
+
+function Remove-SessionFile {
+    if (Test-Path $sessionFile) {
+        Remove-Item $sessionFile -Force
+    }
 }
 
 Write-Header -Title "Maven Flow - Starting"
@@ -110,68 +132,75 @@ Do NOT output the signal. Just end your response.
 - Keep formatting simple and compatible with all terminals
 '@
 
-for ($i = 1; $i -le $MaxIterations; $i++) {
-    Write-IterationHeader -Current $i -Total $MaxIterations
+try {
+    for ($i = 1; $i -le $MaxIterations; $i++) {
+        Write-IterationHeader -Current $i -Total $MaxIterations
 
-    Write-Host "  Starting Claude..." -ForegroundColor Gray
-    Write-Host ""
-
-    $taskStart = Get-Date
-    $claudeStarted = $false
-    
-    # Start Claude in background and show timer
-    $job = Start-Job -ScriptBlock {
-        param($prompt)
-        & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
-    } -ArgumentList $PROMPT
-    
-    # Show running timer with status
-    while ($job.State -eq 'Running') {
-        $totalSeconds = [math]::Floor(((Get-Date) - $taskStart).TotalSeconds)
-        $minutes = [math]::Floor($totalSeconds / 60)
-        $seconds = $totalSeconds % 60
-        
-        if ($minutes -gt 0) {
-            $elapsedStr = "${minutes}m ${seconds}s"
-        } else {
-            $elapsedStr = "${seconds}s"
-        }
-        
-        # Update status after first few seconds
-        if ($totalSeconds -gt 3 -and -not $claudeStarted) {
-            $claudeStarted = $true
-        }
-        
-        if ($claudeStarted) {
-            $status = "[Working]"
-        } else {
-            $status = "[Starting]"
-        }
-        
-        Write-Host -NoNewline "`r  $status [$elapsedStr] "
-        Start-Sleep -Seconds 1
-    }
-    Write-Host ""
-    
-    # Get the result
-    $result = Receive-Job $job
-    Remove-Job $job
-    
-    Write-Host $result
-
-    if ($result -match "<promise>COMPLETE</promise>") {
-        $duration = (Get-Date) - $startTime
-        Write-Complete -Iterations $i -Duration $duration
-        exit 0
-    }
-
-    if ($i -lt $MaxIterations) {
+        Write-Host "  Starting Claude..." -ForegroundColor Gray
         Write-Host ""
-        Write-Host "  Pausing ${SleepSeconds}s..." -ForegroundColor DarkGray
-        Start-Sleep -Seconds $SleepSeconds
+
+        $taskStart = Get-Date
+        $claudeStarted = $false
+
+        # Start Claude in background and show timer
+        $job = Start-Job -ScriptBlock {
+            param($prompt)
+            & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
+        } -ArgumentList $PROMPT
+
+        # Show running timer with status
+        while ($job.State -eq 'Running') {
+            $totalSeconds = [math]::Floor(((Get-Date) - $taskStart).TotalSeconds)
+            $minutes = [math]::Floor($totalSeconds / 60)
+            $seconds = $totalSeconds % 60
+
+            if ($minutes -gt 0) {
+                $elapsedStr = "${minutes}m ${seconds}s"
+            } else {
+                $elapsedStr = "${seconds}s"
+            }
+
+            # Update status after first few seconds
+            if ($totalSeconds -gt 3 -and -not $claudeStarted) {
+                $claudeStarted = $true
+            }
+
+            if ($claudeStarted) {
+                $status = "[Working]"
+            } else {
+                $status = "[Starting]"
+            }
+
+            Write-Host -NoNewline "`r  $status [$elapsedStr] "
+            Start-Sleep -Seconds 1
+        }
         Write-Host ""
+
+        # Get the result
+        $result = Receive-Job $job
+        Remove-Job $job
+
+        Write-Host $result
+
+        if ($result -match "<promise>COMPLETE</promise>") {
+            $duration = (Get-Date) - $startTime
+            Write-Complete -Iterations $i -Duration $duration
+            Remove-SessionFile
+            exit 0
+        }
+
+        if ($i -lt $MaxIterations) {
+            Write-Host ""
+            Write-Host "  Pausing ${SleepSeconds}s..." -ForegroundColor DarkGray
+            Start-Sleep -Seconds $SleepSeconds
+            Write-Host ""
+        }
     }
+
+    Write-MaxReached -Max $MaxIterations
+    Remove-SessionFile
+    exit 0
+} finally {
+    # Always cleanup session file
+    Remove-SessionFile
 }
-
-Write-MaxReached -Max $MaxIterations
-exit 0
