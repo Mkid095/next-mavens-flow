@@ -56,7 +56,7 @@ function Write-Complete {
     Write-Host ""
     Write-Host "┌─────────────────────────────────────────────────────────────────┐" -ForegroundColor Green
     Write-Host "│" -NoNewline -ForegroundColor Green
-    Write-Host (" ✓ ALL TASKS COMPLETE{0,50} " -f "") -NoNewline -ForegroundColor Green
+    Write-Host (" [OK] ALL TASKS COMPLETE{0,46} " -f "") -NoNewline -ForegroundColor Green
     Write-Host "│" -ForegroundColor Green
     Write-Host "├─────────────────────────────────────────────────────────────────┤" -ForegroundColor Green
     Write-Host "│" -NoNewline -ForegroundColor Green
@@ -84,7 +84,7 @@ function Write-MaxReached {
 }
 
 # Main Header
-Write-Header -Title "▶️ Maven Flow - Continuing"
+Write-Header -Title "[CONTINUE] Maven Flow - Continuing"
 
 $PROMPT = @"
 You are Maven Flow, an autonomous development agent.

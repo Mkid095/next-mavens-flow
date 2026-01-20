@@ -53,18 +53,18 @@ function Write-IterationHeader {
 
 function Write-Spinner {
     param([string]$Message, [scriptblock]$Script)
-    $spinners = @('⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏')
+    $spinners = @('/', '-', '\', '|')
     $idx = 0
 
     $job = Start-Job -ScriptBlock $Script
 
     while ($job.State -eq 'Running') {
-        Write-Host -NoNewline "`r$($spinners[$idx % 10]) $Message "
+        Write-Host -NoNewline "`r$($spinners[$idx % 4]) $Message "
         $idx++
         Start-Sleep -Milliseconds 100
     }
 
-    Write-Host -NoNewline "`r✓ $Message "
+    Write-Host -NoNewline "`r[OK] $Message "
     Write-Host ""
 
     $result = Receive-Job $job
@@ -77,7 +77,7 @@ function Write-Complete {
     Write-Host ""
     Write-Host "┌─────────────────────────────────────────────────────────────────┐" -ForegroundColor Green
     Write-Host "│" -NoNewline -ForegroundColor Green
-    Write-Host (" ✓ ALL TASKS COMPLETE{0,50} " -f "") -NoNewline -ForegroundColor Green
+    Write-Host (" [OK] ALL TASKS COMPLETE{0,46} " -f "") -NoNewline -ForegroundColor Green
     Write-Host "│" -ForegroundColor Green
     Write-Host "├─────────────────────────────────────────────────────────────────┤" -ForegroundColor Green
     Write-Host "│" -NoNewline -ForegroundColor Green
@@ -105,7 +105,7 @@ function Write-MaxReached {
 }
 
 # Main Header
-Write-Header -Title "🚀 Maven Flow - Starting"
+Write-Header -Title "[START] Maven Flow - Starting"
 
 $PROMPT = @"
 You are Maven Flow, an autonomous development agent.
