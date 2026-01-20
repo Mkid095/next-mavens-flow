@@ -50,7 +50,7 @@ function Write-IterationHeader {
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host "  Iteration $Current of $Total ($iterPercent%)" -ForegroundColor Yellow
-    Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - Project: $($stats.Progress)%" -ForegroundColor Cyan
+    Write-Host "  Stories: $($stats.Completed)/$stats.Total) ($($stats.Remaining) left) - Project: $($stats.Progress)%" -ForegroundColor Cyan
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host ""
 }
@@ -116,11 +116,32 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     Write-Host "  Executing Claude..." -ForegroundColor Gray
     Write-Host ""
 
-    $result = & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | Out-String
-    # Filter out pre-flight warnings and clean up output
-    $result = $result -replace 'node\.exe.*?NativeCommandError[\r\n]*', ''
-    $result = $result -replace '\[BashTool\].*?pre-flight check.*?[\r\n]+', '' -replace 'ΓÜá∩╕Å.*?[\r\n]+', ''
-    $result = $result -replace 'WARNING.*?pre-flight check.*?[\r\n]+', ''
+    $taskStart = Get-Date
+    
+    # Start Claude in background and show timer
+    $result = ""
+    $job = Start-Job -ScriptBlock {
+        param($prompt)
+        & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
+    } -ArgumentList $PROMPT
+    
+    # Show running timer
+    while ($job.State -eq 'Running') {
+        $elapsed = (Get-Date) - $taskStart
+        $elapsedStr = if ($elapsed.TotalMinutes -gt 0) {
+            "$($elapsed.TotalMinutes)m $($elapsed.Seconds)s"
+        } else {
+            "$($elapsed.Seconds)s"
+        }
+        Write-Host -NoNewline "`r  [$elapsedStr elapsed] "
+        Start-Sleep -Seconds 1
+    }
+    Write-Host ""
+    
+    # Get the result
+    $result = Receive-Job $job
+    Remove-Job $job
+    
     Write-Host $result
 
     if ($result -match "<promise>COMPLETE</promise>") {
