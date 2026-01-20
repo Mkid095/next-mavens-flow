@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Maven Flow - Autonomous Development Orchestrator
 
-param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
+param([int]$MaxIterations = 100, [int]$SleepSeconds = 2, [int]$TaskTimeoutMinutes = 30)
 
 $ErrorActionPreference = 'Continue'
 
@@ -55,9 +55,7 @@ function Write-Header {
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  Project: $projectName" -ForegroundColor Cyan
     Write-Host "  Session: $sessionId" -ForegroundColor Magenta
-    if ($claudeSessionId) {
-        Write-Host "  Claude Session: $claudeSessionId" -ForegroundColor Magenta
-    }
+    Write-Host "  Timeout: ${TaskTimeoutMinutes}min per task" -ForegroundColor Gray
     Write-Host "  Resumed: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
     Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - $($stats.Progress)% complete" -ForegroundColor Green
     Write-Host "  Max Iterations: $MaxIterations" -ForegroundColor Gray
@@ -179,6 +177,8 @@ try {
 
         $taskStart = Get-Date
         $claudeStarted = $false
+        $timeoutSeconds = $TaskTimeoutMinutes * 60
+        $jobTimedOut = $false
 
         # Start Claude in background and show timer
         $job = Start-Job -ScriptBlock {
@@ -210,15 +210,46 @@ try {
             }
 
             Write-Host -NoNewline "`r  $status [$elapsedStr] "
+
+            # Check for timeout
+            if ($totalSeconds -ge $timeoutSeconds) {
+                Write-Host ""
+                Write-Host "  [ERROR] Task timeout after ${TaskTimeoutMinutes} minutes" -ForegroundColor Red
+                Write-Host "  [INFO] Stopping job..." -ForegroundColor Yellow
+                Stop-Job $job -Force
+                $jobTimedOut = $true
+                break
+            }
+
             Start-Sleep -Seconds 1
         }
         Write-Host ""
 
         # Get the result
         $result = Receive-Job $job
-        Remove-Job $job
+        Remove-Job $job -Force
 
-        Write-Host $result
+        if ($jobTimedOut) {
+            Write-Host "  [ERROR] Task timed out. Check Claude status manually." -ForegroundColor Red
+            Write-Host "  [INFO] You can resume with 'flow-continue'" -ForegroundColor Yellow
+            Stop-ClaudeSession -SessionId $sessionId
+            Remove-SessionFile
+            exit 1
+        }
+
+        # Check if job had an error
+        if ($job.State -eq 'Failed') {
+            Write-Host "  [ERROR] Job failed. Error:" -ForegroundColor Red
+            Write-Host $result
+            Stop-ClaudeSession -SessionId $sessionId
+            Remove-SessionFile
+            exit 1
+        }
+
+        # Show result if not empty
+        if ($result -and $result.Trim() -ne "") {
+            Write-Host $result
+        }
 
         if ($result -match "<promise>COMPLETE</promise>") {
             $duration = (Get-Date) - $startTime
