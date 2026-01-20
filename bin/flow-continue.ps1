@@ -41,7 +41,7 @@ function Write-IterationHeader {
     Write-Host "  ┌────────────────────────────────────────────────────────────" -ForegroundColor Yellow
     Write-Host "  │" -NoNewline -ForegroundColor Yellow
     Write-Host (" Iteration {0}/{1} " -f $Current, $Total) -NoNewline -ForegroundColor Yellow
-    Write-Host ("[" -NoNewline -ForegroundColor Gray
+    Write-Host "[" -NoNewline -ForegroundColor Gray
     Write-Host $bar -NoNewline -ForegroundColor Green
     Write-Host "]" -NoNewline -ForegroundColor Gray
     Write-Host (" {0}% " -f $percent) -NoNewline -ForegroundColor Yellow
@@ -123,11 +123,7 @@ for ($i = 1; $i -le $MaxIterations; $i++) {
     if ($i -lt $MaxIterations) {
         Write-Host ""
         Write-Host "  Pausing ${SleepSeconds}s before next iteration..." -ForegroundColor DarkGray
-        for ($s = $SleepSeconds; $s -gt 0; $s--) {
-            Write-Host "    [$s] " -NoNewline
-            Start-Sleep -Seconds 1
-        }
-        Write-Host ""
+        Start-Sleep -Seconds $SleepSeconds
         Write-Host ""
     }
 }
