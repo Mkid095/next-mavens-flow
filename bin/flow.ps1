@@ -140,13 +140,13 @@ try {
         Write-Host "  Starting Claude..." -ForegroundColor Gray
         Write-Host ""
 
-        # Just run Claude directly like bash does
-        $result = & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | Out-String
-
-        # Show result if not empty
-        if ($result -and $result.Trim() -ne "") {
-            Write-Host $result
+        # Stream output in real-time AND capture it for pattern matching
+        $claudeOutput = @()
+        & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | ForEach-Object {
+            Write-Host $_
+            $claudeOutput += $_
         }
+        $result = $claudeOutput -join "`n"
 
         if ($result -match "<promise>COMPLETE</promise>") {
             $duration = (Get-Date) - $startTime
