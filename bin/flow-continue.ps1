@@ -8,14 +8,35 @@ $ErrorActionPreference = 'Continue'
 $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 
+function Get-StoryStats {
+    $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
+    $totalStories = 0
+    $completedStories = 0
+
+    foreach ($prd in $prdFiles) {
+        $count = jq '.userStories | length' $prd.FullName 2>$null
+        if ($count) {
+            $totalStories += [int]$count
+        }
+        $complete = jq '[.userStories[] | select(.passes == true)] | length' $prd.FullName 2>$null
+        if ($complete) {
+            $completedStories += [int]$complete
+        }
+    }
+
+    return @{ Total = $totalStories; Completed = $completedStories; Remaining = $totalStories - $completedStories }
+}
+
 function Write-Header {
     param([string]$Title, [string]$Color = "Cyan")
+    $stats = Get-StoryStats
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  $Title" -ForegroundColor $Color
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  Project: $projectName" -ForegroundColor Cyan
     Write-Host "  Resumed: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
+    Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) remaining)" -ForegroundColor Green
     Write-Host "  Max Iterations: $MaxIterations" -ForegroundColor Gray
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host ""
@@ -23,19 +44,23 @@ function Write-Header {
 
 function Write-IterationHeader {
     param([int]$Current, [int]$Total)
+    $stats = Get-StoryStats
     $percent = [math]::Round(($Current / $Total) * 100)
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host "  Iteration $Current of $Total ($percent%)" -ForegroundColor Yellow
+    Write-Host "  Stories: $($stats.Completed)/$($stats.Total) - $($stats.Remaining) left" -ForegroundColor Cyan
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host ""
 }
 
 function Write-Complete {
     param([int]$Iterations, [timespan]$Duration)
+    $stats = Get-StoryStats
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Green
     Write-Host "  [OK] ALL TASKS COMPLETE" -ForegroundColor Green
+    Write-Host "  Stories: $($stats.Total)/$($stats.Total)" -ForegroundColor White
     Write-Host "  Iterations: $Iterations" -ForegroundColor White
     Write-Host "  Duration: $($duration.ToString('hh\:mm\:ss'))" -ForegroundColor White
     Write-Host "===========================================" -ForegroundColor Green
@@ -44,9 +69,11 @@ function Write-Complete {
 
 function Write-MaxReached {
     param([int]$Max)
+    $stats = Get-StoryStats
     Write-Host ""
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host "  [!] MAX ITERATIONS REACHED" -ForegroundColor Yellow
+    Write-Host "  Stories remaining: $($stats.Remaining)" -ForegroundColor Cyan
     Write-Host "  Run 'flow-continue' to resume" -ForegroundColor Gray
     Write-Host "===========================================" -ForegroundColor Yellow
     Write-Host ""
