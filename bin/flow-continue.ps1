@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Maven Flow - Autonomous Development Orchestrator
 
-param([int]$MaxIterations = 100, [int]$SleepSeconds = 2, [int]$TaskTimeoutMinutes = 30)
+param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
 
 $ErrorActionPreference = 'Continue'
 
@@ -9,19 +9,16 @@ $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 $sessionId = "$projectName-" + (New-Guid).Guid.Substring(0, 8)
 $sessionFile = ".flow-session"
-$claudeSessionId = $null
 
 # Save session ID to file
 $sessionId | Out-File -FilePath $sessionFile -Encoding UTF8
 
-# Get or create Claude session
-try {
-    $sessionList = claude session list 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        $claudeSessionId = "flow-$sessionId"
-    }
-} catch {
-    # Ignore errors
+# Check if claude is available
+$claudeExe = Get-Command "claude" -ErrorAction SilentlyContinue
+if (-not $claudeExe) {
+    Write-Host "  [ERROR] Claude CLI not found in PATH" -ForegroundColor Red
+    Write-Host "  [INFO] Install with: npm install -g @anthropic-ai/claude-code" -ForegroundColor Yellow
+    exit 1
 }
 
 function Get-StoryStats {
@@ -44,25 +41,6 @@ function Get-StoryStats {
     return @{ Total = $totalStories; Completed = $completedStories; Remaining = $totalStories - $completedStories; Progress = $progress }
 }
 
-function Get-FileSnapshot {
-    $files = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
-             Where-Object {
-                 $_.FullName -notmatch '\\\.git\\' -and
-                 $_.FullName -notmatch '\\node_modules\\' -and
-                 $_.FullName -notmatch '\\\.next\\' -and
-                 $_.FullName -notmatch '\\\.turbo\\' -and
-                 $_.FullName -notmatch '\\dist\\' -and
-                 $_.FullName -notmatch '\\build\\'
-             } |
-             ForEach-Object {
-                 [PSCustomObject]@{
-                     Path = $_.FullName
-                     Hash = (Get-FileHash -Path $_.FullName -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
-                 }
-             }
-    return $files
-}
-
 function Write-Header {
     param([string]$Title, [string]$Color = "Cyan")
     $stats = Get-StoryStats
@@ -72,7 +50,6 @@ function Write-Header {
     Write-Host "===========================================" -ForegroundColor $Color
     Write-Host "  Project: $projectName" -ForegroundColor Cyan
     Write-Host "  Session: $sessionId" -ForegroundColor Magenta
-    Write-Host "  Timeout: ${TaskTimeoutMinutes}min per task" -ForegroundColor Gray
     Write-Host "  Resumed: $($startTime.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Gray
     Write-Host "  Stories: $($stats.Completed)/$($stats.Total) ($($stats.Remaining) left) - $($stats.Progress)% complete" -ForegroundColor Green
     Write-Host "  Max Iterations: $MaxIterations" -ForegroundColor Gray
@@ -126,33 +103,6 @@ function Remove-SessionFile {
     }
 }
 
-function Stop-ClaudeSession {
-    param([string]$SessionId)
-
-    if (-not $SessionId) {
-        return
-    }
-
-    Write-Host "  [INFO] Stopping Claude session..." -ForegroundColor DarkGray
-
-    try {
-        $sessions = claude session list 2>&1
-        if ($LASTEXITCODE -eq 0 -and $sessions) {
-            $sessions | ForEach-Object {
-                if ($_ -match $SessionId) {
-                    $sessionParts = $_ -split '\s+'
-                    if ($sessionParts.Length -gt 0) {
-                        $actualSessionId = $sessionParts[0]
-                        claude session stop $actualSessionId 2>&1 | Out-Null
-                    }
-                }
-            }
-        }
-    } catch {
-        # Ignore errors
-    }
-}
-
 Write-Header -Title "Maven Flow - Continuing"
 
 $PROMPT = @'
@@ -190,124 +140,8 @@ try {
         Write-Host "  Starting Claude..." -ForegroundColor Gray
         Write-Host ""
 
-        $taskStart = Get-Date
-        $claudeStarted = $false
-        $timeoutSeconds = $TaskTimeoutMinutes * 60
-        $jobTimedOut = $false
-        $lastActivityCount = 0
-        $noActivityCount = 0
-
-        # Get initial file snapshot
-        $initialSnapshot = Get-FileSnapshot
-        $initialFileCount = ($initialSnapshot | Measure-Object).Count
-
-        # Start Claude in background
-        $job = Start-Job -ScriptBlock {
-            param($prompt)
-            & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
-        } -ArgumentList $PROMPT
-
-        # Show running timer with status and file activity
-        while ($job.State -eq 'Running') {
-            $totalSeconds = [math]::Floor(((Get-Date) - $taskStart).TotalSeconds)
-            $minutes = [math]::Floor($totalSeconds / 60)
-            $seconds = $totalSeconds % 60
-
-            if ($minutes -gt 0) {
-                $elapsedStr = "${minutes}m ${seconds}s"
-            } else {
-                $elapsedStr = "${seconds}s"
-            }
-
-            # Update status after first few seconds
-            if ($totalSeconds -gt 3 -and -not $claudeStarted) {
-                $claudeStarted = $true
-            }
-
-            if ($claudeStarted) {
-                $status = "[Working]"
-
-                # Check for file activity every 10 seconds
-                if ($totalSeconds % 10 -eq 0 -and $totalSeconds -gt 0) {
-                    $currentSnapshot = Get-FileSnapshot
-                    $currentFileCount = ($currentSnapshot | Measure-Object).Count
-
-                    # Compare hashes to detect actual changes
-                    $changedFiles = 0
-                    foreach ($file in $currentSnapshot) {
-                        $initialFile = $initialSnapshot | Where-Object { $_.Path -eq $file.Path }
-                        if ($initialFile) {
-                            if ($initialFile.Hash -ne $file.Hash) {
-                                $changedFiles++
-                            }
-                        }
-                    }
-
-                    if ($changedFiles -gt 0 -or $currentFileCount -ne $initialFileCount) {
-                        $lastActivityCount = $totalSeconds
-                        $noActivityCount = 0
-                        $activityStr = " | Files: YES"
-                    } else {
-                        $noActivityCount++
-                        $inactiveSeconds = $totalSeconds - $lastActivityCount
-                        if ($inactiveSeconds -gt 60) {
-                            $inactiveMin = [math]::Floor($inactiveSeconds / 60)
-                            $activityStr = " | Files: NO (${inactiveMin}m inactive)"
-                        } else {
-                            $activityStr = " | Files: ..."
-                        }
-                    }
-                } else {
-                    $activityStr = ""
-                }
-            } else {
-                $status = "[Starting]"
-                $activityStr = ""
-            }
-
-            Write-Host -NoNewline "`r  $status [$elapsedStr]$activityStr "
-
-            # Check for timeout
-            if ($totalSeconds -ge $timeoutSeconds) {
-                Write-Host ""
-                Write-Host "  [ERROR] Task timeout after ${TaskTimeoutMinutes} minutes" -ForegroundColor Red
-                Write-Host "  [INFO] Stopping job..." -ForegroundColor Yellow
-                Stop-Job $job -Force
-                $jobTimedOut = $true
-                break
-            }
-
-            # Warning if no activity for 5 minutes
-            if ($noActivityCount -ge 30 -and $totalSeconds -gt 300) {
-                Write-Host ""
-                Write-Host "  [WARNING] No file activity for 5+ minutes. Claude may be stuck." -ForegroundColor Yellow
-                $noActivityCount = 0
-            }
-
-            Start-Sleep -Seconds 1
-        }
-        Write-Host ""
-
-        # Get the result
-        $result = Receive-Job $job
-        Remove-Job $job -Force
-
-        if ($jobTimedOut) {
-            Write-Host "  [ERROR] Task timed out. Check Claude status manually." -ForegroundColor Red
-            Write-Host "  [INFO] You can resume with 'flow-continue'" -ForegroundColor Yellow
-            Stop-ClaudeSession -SessionId $sessionId
-            Remove-SessionFile
-            exit 1
-        }
-
-        # Check if job had an error
-        if ($job.State -eq 'Failed') {
-            Write-Host "  [ERROR] Job failed. Error:" -ForegroundColor Red
-            Write-Host $result
-            Stop-ClaudeSession -SessionId $sessionId
-            Remove-SessionFile
-            exit 1
-        }
+        # Just run Claude directly like bash does
+        $result = & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | Out-String
 
         # Show result if not empty
         if ($result -and $result.Trim() -ne "") {
@@ -317,7 +151,6 @@ try {
         if ($result -match "<promise>COMPLETE</promise>") {
             $duration = (Get-Date) - $startTime
             Write-Complete -Iterations $i -Duration $duration
-            Stop-ClaudeSession -SessionId $sessionId
             Remove-SessionFile
             exit 0
         }
@@ -331,10 +164,8 @@ try {
     }
 
     Write-MaxReached -Max $MaxIterations
-    Stop-ClaudeSession -SessionId $sessionId
     Remove-SessionFile
     exit 0
 } finally {
-    Stop-ClaudeSession -SessionId $sessionId
     Remove-SessionFile
 }
