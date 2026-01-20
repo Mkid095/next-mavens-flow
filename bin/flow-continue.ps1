@@ -18,12 +18,10 @@ $sessionId | Out-File -FilePath $sessionFile -Encoding UTF8
 try {
     $sessionList = claude session list 2>&1
     if ($LASTEXITCODE -eq 0) {
-        # Parse the session list to find active sessions
-        # We'll create a new session for this flow run
         $claudeSessionId = "flow-$sessionId"
     }
 } catch {
-    # Ignore errors, will proceed without explicit session tracking
+    # Ignore errors
 }
 
 function Get-StoryStats {
@@ -44,6 +42,25 @@ function Get-StoryStats {
 
     $progress = if ($totalStories -gt 0) { [math]::Round(($completedStories / $totalStories) * 100) } else { 0 }
     return @{ Total = $totalStories; Completed = $completedStories; Remaining = $totalStories - $completedStories; Progress = $progress }
+}
+
+function Get-FileSnapshot {
+    $files = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
+             Where-Object {
+                 $_.FullName -notmatch '\\\.git\\' -and
+                 $_.FullName -notmatch '\\node_modules\\' -and
+                 $_.FullName -notmatch '\\\.next\\' -and
+                 $_.FullName -notmatch '\\\.turbo\\' -and
+                 $_.FullName -notmatch '\\dist\\' -and
+                 $_.FullName -notmatch '\\build\\'
+             } |
+             ForEach-Object {
+                 [PSCustomObject]@{
+                     Path = $_.FullName
+                     Hash = (Get-FileHash -Path $_.FullName -Algorithm MD5 -ErrorAction SilentlyContinue).Hash
+                 }
+             }
+    return $files
 }
 
 function Write-Header {
@@ -118,11 +135,9 @@ function Stop-ClaudeSession {
 
     Write-Host "  [INFO] Stopping Claude session..." -ForegroundColor DarkGray
 
-    # Try to stop sessions by filtering for our session
     try {
         $sessions = claude session list 2>&1
         if ($LASTEXITCODE -eq 0 -and $sessions) {
-            # Parse and stop our session
             $sessions | ForEach-Object {
                 if ($_ -match $SessionId) {
                     $sessionParts = $_ -split '\s+'
@@ -134,7 +149,7 @@ function Stop-ClaudeSession {
             }
         }
     } catch {
-        # Ignore errors stopping session
+        # Ignore errors
     }
 }
 
@@ -179,14 +194,20 @@ try {
         $claudeStarted = $false
         $timeoutSeconds = $TaskTimeoutMinutes * 60
         $jobTimedOut = $false
+        $lastActivityCount = 0
+        $noActivityCount = 0
 
-        # Start Claude in background and show timer
+        # Get initial file snapshot
+        $initialSnapshot = Get-FileSnapshot
+        $initialFileCount = ($initialSnapshot | Measure-Object).Count
+
+        # Start Claude in background
         $job = Start-Job -ScriptBlock {
             param($prompt)
             & claude --dangerously-skip-permissions -p $prompt 2>&1 | Out-String
         } -ArgumentList $PROMPT
 
-        # Show running timer with status
+        # Show running timer with status and file activity
         while ($job.State -eq 'Running') {
             $totalSeconds = [math]::Floor(((Get-Date) - $taskStart).TotalSeconds)
             $minutes = [math]::Floor($totalSeconds / 60)
@@ -205,11 +226,46 @@ try {
 
             if ($claudeStarted) {
                 $status = "[Working]"
+
+                # Check for file activity every 10 seconds
+                if ($totalSeconds % 10 -eq 0 -and $totalSeconds -gt 0) {
+                    $currentSnapshot = Get-FileSnapshot
+                    $currentFileCount = ($currentSnapshot | Measure-Object).Count
+
+                    # Compare hashes to detect actual changes
+                    $changedFiles = 0
+                    foreach ($file in $currentSnapshot) {
+                        $initialFile = $initialSnapshot | Where-Object { $_.Path -eq $file.Path }
+                        if ($initialFile) {
+                            if ($initialFile.Hash -ne $file.Hash) {
+                                $changedFiles++
+                            }
+                        }
+                    }
+
+                    if ($changedFiles -gt 0 -or $currentFileCount -ne $initialFileCount) {
+                        $lastActivityCount = $totalSeconds
+                        $noActivityCount = 0
+                        $activityStr = " | Files: YES"
+                    } else {
+                        $noActivityCount++
+                        $inactiveSeconds = $totalSeconds - $lastActivityCount
+                        if ($inactiveSeconds -gt 60) {
+                            $inactiveMin = [math]::Floor($inactiveSeconds / 60)
+                            $activityStr = " | Files: NO (${inactiveMin}m inactive)"
+                        } else {
+                            $activityStr = " | Files: ..."
+                        }
+                    }
+                } else {
+                    $activityStr = ""
+                }
             } else {
                 $status = "[Starting]"
+                $activityStr = ""
             }
 
-            Write-Host -NoNewline "`r  $status [$elapsedStr] "
+            Write-Host -NoNewline "`r  $status [$elapsedStr]$activityStr "
 
             # Check for timeout
             if ($totalSeconds -ge $timeoutSeconds) {
@@ -219,6 +275,13 @@ try {
                 Stop-Job $job -Force
                 $jobTimedOut = $true
                 break
+            }
+
+            # Warning if no activity for 5 minutes
+            if ($noActivityCount -ge 30 -and $totalSeconds -gt 300) {
+                Write-Host ""
+                Write-Host "  [WARNING] No file activity for 5+ minutes. Claude may be stuck." -ForegroundColor Yellow
+                $noActivityCount = 0
             }
 
             Start-Sleep -Seconds 1
@@ -272,7 +335,6 @@ try {
     Remove-SessionFile
     exit 0
 } finally {
-    # Always cleanup
     Stop-ClaudeSession -SessionId $sessionId
     Remove-SessionFile
 }
