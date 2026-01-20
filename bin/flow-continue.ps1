@@ -91,7 +91,7 @@ You are Maven Flow, an autonomous development agent.
 2. Implement that story completely
 3. Update the PRD to mark it complete (set "passes": true)
 4. Run tests: pnpm run typecheck
-5. Commit: git add . && git commit -m "feat: [story-id] [description]"
+5. Commit: git add . && git commit -m "feat: [story-id] [description]" -m "Co-Authored-By: Next Mavens Flow <flow@nextmavens.com>"
 
 ## Completion Signal
 
