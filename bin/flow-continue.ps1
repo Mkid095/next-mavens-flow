@@ -104,7 +104,8 @@ function Get-IncompleteStory {
         for ($j = 0; $j -lt $storyCountInt; $j++) {
             $passes = jq ".userStories[$j].passes" $prd.FullName 2>$null
             $passesTrimmed = if ($passes) { $passes.Trim() } else { "" }
-            if ($passesTrimmed -eq "false" -or $passesTrimmed -eq "false`n" -or $passesTrimmed -match "^false") {
+            # Case-insensitive check for "false" (defensive programming)
+            if ($passesTrimmed -ieq "false" -or $passesTrimmed -ieq "false`n" -or $passesTrimmed -imatch "^false") {
                 $storyData = jq ".userStories[$j]" $prd.FullName 2>$null
                 $storyId = jq -r ".userStories[$j].id" $prd.FullName 2>$null
                 # Null safety for storyId

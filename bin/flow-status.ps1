@@ -20,17 +20,22 @@ $totalCompleted = 0
 foreach ($prd in $prdFiles | Sort-Object Name) {
     $featureName = $prd.Name -replace "prd-", "" -replace ".json", ""
     $storyCount = jq '.userStories | length' $prd.FullName 2>$null
-    if (-not $storyCount -or $storyCount -match 'error|Error') { continue }
-    $totalStories += [int]$storyCount
+    # Validate storyCount is numeric and non-negative (matches Get-IncompleteStory logic)
+    if (-not $storyCount -or $storyCount -match 'error|Error|parse|invalid') { continue }
+    $storyCountInt = 0
+    if (-not [int]::TryParse($storyCount, [ref]$storyCountInt)) { continue }
+    if ($storyCountInt -lt 0) { continue }
+    $totalStories += $storyCountInt
 
     $completedCount = 0
     $currentStoryData = $null
 
-    for ($j = 0; $j -lt [int]$storyCount; $j++) {
+    for ($j = 0; $j -lt $storyCountInt; $j++) {
         $passesOutput = jq ".userStories[$j].passes" $prd.FullName 2>$null
         $passesTrimmed = if ($passesOutput) { $passesOutput.Trim() } else { "" }
         # Story is complete if passes is NOT "false" (matches Get-IncompleteStory logic)
-        $isComplete = -not ($passesTrimmed -eq "false" -or $passesTrimmed -eq "false`n" -or $passesTrimmed -match "^false")
+        # Case-insensitive check for "false" (defensive programming)
+        $isComplete = -not ($passesTrimmed -ieq "false" -or $passesTrimmed -ieq "false`n" -or $passesTrimmed -imatch "^false")
         if ($isComplete) {
             $completedCount++
             $totalCompleted++
@@ -42,12 +47,12 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
     }
 
     # Display progress bar
-    $progressPct = if ([int]$storyCount -gt 0) { [math]::Round(($completedCount / [int]$storyCount) * 100) } else { 0 }
+    $progressPct = if ($storyCountInt -gt 0) { [math]::Round(($completedCount / $storyCountInt) * 100) } else { 0 }
 
-    if ($completedCount -eq [int]$storyCount) {
-        $statusText = "COMPLETE ($completedCount/$storyCount) "
+    if ($completedCount -eq $storyCountInt) {
+        $statusText = "COMPLETE ($completedCount/$storyCountInt) "
         $featureDisplay = if ($featureName.Length -gt 48) { $featureName.Substring(0, 45) + "..." } else { $featureName }
-        $countDisplay = "$completedCount/$storyCount"
+        $countDisplay = "$completedCount/$storyCountInt"
         Write-Host "┌────────────────────────────────────────────────────────────────────┐" -ForegroundColor Green
         Write-Host "│ " -NoNewline -ForegroundColor Green
         Write-Host "✓ $featureDisplay" -NoNewline -ForegroundColor Green
@@ -57,7 +62,7 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
         Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Green
     } else {
         $barLength = 30
-        $filled = [math]::Floor($barLength * $completedCount / [int]$storyCount)
+        $filled = [math]::Floor($barLength * $completedCount / $storyCountInt)
         $empty = $barLength - $filled
         $progressBar = "█" * $filled + "░" * $empty
 
@@ -69,9 +74,9 @@ foreach ($prd in $prdFiles | Sort-Object Name) {
         Write-Host " " -NoNewline
         Write-Host "$progressPct%" -NoNewline -ForegroundColor Cyan
         Write-Host " (" -NoNewline -ForegroundColor Gray
-        Write-Host "$completedCount/$storyCount" -NoNewline -ForegroundColor Gray
+        Write-Host "$completedCount/$storyCountInt" -NoNewline -ForegroundColor Gray
         Write-Host ")" -NoNewline -ForegroundColor Gray
-        Write-Host (" " * [math]::Max(0, 12 - "$completedCount/$storyCount".Length)) -NoNewline
+        Write-Host (" " * [math]::Max(0, 12 - "$completedCount/$storyCountInt".Length)) -NoNewline
         Write-Host "│" -ForegroundColor Cyan
         Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
 
