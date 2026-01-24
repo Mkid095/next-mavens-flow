@@ -123,7 +123,7 @@ for target_rel in "${!MANIFEST_FILES[@]}"; do
                 fi
 
                 safe_copy "$src" "$dest"
-                MANAGED_FILES+=("$(cd "$dest" && pwd)")
+                MANAGED_FILES+=("$(realpath "$dest" 2>/dev/null || readlink -f "$dest" 2>/dev/null || echo "$dest")")
             fi
         done
     fi
@@ -151,7 +151,7 @@ for dir in "${MANIFEST_DIRS[@]}"; do
 
     for file in "$full_dir"/*; do
         if [ -f "$file" ]; then
-            real_path="$(cd "$file" && pwd)"
+            real_path="$(realpath "$file" 2>/dev/null || readlink -f "$file" 2>/dev/null || echo "$file")"
             # Check if file is in managed list
             is_managed=false
             for managed in "${MANAGED_FILES[@]}"; do
