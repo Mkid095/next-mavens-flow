@@ -137,11 +137,159 @@ Now continue with the standard flow:
 4. For each incomplete story (in priority order):
 
    **MEMORY LOADING PHASE:**
-   - Read PRD's `relatedPRDs` array
-   - Load consolidated memory from each related PRD (if any)
-   - Pre-analyze and summarize relevant sections (~3-5K tokens)
-   - Load previous story memories from same PRD (~10K tokens)
-   - Create story session with proper context structure
+
+   **CRITICAL: Before spawning any agents, you MUST load memory context.**
+
+   **Step 1: Read PRD's relatedPRDs array**
+   ```bash
+   # Extract relatedPRDs from the PRD JSON
+   cat docs/prd-[feature].json | jq '.relatedPRDs'
+   ```
+
+   **Step 2: Load consolidated memory from each related PRD (if any)**
+
+   For each related PRD in the array:
+   1. **Find the consolidated memory file:**
+      ```bash
+      # Related PRD: docs/prd-auth.json
+      # Load: docs/consolidated-auth.txt
+      ```
+   2. **Read and extract relevant sections:**
+      ```bash
+      cat docs/consolidated-[feature].txt
+      ```
+   3. **Pre-analyze and summarize** (~3-5K tokens per related PRD):
+      - Architecture decisions (tech stack, structure)
+      - Integration patterns (authentication, database, API)
+      - Public interfaces (endpoints, components)
+      - Key lessons learned
+
+   **Build consolidated memory summary:**
+   ```
+   RELATED_PRD_CONTEXT = {
+     prd-auth.json: {
+       architecture: [tech stack, structure],
+       integration: [auth patterns, API endpoints],
+       lessons: [key learnings]
+     },
+     prd-products.json: {
+       architecture: [data models],
+       integration: [product API endpoints],
+       lessons: [database patterns]
+     }
+   }
+   ```
+
+   **Step 3: Load previous story memories from same PRD**
+
+   Execute:
+   ```bash
+   find docs/[feature]/story-*.txt -type f | sort
+   ```
+
+   For each story memory file (~10K tokens total):
+   1. **Read the story memory file**
+   2. **Extract:**
+      - What was implemented (files, components, functions)
+      - Key decisions made
+      - Challenges resolved
+      - Integration points
+      - Lessons learned
+
+   **Build story memory summary:**
+   ```
+   PREVIOUS_STORIES_CONTEXT = {
+     "US-001": {
+       implemented: [database schema, API endpoints],
+       decisions: [used Supabase MCP for direct DB access],
+       integration: [connected to auth feature]
+     },
+     "US-002": {
+       implemented: [UI components, forms],
+       decisions: [used centralized Form component],
+       lessons: [test with real data, not mocks]
+     }
+   }
+   ```
+
+   **Step 4: Build story session with proper context structure**
+
+   When spawning each agent, include:
+
+   ```
+   ## CONTEXT FOR CURRENT STORY
+
+   ### From Related PRDs:
+   - [prd-auth.json]: Authentication uses Supabase Auth with RLS
+   - [prd-products.json]: Product data accessed via /api/products/*
+
+   ### From Previous Stories:
+   - [US-001]: Database schema uses 'status' enum column
+   - [US-002]: UI components centralized in @shared/ui
+
+   ### Current Story:
+   - Story: US-003
+   - Task: [story description]
+   - Acceptance Criteria: [from PRD]
+   ```
+
+   **Step 5: Inject context into agent prompts**
+
+   For each mavenStep, when spawning the agent:
+   1. **Include PRD JSON** (story description, acceptance criteria)
+   2. **Include relatedPRDs context** (architecture, integration patterns)
+   3. **Include previous stories context** (decisions, patterns)
+   4. **Specify MCPs to use** (from mcpTools.step[N])
+
+   **Example agent prompt with context:**
+   ```
+   @development-agent
+
+   You are working on Step 1 of Maven Workflow for story: US-003 - Add task filtering
+
+   PRD: docs/prd-task-management.json
+   MCPs to use for this step: supabase
+
+   ## CONTEXT FROM RELATED FEATURES:
+
+   ### Authentication (prd-auth.json):
+   - Auth provider: Supabase Auth
+   - User ID accessed via: auth.getUser()
+   - RLS policies filter by user_id automatically
+
+   ### Products (prd-products.json):
+   - Product API: /api/products (GET, POST, PUT, DELETE)
+   - Data model: { id, name, price, status }
+
+   ## CONTEXT FROM PREVIOUS STORIES:
+
+   ### US-001: Database schema
+   - Table: tasks (id, title, status, user_id, created_at)
+   - Status enum: 'pending', 'in_progress', 'completed'
+   - Decision: Used Supabase MCP for direct schema creation
+
+   ### US-002: UI components
+   - Form component: @shared/ui/Form
+   - Input component: @shared/ui/Input
+   - Decision: Centralize reusable UI components
+
+   ## YOUR TASK (Step 1 - Foundation):
+
+   [Detailed step requirements from PRD acceptance criteria]
+
+   ## QUALITY STANDARDS (ZERO TOLERANCE):
+   - No 'any' types - use proper TypeScript
+   - No gradients - use solid professional colors
+   - No relative imports - use @/ aliases
+   - Components < 300 lines
+
+   When complete, output: [STEP_COMPLETE]
+   ```
+
+   **⚠️ CRITICAL:** Do NOT skip memory loading. Agents need context from:
+   - Related PRDs (how to integrate)
+   - Previous stories (patterns to follow)
+   - Architecture decisions (what already exists)
 
    **IMPLEMENTATION PHASE:**
    - Read story's mavenSteps array
