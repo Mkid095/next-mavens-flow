@@ -53,22 +53,18 @@ When you execute `/flow start` or `/flow continue`:
 
 ## EXACT EXECUTION INSTRUCTIONS (READ CAREFULLY):
 
-**You MUST use the Task tool to spawn specialist agents. Follow these exact steps:**
+**You MUST invoke specialist agents using the @agent-name syntax. Each agent runs in its own isolated context window.**
 
-### For each story, execute each mavenStep by calling:
+### For each story, execute each mavenStep by invoking the appropriate agent:
 
 **Step 1, 2, 7, 9 (Development):**
-```bash
-Task tool → development-agent
-Description: [Story title] - Step [N]
-Prompt:
-You are the Maven Development Agent working on Step [N] of Maven Workflow.
+```
+@development-agent
 
-STORY: [US-XXX - Story title]
+You are working on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 
-PRD: [docs/prd-[feature].json]
-
-MCPs to use for this step: [from mcpTools]
+PRD: docs/prd-[feature].json
+MCPs to use for this step: [from mcpTools.mcpTools.step[N]]
 
 ## Your Task (Step [N]):
 [Detailed step requirements from PRD acceptance criteria]
@@ -83,28 +79,27 @@ When complete, output: [STEP_COMPLETE]
 ```
 
 **Step 3, 4, 6 (Refactor):**
-```bash
-Task tool → refactor-agent
-Description: [Story title] - Step [N]
+```
+@refactor-agent
 [Same prompt structure as above]
 ```
 
 **Step 5 (Quality):**
-```bash
-Task tool → quality-agent
-[Same prompt structure]
+```
+@quality-agent
+[Same prompt structure as above]
 ```
 
 **Step 8, 10 (Security):**
-```bash
-Task tool → security-agent
-[Same prompt structure]
+```
+@security-agent
+[Same prompt structure as above]
 ```
 
 **Step 11 (Design):**
-```bash
-Task tool → design-agent
-[Same prompt structure]
+```
+@design-agent
+[Same prompt structure as above]
 ```
 
 ### Wait for agent completion before proceeding to next step
@@ -151,12 +146,12 @@ Now continue with the standard flow:
    **IMPLEMENTATION PHASE:**
    - Read story's mavenSteps array
    - Read story's mcpTools (if specified for each step)
-   - **Spawn specialist agents directly:**
-     - Step 1, 2, 7, 9 → Task(subagent_type="development-agent")
-     - Step 3, 4, 6 → Task(subagent_type="refactor-agent")
-     - Step 5 → Task(subagent_type="quality-agent")
-     - Step 8, 10 → Task(subagent_type="security-agent")
-     - Step 11 → Task(subagent_type="design-agent") [optional, for mobile apps]
+   - **Spawn specialist agents using @agent-name syntax:**
+     - Step 1, 2, 7, 9 → @development-agent
+     - Step 3, 4, 6 → @refactor-agent
+     - Step 5 → @quality-agent
+     - Step 8, 10 → @security-agent
+     - Step 11 → @design-agent [optional, for mobile apps]
    - **Tell agent which MCPs to use with EXPLICIT INSTRUCTIONS at the start of prompt:**
      ```
      *** CRITICAL: MCP TOOLS INSTRUCTION ***
