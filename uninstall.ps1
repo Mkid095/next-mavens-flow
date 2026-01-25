@@ -3,7 +3,6 @@
 # ============================================================================
 # Removes Maven Flow components from Claude folders
 # ============================================================================
-
 #Requires -Version 5.0
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -13,7 +12,7 @@ $ErrorActionPreference = "Stop"
 # -------------------------
 $HomeClaude = Join-Path $env:USERPROFILE ".claude"
 
-# Maven Flow files to remove
+# Maven Flow files to remove (updated 2026)
 $FlowAgents = @(
     "development.md",
     "quality.md",
@@ -29,14 +28,13 @@ $FlowAgents = @(
 $FlowCommands = @(
     "flow.md",
     "flow-prd.md",
-    "flow-convert.md",
-    "flow-update.md",
-    "flow-mobile.md"
+    "consolidate-memory.md",
+    "create-story-memory.md",
+    "flow-convert.md"
 )
 
 $FlowSkillsSubdirs = @(
     "workflow",
-    "flow-prd",
     "flow-convert"
 )
 
@@ -45,21 +43,41 @@ $FlowSkillFiles = @(
 )
 
 $FlowHooks = @(
-    "pre-task-flow-validation.js"
+    "session-save.sh",
+    "session-restore.sh",
+    "pre-task-flow-validation.js",
+    "agent-selector.js",
+    "dependency-graph.js",
+    "error-reporter.js",
+    "memory-cache.js",
+    "path-utils.js",
+    "prd-utils.js",
+    "toon-compress.js",
+    "retry-manager.js"
 )
 
 $FlowScripts = @(
     "flow.sh",
     "flow-prd.sh",
     "flow-convert.sh",
-    "flow-update.sh",
     "flow-install-global.sh",
     "flow-uninstall-global.sh",
+    "flow-sync.sh",
+    "flow-status.sh",
+    "flow-continue.sh",
+    "flow-help.sh",
+    "flow-update.sh",
     "maven-flow-wrapper.sh",
     "flow.ps1",
     "flow-prd.ps1",
     "flow-convert.ps1",
-    "flow-update.ps1"
+    "flow-continue.ps1",
+    "flow-help.ps1",
+    "flow-status.ps1",
+    "flow-sync.ps1",
+    "flow-update.ps1",
+    "flow-install-global.ps1",
+    "flow-uninstall-global.ps1"
 )
 
 # -------------------------

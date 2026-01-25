@@ -56,13 +56,13 @@ SKILLS_DIR="$CLAUDE_DIR/skills"
 HOOKS_DIR="$CLAUDE_DIR/hooks"
 BIN_DIR="$CLAUDE_DIR/bin"
 
-# Maven Flow files to remove
+# Maven Flow files to remove (updated 2026)
 FLOW_AGENTS=("development.md" "quality.md" "testing.md" "refactor.md" "security.md" "design.md" "mobile-app.md" "Project-Auditor.md" "debugging-agent.md")
-FLOW_COMMANDS=("flow.md" "flow-prd.md" "flow-convert.md" "flow-update.md" "flow-mobile.md")
-FLOW_SKILLS_SUBDIRS=("workflow" "flow-prd" "flow-convert")
+FLOW_COMMANDS=("flow.md" "flow-prd.md" "consolidate-memory.md" "create-story-memory.md" "flow-convert.md")
+FLOW_SKILLS_SUBDIRS=("workflow" "flow-convert")
 FLOW_SKILLS_FILES=("flow-prd-mobile.md")
-FLOW_HOOKS=("pre-task-flow-validation.js")
-FLOW_SCRIPTS=("flow.sh" "flow-prd.sh" "flow-convert.sh" "flow-update.sh" "flow-install-global.sh" "flow-uninstall-global.sh" "maven-flow-wrapper.sh" "flow.ps1" "flow-prd.ps1" "flow-convert.ps1" "flow-update.ps1")
+FLOW_HOOKS=("session-save.sh" "session-restore.sh" "pre-task-flow-validation.js" "agent-selector.js" "dependency-graph.js" "error-reporter.js" "memory-cache.js" "path-utils.js" "prd-utils.js" "toon-compress.js" "retry-manager.js")
+FLOW_SCRIPTS=("flow.sh" "flow-prd.sh" "flow-convert.sh" "flow-install-global.sh" "flow-uninstall-global.sh" "flow-sync.sh" "flow-status.sh" "flow-continue.sh" "flow-help.sh" "flow-update.sh" "maven-flow-wrapper.sh" "flow.ps1" "flow-prd.ps1" "flow-convert.ps1" "flow-continue.ps1" "flow-help.ps1" "flow-status.ps1" "flow-sync.ps1" "flow-update.ps1" "flow-install-global.ps1" "flow-uninstall-global.ps1")
 
 # Step 1: Remove agents
 echo -e "${GRAY}  → Removing Maven Flow agents...${NC}"
@@ -70,12 +70,12 @@ removed_any=false
 for agent in "${FLOW_AGENTS[@]}"; do
     if [ -f "$AGENTS_DIR/$agent" ]; then
         (rm -f "$AGENTS_DIR/$agent") &
+        show_spinner $! "Removing Maven Flow agents"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow agents"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow agents found                    "
 fi
 
@@ -85,12 +85,12 @@ removed_any=false
 for cmd in "${FLOW_COMMANDS[@]}"; do
     if [ -f "$COMMANDS_DIR/$cmd" ]; then
         (rm -f "$COMMANDS_DIR/$cmd") &
+        show_spinner $! "Removing Maven Flow commands"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow commands"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow commands found                    "
 fi
 
@@ -100,12 +100,12 @@ removed_any=false
 for skill_dir in "${FLOW_SKILLS_SUBDIRS[@]}"; do
     if [ -d "$SKILLS_DIR/$skill_dir" ]; then
         (rm -rf "$SKILLS_DIR/$skill_dir") &
+        show_spinner $! "Removing Maven Flow skill directories"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow skill directories"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow skill directories found                    "
 fi
 
@@ -115,12 +115,12 @@ removed_any=false
 for skill in "${FLOW_SKILLS_FILES[@]}"; do
     if [ -f "$SKILLS_DIR/$skill" ]; then
         (rm -f "$SKILLS_DIR/$skill") &
+        show_spinner $! "Removing Maven Flow skill files"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow skill files"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow skill files found                    "
 fi
 
@@ -130,12 +130,12 @@ removed_any=false
 for hook in "${FLOW_HOOKS[@]}"; do
     if [ -f "$HOOKS_DIR/$hook" ]; then
         (rm -f "$HOOKS_DIR/$hook") &
+        show_spinner $! "Removing Maven Flow hooks"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow hooks"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow hooks found                    "
 fi
 
@@ -145,12 +145,12 @@ removed_any=false
 for script in "${FLOW_SCRIPTS[@]}"; do
     if [ -f "$BIN_DIR/$script" ]; then
         (rm -f "$BIN_DIR/$script") &
+        show_spinner $! "Removing Maven Flow scripts"
         removed_any=true
+        break
     fi
 done
-if [ "$removed_any" = true ]; then
-    show_spinner $! "Removing Maven Flow scripts"
-else
+if [ "$removed_any" = false ]; then
     echo -e "\r${YELLOW}[!]${NC} No Maven Flow scripts found                    "
 fi
 
