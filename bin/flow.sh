@@ -580,6 +580,15 @@ process_story() {
     echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
     echo ""
 
+    # ⭐ MEMORY STEP 1: Create/Update Story Memory
+    echo -e "${CYAN}Creating story memory...${NC}"
+    if create_story_memory "$prd_file" "$story_id"; then
+        echo -e "${GREEN}✓ Story memory created${NC}"
+    else
+        echo -e "${YELLOW}⚠ Could not create story memory${NC}"
+    fi
+    echo ""
+
     # Update PRD to mark story as complete
     echo -e "${CYAN}Updating PRD...${NC}"
     node -e "
@@ -597,7 +606,7 @@ if (story) {
     echo -e "${CYAN}Running final quality check...${NC}"
     pnpm run typecheck 2>&1 || echo -e "${YELLOW}⚠ Typecheck had issues - please review${NC}"
 
-    # Commit changes
+    # Commit changes (NOW INCLUDES MEMORY FILE)
     echo -e "${CYAN}Committing changes...${NC}"
     git add -A
     local commit_title="feat: $story_id - $story_title"
@@ -610,6 +619,29 @@ if (story) {
     git push 2>&1 || echo -e "${YELLOW}⚠ Push failed (may need manual push)${NC}"
 
     echo ""
+
+    # ⭐ MEMORY STEP 2: Check if ALL stories in PRD are complete, then consolidate
+    if check_prd_complete "$prd_file"; then
+        echo -e "${PURPLE}═══════════════════════════════════════════════════════${NC}"
+        echo -e "${PURPLE}  All stories in PRD complete!${NC}"
+        echo -e "${PURPLE}═══════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${CYAN}Consolidating memory from all stories...${NC}"
+
+        if consolidate_prd_memory "$prd_file"; then
+            echo -e "${GREEN}✓ Memory consolidated into PRD${NC}"
+
+            # Commit the consolidation
+            git add "$prd_file"
+            git commit -m "docs: consolidate memory for $(basename "$prd_file" .json)" 2>/dev/null
+            git push 2>&1
+            echo -e "${GREEN}✓ Consolidation committed and pushed${NC}"
+        else
+            echo -e "${YELLOW}⚠ Could not consolidate memory${NC}"
+        fi
+        echo ""
+    fi
+
     return 0
 }
 
@@ -645,6 +677,168 @@ commit_and_push_changes() {
     fi
 
     echo ""
+}
+
+# ============================================================================
+# Memory Management Functions
+# ============================================================================
+
+# Function to create/update story memory after completion
+create_story_memory() {
+    local prd_file="$1"
+    local story_id="$2"
+
+    # Extract story details from PRD
+    local story_json=$(jq ".userStories[] | select(.id == \"$story_id\")" "$prd_file" 2>/dev/null)
+    if [ -z "$story_json" ]; then
+        echo "Error: Could not find story $story_id in PRD"
+        return 1
+    fi
+
+    local story_title=$(echo "$story_json" | jq -r '.title')
+    local feature=$(basename "$prd_file" | sed 's/^prd-//' | sed 's/\.json$//')
+
+    # Create feature directory if it doesn't exist
+    local feature_dir="docs/${feature}"
+    mkdir -p "$feature_dir"
+
+    # Slugify title for filename
+    local slug_title=$(echo "$story_title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\+/-/g' | sed 's/^-\+//;s/-\+$//')
+    local memory_file="${feature_dir}/story-${story_id,,}-${slug_title}.txt"
+
+    # Get files changed (from most recent commit)
+    local files_created=$(git diff --name-only --diff-filter=A HEAD~1 2>/dev/null | sort | uniq || echo "")
+    local files_modified=$(git diff --name-only --diff-filter=M HEAD~1 2>/dev/null | sort | uniq || echo "")
+
+    # Generate summary of what was done
+    local maven_steps=$(echo "$story_json" | jq -r '.mavenSteps | join(", ")')
+    local acceptance_criteria=$(echo "$story_json" | jq -r '.acceptanceCriteria[]? // "None"' | head -5)
+
+    # Write memory file
+    cat > "$memory_file" <<MEMORY_EOF
+STORY MEMORY: ${story_id} - ${story_title}
+=========================================================
+
+COMPLETED: $(date +%Y-%m-%d)
+
+STORY DETAILS:
+- ID: ${story_id}
+- Title: ${story_title}
+- Priority: $(echo "$story_json" | jq -r '.priority // "N/A"')
+- Maven Steps: [${maven_steps}]
+- Status: Complete
+
+IMPLEMENTATION SUMMARY:
+Completed Maven workflow for ${story_title}.
+Executed steps: ${maven_steps}
+
+FILES CREATED:
+$(echo "$files_created" | sed 's/^/- /' || echo "None")
+
+FILES MODIFIED:
+$(echo "$files_modified" | sed 's/^/- /' || echo "None")
+
+KEY DECISIONS:
+(To be filled based on implementation)
+
+INTEGRATION POINTS:
+(To be filled based on implementation)
+
+CHALLENGES RESOLVED:
+(To be filled based on implementation)
+
+LESSONS LEARNED:
+(To be filled based on implementation)
+
+CODE PATTERNS:
+(To be filled based on implementation)
+
+ACCEPTANCE CRITERIA:
+${acceptance_criteria}
+
+MEMORY_EOF
+
+    echo "Created memory file: $memory_file"
+    return 0
+}
+
+# Function to check if all stories in a PRD are complete
+check_prd_complete() {
+    local prd_file="$1"
+
+    # Check if all stories have passes: true
+    local incomplete_count=$(jq '[.userStories[] | select(.passes != true)] | length' "$prd_file" 2>/dev/null)
+
+    if [ "$incomplete_count" -eq 0 ]; then
+        return 0  # All complete
+    else
+        return 1  # Some incomplete
+    fi
+}
+
+# Function to consolidate all story memories into PRD
+consolidate_prd_memory() {
+    local prd_file="$1"
+    local feature=$(basename "$prd_file" | sed 's/^prd-//' | sed 's/\.json$//')
+    local feature_dir="docs/${feature}"
+
+    # Check if feature directory exists
+    if [ ! -d "$feature_dir" ]; then
+        echo "No story memories found in $feature_dir"
+        return 1
+    fi
+
+    # Get all story memory files
+    local story_memories=$(find "$feature_dir" -name "story-*.txt" -type f | sort)
+
+    if [ -z "$story_memories" ]; then
+        echo "No story memory files found"
+        return 1
+    fi
+
+    # Build consolidated memory
+    local consolidated="# Consolidated Memory: ${feature}
+
+## Project Overview
+${feature} feature implemented with Maven Flow workflow.
+
+## Architecture Decisions
+
+Feature-based architecture with isolated components under src/features/${feature}/.
+
+## Story Summaries
+"
+
+    # Append each story memory (extract key sections)
+    while IFS= read -r memory_file; do
+        local story_id=$(grep "^STORY MEMORY:" "$memory_file" | sed 's/STORY MEMORY: //' | sed 's/ - .*//')
+        local story_title=$(grep "^STORY MEMORY:" "$memory_file" | sed 's/.*- //')
+
+        consolidated="${consolidated}
+### ${story_id}: ${story_title}
+$(grep -A 10 "IMPLEMENTATION SUMMARY:" "$memory_file" | tail -9)
+"
+    done <<< "$story_memories"
+
+    consolidated="${consolidated}
+## Key Learnings
+
+$(while IFS= read -r memory_file; do
+    grep -A 5 "LESSONS LEARNED:" "$memory_file" | tail -4
+done <<< "$story_memories" | sort | uniq)
+"
+
+    # Update PRD with consolidated memory
+    local temp_prd=$(mktemp)
+    if jq --arg memory "$consolidated" '.consolidatedMemory = $memory' "$prd_file" > "$temp_prd" 2>/dev/null; then
+        mv "$temp_prd" "$prd_file"
+        echo "Updated PRD with consolidated memory"
+        return 0
+    else
+        rm -f "$temp_prd"
+        echo "Failed to update PRD with consolidated memory"
+        return 1
+    fi
 }
 
 # Main flow
