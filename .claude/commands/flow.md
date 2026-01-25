@@ -51,12 +51,77 @@ Before starting, the command validates:
 
 When you execute `/flow start` or `/flow continue`:
 
-1. **Validate prerequisites** (docs/, PRD files, incomplete stories)
-2. Scan for incomplete PRDs
-3. Pick the first incomplete story
-4. **Spawn specialist agents directly using Task tool:**
-   - For each mavenStep in the story, spawn appropriate agent
-   - Tell agent which MCPs to use (from PRD mcpTools)
+## EXACT EXECUTION INSTRUCTIONS (READ CAREFULLY):
+
+**You MUST use the Task tool to spawn specialist agents. Follow these exact steps:**
+
+### For each story, execute each mavenStep by calling:
+
+**Step 1, 2, 7, 9 (Development):**
+```bash
+Task tool → development-agent
+Description: [Story title] - Step [N]
+Prompt:
+You are the Maven Development Agent working on Step [N] of Maven Workflow.
+
+STORY: [US-XXX - Story title]
+
+PRD: [docs/prd-[feature].json]
+
+MCPs to use for this step: [from mcpTools]
+
+## Your Task (Step [N]):
+[Detailed step requirements from PRD acceptance criteria]
+
+## Quality Standards (ZERO TOLERANCE):
+- No 'any' types - use proper TypeScript
+- No gradients - use solid professional colors
+- No relative imports - use @/ aliases
+- Components < 300 lines
+
+When complete, output: [STEP_COMPLETE]
+```
+
+**Step 3, 4, 6 (Refactor):**
+```bash
+Task tool → refactor-agent
+Description: [Story title] - Step [N]
+[Same prompt structure as above]
+```
+
+**Step 5 (Quality):**
+```bash
+Task tool → quality-agent
+[Same prompt structure]
+```
+
+**Step 8, 10 (Security):**
+```bash
+Task tool → security-agent
+[Same prompt structure]
+```
+
+**Step 11 (Design):**
+```bash
+Task tool → design-agent
+[Same prompt structure]
+```
+
+### Wait for agent completion before proceeding to next step
+
+### After all steps complete:
+1. Run: `pnpm run typecheck` (or `pnpm tsc`)
+2. Update PRD: Set `passes: true` for the story
+3. Commit: `git add . && git commit -m "feat: [US-XXX] [title]"`
+4. Output: `<STORY_COMPLETE>`
+
+### Then move to next incomplete story
+
+**DO NOT STOP. Continue automatically until ALL stories complete.**
+
+---
+
+Now continue with the standard flow:
    - Wait for agent to complete before spawning next
    - Continue until all mavenSteps are done
 5. Run quality checks, commit, update PRD
