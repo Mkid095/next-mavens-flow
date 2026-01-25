@@ -1,57 +1,65 @@
 ---
-description: Parse plan.md and create multiple PRDs - NO QUESTIONS
-argument-hint: [plan]
+description: Generate PRD markdown from user message or plan.md - NO QUESTIONS
+argument-hint: "[message describing what to build]"
 ---
 
-# FLOW-PRD: PARSE PLAN.MD, CREATE MULTIPLE PRDS, EXIT
+# FLOW-PRD: Generate PRD Markdown from Message or Plan
 
 **DO NOT ASK QUESTIONS. EXECUTE STEPS. CREATE FILES. EXIT.**
 
 ---
 
-## STEP 1: Get Working Directory
+## STEP 1: Determine Input Source
 
-Execute: `pwd`
+**Check if plan.md exists:**
 
----
+Execute: `test -f plan.md && echo "EXISTS" || echo "NOT_FOUND"`
 
-## STEP 2: Read plan.md
+**IF plan.md EXISTS:**
+- Use plan.md as input source
+- Parse structure and extract features
+- Skip to STEP 3
 
-Execute: `cat plan.md`
-
----
-
-## STEP 3: Parse plan.md Structure
-
-The plan.md contains TWO complete PRDs:
-1. **Web Version** (lines 1-237) - "Next Mavens Artboard System (NNMA)"
-2. **Desktop Edition** (lines 237-522) - "NNMA – Desktop Edition"
-
-For EACH PRD, extract major features from these sections:
-- ### 3.1 Workspace (Dashboard) → `prd-workspace.md`
-- ### 3.2 Vector Engine (Canvas) → `prd-vector-canvas.md`
-- ### 3.3 Property System → `prd-property-system.md`
-- Typography → `prd-typography.md`
-- System Architecture → `prd-technical-architecture.md`
-- Performance → `prd-performance.md`
-- UI/UX → `prd-ui-ux.md`
-- Documentation → `prd-documentation.md`
-- Keyboard/Commands → `prd-keyboard-shortcuts.md`
-- Export → `prd-export-documentation.md`
-- AI Integration → `prd-ai-analysis-integration.md`
+**IF plan.md DOES NOT EXIST:**
+- Check if a message was provided with the command
+- Extract features from the message
+- Proceed to STEP 2
 
 ---
 
-## STEP 4: Create PRD Files
+## STEP 2: Extract Features from Message (if no plan.md)
 
-For EACH feature identified:
+**Analyze the user's message** to identify:
+- Main feature/application being described
+- Key components or modules mentioned
+- User roles or use cases
+- Technical requirements or constraints
 
-### Create: `docs/prd-[feature-name].md`
+**Generate a structured feature breakdown:**
+1. Main application/feature name (kebab-case for filename)
+2. Feature description (1-2 sentences)
+3. Key sub-features (3-8 items)
+4. Technical approach
+5. Target platform (web/mobile/desktop)
+
+**Example message analysis:**
+- "I want to build a task management app with real-time updates and user authentication"
+  → Feature: task-management
+  → Sub-features: dashboard, task-list, real-time-updates, user-auth, team-workspaces
+
+---
+
+## STEP 3: Generate PRD Markdown Files
+
+**Create PRD in MARKDOWN format** (not JSON) at: `docs/prd-[feature-name].md`
+
+Use this exact markdown structure:
 
 ```markdown
 ---
 project: [Feature Name]
-branch: flow/[feature-name]
+branchName: flow/[feature-name-kebab-case]
+description: [One-line description]
 availableMCPs:
   - supabase
   - chrome-devtools
@@ -61,44 +69,101 @@ availableMCPs:
 # [Feature Name]
 
 ## Overview
-[Extracted from plan.md - 2-3 sentences]
+
+[Brief 2-3 sentence description of what this feature does and its main purpose.]
 
 ## Technical Approach
-[Extracted from plan.md]
+
+[Description of the technical stack, architecture, and implementation approach.]
 
 ## User Stories
 
-### US-001: [Story from feature]
-**Priority:** 1
-**Maven Steps:** [1, 3, 7, 10]
-**MCP Tools:** []
+### US-001: [Story Title - What user wants]
 
-As a [user type from plan.md], I want to [action] so that [benefit].
+**Priority:** 1
+**Maven Steps:** [1, 3, 5, 7]
+**MCP Tools:** `{ step1: ["supabase"], step7: ["supabase", "chrome-devtools"] }`
+
+**Description:**
+As a [user role], I want to [action] so that [benefit].
 
 **Acceptance Criteria:**
-- [Extract from plan.md requirements]
-- Typecheck passes
-
-**Status:** false
-
-[Add more stories as needed - max 10 per PRD]
-```
+- [Specific, verifiable requirement 1]
+- [Specific, verifiable requirement 2]
+- [Specific, verifiable requirement 3]
 
 ---
 
-## STEP 5: Create Memory Files
+### US-002: [Second Story Title]
 
-For EACH PRD created:
+**Priority:** 2
+**Maven Steps:** [1, 3]
+**MCP Tools:** `{}`
 
-### Create: `docs/consolidated-[feature-name].txt`
+**Description:**
+As a [user role], I want to [action] so that [benefit].
+
+**Acceptance Criteria:**
+- [Requirement 1]
+- [Requirement 2]
+
+### US-002: [Second Story Title]
+
+**Priority:** 2
+**Maven Steps:** [1, 3]
+**MCP Tools:** `{}`
+
+**Description:**
+As a [user role], I want to [action] so that [benefit].
+
+**Acceptance Criteria:**
+- [Requirement 1]
+- [Requirement 2]
+
+---
+
+## Related Features
+
+- List other PRDs/features this integrates with
+- Leave empty if standalone
+```
+
+**Rules for mavenSteps:**
+- Step 1: Foundation/UI from scratch → development-agent
+- Step 2: Package manager changes → development-agent
+- Step 3: Feature structure changes → refactor-agent
+- Step 4: Component modularization (>300 lines) → refactor-agent
+- Step 5: Type safety enforcement → quality-agent
+- Step 6: UI centralization → refactor-agent
+- Step 7: Data layer/backend → development-agent
+- Step 8: Auth/integration → security-agent
+- Step 9: MCP integration → development-agent
+- Step 10: Security hardening → security-agent
+- Step 11: Mobile UI design → design-agent
+
+**Rules for mcpTools:**
+- Only specify MCP server names (e.g., "supabase", "chrome-devtools")
+- Use empty object `{}` if no MCPs needed
+- Don't worry about available MCPs here - flow-convert will validate
+
+**Rules for priority:**
+- Lower number = higher priority (executed first)
+- Start priority at 1 for first story
+- Increment for subsequent stories
+
+---
+
+## STEP 4: Create Consolidated Memory File
+
+**Create:** `docs/consolidated-[feature-name].txt`
 
 ```markdown
 ---
 memoryVersion: 1
 schemaVersion: 1
 feature: [Feature Name]
-consolidatedDate: [Current Date]
-totalStories: [Count from PRD]
+consolidatedDate: [Current Date in ISO format]
+totalStories: [Number of stories in PRD]
 completedStories: 0
 status: initialized
 ---
@@ -106,27 +171,30 @@ status: initialized
 # [Feature Name] - Consolidated Implementation Memory
 
 ## System Overview
-[From PRD overview]
+[Brief description of what this feature does]
 
-## Current Status
-PRD created, waiting for execution.
+## Key Architectural Decisions
+- Initial setup and architecture decisions will be documented here as stories complete
 
-## Technical Approach
-[From PRD technical approach]
+## Public Interfaces
+- API endpoints, UI components, and integration points will be listed here
+
+## Integration Patterns
+- How this feature connects to other PRDs
 
 ## Related PRDs
-[List other PRDs this integrates with]
+[None initially - will be updated as related features are added]
 
 ## Stories to Implement
 [List all story IDs and titles from PRD]
 
 ## Memory Structure
-This file will be updated as stories complete.
+This file will be updated as stories complete
 ```
 
 ---
 
-## STEP 6: Display Summary
+## STEP 5: Display Summary
 
 ```
 ==============================================================================
@@ -135,39 +203,31 @@ PRD Generation Complete
 
 Working Directory: [from pwd]
 
-Analyzed: plan.md (2 PRDs - Web + Desktop)
+Input Source: [plan.md OR user message]
 
-Created PRDs:
-- docs/prd-workspace.md
-- docs/prd-vector-canvas.md
-- docs/prd-property-system.md
-- docs/prd-typography.md
-- docs/prd-technical-architecture.md
-- docs/prd-ui-ux.md
-- docs/prd-performance.md
-- docs/prd-documentation.md
-- docs/prd-keyboard-shortcuts.md
-- docs/prd-export-documentation.md
-- docs/prd-ai-analysis-integration.md
+Created PRD (Markdown):
+- docs/prd-[feature-name].md
 
-Memory Files:
-- docs/consolidated-workspace.txt
-- docs/consolidated-vector-canvas.txt
-- docs/consolidated-property-system.txt
-- docs/consolidated-typography.txt
-- docs/consolidated-technical-architecture.txt
-- docs/consolidated-ui-ux.txt
-- docs/consolidated-performance.txt
-- docs/consolidated-documentation.txt
-- docs/consolidated-keyboard-shortcuts.txt
-- docs/consolidated-export-documentation.txt
-- docs/consolidated-ai-analysis-integration.txt
+Memory File:
+- docs/consolidated-[feature-name].txt
 
-Total: 11 PRDs + 11 Memory Files
+Total Stories: [number]
 
-Next: flow-convert --all
+Next Steps:
+1. Review the PRD: cat docs/prd-[feature-name].md
+2. Edit if needed: nano docs/prd-[feature-name].md
+3. Convert to JSON: flow-convert docs/prd-[feature-name].md
+4. Start development: flow start
 ==============================================================================
 ```
+
+---
+
+## STEP 6: Run flow-convert
+
+**Convert PRD markdown to JSON (validates MCPs):**
+
+Execute: `flow-convert docs/prd-[feature-name].md`
 
 ---
 
@@ -179,14 +239,16 @@ Next: flow-convert --all
 
 ## EXECUTION RULES
 
-1. Read plan.md completely
-2. Parse BOTH PRDs (Web + Desktop)
-3. Extract ALL major features (### 3.x sections)
-4. Create PRD file for EACH feature
-5. Create memory file for EACH PRD
-6. Display summary
+1. Accept user message OR read plan.md
+2. Extract main feature and sub-features
+3. Generate PRD in MARKDOWN format (human-readable)
+4. Generate consolidated memory file
+5. Display summary
+6. Run flow-convert to validate MCPs and create JSON
 7. EXIT
 
 ---
+
+**CRITICAL: Always generate markdown PRDs first, then flow-convert handles JSON conversion with MCP validation.**
 
 **EXECUTE NOW.**

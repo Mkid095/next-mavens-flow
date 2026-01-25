@@ -275,18 +275,26 @@ fi
 echo "🏗️  Checking feature isolation..."
 
 if [ -f "$PROJECT_ROOT/eslint.config.mjs" ] || [ -f "$PROJECT_ROOT/.eslintrc.js" ]; then
-  # Run ESLint boundaries check
-  ESLINT_RESULT=$(pnpm eslint --quiet "$PROJECT_ROOT/src" 2>&1 || true)
+  # Get TypeScript files changed in this session (staged + unstaged)
+  CHANGED_TS_FILES=$(cd "$PROJECT_ROOT" && git diff --name-only 2>/dev/null | grep -E '\.(ts|tsx)$' || true)
+  CHANGED_TS_FILES="$CHANGED_TS_FILES$(cd "$PROJECT_ROOT" && git diff --cached --name-only 2>/dev/null | grep -E '\.(ts|tsx)$' || true)"
 
-  if echo "$ESLINT_RESULT" | grep -q "boundaries"; then
-    echo "  ⚠️  Cross-feature import violations detected:"
-    echo "$ESLINT_RESULT" | grep "boundaries" | head -5
-    TOTAL_ISSUES=$((TOTAL_ISSUES + 5))
+  if [ -n "$CHANGED_TS_FILES" ]; then
+    # Run ESLint only on changed TypeScript files
+    ESLINT_RESULT=$(cd "$PROJECT_ROOT" && echo "$CHANGED_TS_FILES" | xargs -r pnpm eslint --quiet 2>&1 || true)
 
-    cat > "/tmp/maven_agents/fix_boundaries_$SPAWNED_AGENTS.md" << EOF
+    if echo "$ESLINT_RESULT" | grep -q "boundaries\|error\|warning"; then
+      echo "  ⚠️  ESLint violations detected in changed files:"
+      echo "$ESLINT_RESULT" | head -10
+      TOTAL_ISSUES=$((TOTAL_ISSUES + $(echo "$ESLINT_RESULT" | grep -c "error\|warning" || echo "0")))
+
+      cat > "/tmp/maven_agents/fix_boundaries_$SPAWNED_AGENTS.md" << EOF
 # Feature Boundary Violation Fix
 
-ESLint detected cross-feature imports.
+ESLint detected violations in changed files.
+
+## Files checked:
+$(echo "$CHANGED_TS_FILES" | sed 's/^/  - /')
 
 ## Instructions:
 1. Review ESLint output for violations
@@ -302,9 +310,12 @@ ESLint detected cross-feature imports.
 - App CAN import from features and shared
 - Shared CANNOT import from features or app
 EOF
-    SPAWNED_AGENTS=$((SPAWNED_AGENTS + 1))
+      SPAWNED_AGENTS=$((SPAWNED_AGENTS + 1))
+    else
+      echo "  ✅ Feature boundaries respected (checked $(echo "$CHANGED_TS_FILES" | wc -l) changed files)"
+    fi
   else
-    echo "  ✅ Feature boundaries respected"
+    echo "  ℹ️  No TypeScript files changed - skipping ESLint check"
   fi
 else
   echo "  ⚠️  ESLint boundaries not configured"
