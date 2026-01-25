@@ -2468,4 +2468,169 @@ The terminal scripts are minimal - they just forward user input to Claude Code w
 
 ---
 
+## Help
+
+### `/flow help`
+
+Displays comprehensive help information for Maven Flow.
+
+```bash
+/flow help
+flow help
+```
+
+### Quick Reference
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `start [n]` | Start autonomous development | `flow start 10` |
+| `status` | Show progress across all PRDs | `flow status` |
+| `continue [prd] [n]` | Resume from last iteration | `flow continue auth 5` |
+| `reset [prd]` | Archive and reset a PRD | `flow reset auth` |
+| `test [prd]` | Test implemented features | `flow test auth` |
+| `consolidate [prd]` | Fix errors from testing | `flow consolidate auth` |
+| `help` | Show this help | `flow help` |
+
+### Memory System Overview
+
+Maven Flow uses a three-layer memory ecosystem:
+
+1. **Story Memory** (`docs/[feature]/story-US-[###]-[title].txt`)
+   - Created after each story completes
+   - Contains: implemented, decisions, challenges, lessons
+
+2. **Consolidated Memory** (`docs/consolidated-[feature].txt`)
+   - Created when ALL stories in PRD complete
+   - Aggressively summarized to ~15K tokens
+   - Contains: architecture, interfaces, integration patterns
+
+3. **Cross-PRD Context** (assembled dynamically)
+   - Related PRD summaries (~3-5K tokens per PRD)
+   - Previous story summaries (~10K tokens total)
+   - Assembled before spawning agents
+
+### Feature Relationships
+
+PRDs can have relationships with other PRDs:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `depends_on` | This PRD depends on another | Payments → Authentication |
+| `depended_by` | Another PRD depends on this | Payments ← Orders |
+| `bidirectional` | Mutual dependency (rare) | Auth ↔ Profiles |
+
+### Maven Steps
+
+Each story specifies which Maven steps to execute:
+
+| Step | Agent | Description |
+|------|-------|-------------|
+| 1 | development | Foundation - Import UI or create from scratch |
+| 2 | development | Package Manager - Convert npm → pnpm |
+| 3 | refactor | Feature Structure - Feature-based folders |
+| 4 | refactor | Modularization - Split components >300 lines |
+| 5 | quality | Type Safety - No 'any' types, @ aliases |
+| 6 | refactor | UI Centralization - Move to @shared/ui |
+| 7 | development | Data Layer - Backend setup, Supabase |
+| 8 | security | Auth Integration - Firebase + Supabase |
+| 9 | development | MCP Integration - Connect MCP tools |
+| 10 | security | Security & Error Handling |
+| 11 | design | Mobile Design - Professional UI (optional) |
+
+### MCP Tools
+
+MCPs (Model Context Protocol) are assigned per step:
+
+```json
+{
+  "mcpTools": {
+    "step1": ["supabase"],
+    "step7": ["supabase", "web-search-prime"]
+  }
+}
+```
+
+**Common MCPs:**
+- `supabase` - Database operations (steps 1, 7, 8, 10)
+- `chrome-devtools` - Browser testing (testing phases)
+- `web-search-prime` - Research, documentation (all steps)
+- `web-reader` - Read web content (all steps)
+
+### Quality Standards
+
+**Zero Tolerance Rules:**
+
+1. **'any' Types - ZERO TOLERANCE**
+   - No `: any`, `: any[]`, `<any>`, `Promise<any>`
+   - Use proper interfaces or `unknown` with type guards
+
+2. **Gradients in CSS - ZERO TOLERANCE**
+   - No `linear-gradient`, `radial-gradient`, `conic-gradient`
+   - Use solid professional colors only
+
+3. **Emojis in UI - ZERO TOLERANCE**
+   - No emojis anywhere in UI components
+   - Use professional icon libraries (lucide-react, heroicons)
+
+4. **Relative Imports**
+   - No `import { Foo } from './foo'` or `../bar`
+   - Use `@/` aliases for all imports
+
+### File Structure
+
+```
+docs/
+├── [feature]/                          # Story memories folder
+│   ├── story-US-001-[title].txt       # Story: US-001
+│   └── story-US-002-[title].txt       # Story: US-002
+├── prd-[feature].md                   # Human-readable PRD
+├── prd-[feature].json                 # Machine-readable PRD
+├── consolidated-[feature].txt          # Consolidated memory
+└── progress-[feature].txt             # Progress log
+```
+
+### Common Workflows
+
+**New Feature:**
+```bash
+1. flow-prd create "feature description"
+2. flow-convert feature
+3. flow start
+4. flow status
+```
+
+**Resume After Error:**
+```bash
+1. Fix the error
+2. flow continue
+```
+
+**Test Implementation:**
+```bash
+1. flow test [prd]
+2. Review docs/errors-[prd].md
+3. flow consolidate [prd]
+```
+
+**Start Fresh:**
+```bash
+1. flow reset [prd]
+2. flow start
+```
+
+### Getting More Help
+
+**For specific topics:**
+- PRD Creation: See `.claude/commands/flow-prd.md`
+- PRD Conversion: See `.claude/skills/flow-convert/SKILL.md`
+- Terminal Scripts: See `bin/README.md`
+- Memory System: See main `README.md`
+
+**For troubleshooting:**
+- Run `flow status` for diagnostics
+- Check progress file: `docs/progress-[feature].txt`
+- Review git log: `git log --oneline -10`
+
+---
+
 *Maven Flow: Autonomous AI development with comprehensive quality assurance, multi-PRD support, and intelligent memory management powered by Claude Code CLI*

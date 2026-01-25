@@ -1,209 +1,641 @@
 # Maven Flow
 
-Autonomous AI development system for Claude Code CLI that implements PRD stories using a comprehensive 10-step workflow. Coordinates specialized agents for foundation, refactoring, quality, and security.
+**Memory-Driven Autonomous AI Development System for Claude Code CLI**
+
+Maven Flow is a comprehensive development system that implements PRD stories using a 10-step workflow with specialist agents. Its unique **memory ecosystem** ensures that each new feature learns from previous work, creating an intelligent codebase that accumulates knowledge over time.
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Quick Start](#quick-start)
+3. [System Architecture](#system-architecture)
+4. [Memory Ecosystem](#memory-ecosystem)
+5. [Complete Workflow](#complete-workflow)
+6. [Commands Reference](#commands-reference)
+7. [Terminal Scripts](#terminal-scripts)
+8. [Maven 10-Step Workflow](#maven-10-step-workflow)
+9. [Specialist Agents](#specialist-agents)
+10. [Feature-Based Architecture](#feature-based-architecture)
+11. [Quality Hooks](#quality-hooks)
+12. [Installation](#installation)
+13. [Troubleshooting](#troubleshooting)
+
+---
 
 ## Overview
 
 Maven Flow combines powerful concepts for autonomous development:
 
-1. **Multi-PRD Architecture** - Each feature has its own PRD file, processed independently
-2. **PRD-Driven Iteration** - Works through user stories one at a time with clean context
-3. **Maven 10-Step Workflow** - Comprehensive quality assurance via specialized agents
+| Concept | Description |
+|---------|-------------|
+| **Multi-PRD Architecture** | Each feature has its own PRD file, processed independently |
+| **PRD-Driven Iteration** | Works through user stories one at a time with clean context |
+| **Maven 10-Step Workflow** | Comprehensive quality assurance via specialized agents |
+| **Memory Ecosystem** | New features learn from existing implementations |
+| **Claude Code Native** | Built for Claude Code CLI architecture |
 
-Each story is implemented by coordinating the right agents for the job, ensuring code quality, architecture compliance, and security best practices.
+### Key Benefits
+
+- **Intelligent Context Loading**: Agents receive context from related features
+- **Feature Relationship Tracking**: Automatic dependency detection and validation
+- **Accumulated Knowledge**: Each story creates memory, consolidated at PRD completion
+- **Zero-Tolerance Quality**: Automated hooks enforce standards (no 'any' types, no gradients)
+- **Multi-Feature Coordination**: Process multiple PRDs in dependency order
+
+---
 
 ## Quick Start
 
 ```bash
-# 1. Create a PRD for a feature (skill invoked automatically)
-"Create a PRD for user authentication"
+# 1. Create a PRD (memory-aware - loads existing context)
+flow-prd create "I want a payment processing system"
 
-# 2. Convert to feature-specific JSON (skill invoked automatically)
-"Convert the PRD to docs/prd-user-auth.json"
+# 2. Convert to JSON (analyzes relationships, validates MCPs)
+flow-convert payments
 
-# 3. Start autonomous development
-/flow start
+# 3. Start autonomous development (loads related memories)
+flow start
 
-# 4. Check progress across all features
-/flow status
-```
-
-**Multi-PRD Workflow:**
-- Each feature gets its own `docs/prd-[feature-name].json` file
-- The flow scans for all PRD files and processes incomplete ones
-- Create multiple PRDs for different features, flow handles them in order
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         /flow start                         │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Scan docs/ for prd-*.json files                │
-│              Check each for incomplete stories              │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-              ┌───────────────┴───────────────┐
-              │   Select first incomplete PRD  │
-              │   (e.g., prd-task-priority)    │
-              └───────────────┬───────────────┘
-                              │
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│           Load docs/prd-task-priority.json                  │
-│           Read docs/progress-task-priority.txt              │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-              ┌───────────────┴───────────────┐
-              │   For each story where         │
-              │   passes: false               │
-              └───────────────┬───────────────┘
-                              │
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│              flow-iteration agent (🟡 Yellow)                │
-│              Analyzes story → Determines steps               │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ↓                     ↓                     ↓
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│ development   │   │   refactor    │   │   quality     │
-│   agent (🟢)  │   │   agent (🔵)  │   │   agent (🟣)  │
-│               │   │               │   │               │
-│ Steps:        │   │ Steps:        │   │ Steps:        │
-│ • Foundation  │   │ • Structure   │   │ • Type safety │
-│ • pnpm        │   │ • Modularize  │   │ • @ aliases   │
-│ • Data layer  │   │ • UI central  │   │               │
-│ • MCP         │   │               │   │               │
-└───────────────┘   └───────────────┘   └───────────────┘
-                              │
-                              ↓
-                    ┌───────────────┐
-                    │   security    │
-                    │   agent (🔴)  │
-                    │               │
-                    │ Steps:        │
-                    │ • Auth flow   │
-                    │ • Security    │
-                    └───────────────┘
-                              │
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    Quality Checks                           │
-│              • typecheck • lint • tests                     │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│              Commit: feat: [Story ID] - [Title]            │
-│    Update docs/prd-task-priority.json: passes: true        │
-│    Append to docs/progress-task-priority.txt               │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ↓
-                    ┌─────────────────┐
-                    │   All stories   │
-                    │   in PRD        │
-                    │   complete?     │
-                    └────────┬────────┘
-                             │
-                    No ──────┴────── Yes
-                     │                   │
-                     │                   ↓
-                     │          Move to next PRD
-                     │          (if any incomplete)
-                     │
-                     └── Next iteration
-```
-
-## The Maven 10-Step Workflow
-
-| Step | Agent | Color | Description |
-|------|-------|-------|-------------|
-| **1** | development-agent | 🟢 Green | Import UI with mock data (web) or create from scratch (mobile/desktop) |
-| **2** | development-agent | 🟢 Green | Convert package manager from npm to pnpm |
-| **3** | refactor-agent | 🔵 Blue | Restructure to feature-based folder structure with ESLint boundaries |
-| **4** | refactor-agent | 🔵 Blue | Modularize components larger than 300 lines |
-| **5** | quality-agent | 🟣 Purple | Enforce type safety - no 'any' types, use @ import aliases |
-| **6** | refactor-agent | 🔵 Blue | Centralize UI components to @shared/ui |
-| **7** | development-agent | 🟢 Green | Create centralized data layer with backend setup |
-| **8** | security-agent | 🔴 Red | Implement Firebase + Supabase authentication flow |
-| **9** | development-agent | 🟢 Green | Integrate MCP servers (web-search, web-reader, chrome, expo, supabase) |
-| **10** | security-agent | 🔴 Red | Comprehensive security and error handling validation |
-
-## Feature-Based Architecture
-
-Maven Flow enforces a strict feature-based structure for all new code:
-
-```
-src/
-├── app/                    # Entry points, routing
-├── features/               # Isolated feature modules
-│   ├── auth/              # Cannot import from other features
-│   │   ├── api/           # API calls
-│   │   ├── components/    # Feature components
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── types/         # TypeScript types
-│   │   └── index.ts       # Public exports
-│   ├── dashboard/
-│   └── [feature-name]/
-├── shared/                # Shared code (no feature imports)
-│   ├── ui/                # Reusable components
-│   ├── api/               # Backend clients (Firebase, Supabase)
-│   └── utils/             # Utilities
-└── [type: "app"]
-```
-
-### Architecture Rules
-
-| From | Can Import To |
-|------|---------------|
-| features/ | shared/, features/[same feature] |
-| shared/ | shared/ only |
-| app/ | features/, shared/ |
-
-**Import Aliases (no relative imports):**
-- `@shared/*` → `src/shared/*`
-- `@features/*` → `src/features/*`
-- `@app/*` → `src/app/*`
-- `@/*` → `src/*`
-
-## Commands
-
-### `/flow start [max-iterations]`
-
-Begins autonomous iteration through PRD stories.
-
-```bash
-/flow start        # Default 10 iterations
-/flow start 20     # Custom iteration limit
+# 4. Check progress
+flow status
 ```
 
 **What happens:**
-1. Scans `docs/` for all `prd-*.json` files
-2. Finds the first PRD with incomplete stories (`passes: false`)
-3. Creates/verifies feature branch from that PRD's `branchName`
-4. For each iteration:
-   - Spawns fresh `flow-iteration` agent with clean context
-   - Picks highest priority story where `passes: false`
-   - Coordinates Maven agents to implement the story
-   - Runs quality checks
-   - Commits if checks pass
-   - Updates that PRD and its progress file
-5. When PRD is complete, moves to next incomplete PRD
-6. Continues until all PRDs are complete
+1. **flow-prd** scans existing PRDs, loads consolidated memories, identifies relationships
+2. **flow-convert** validates MCPs, tags related features, extracts lessons learned
+3. **flow start** loads related PRD memories + previous story memories before spawning agents
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          USER INTERFACE LAYER                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Terminal Commands                                    Claude Code Commands   │
+│  ─────────────────                                    ────────────────────   │
+│  flow start              ──executes──→  /flow start                          │
+│  flow status             ──executes──→  /flow status                         │
+│  flow-prd create "...""  ──executes──→  /flow-prd "..."                      │
+│  flow-convert auth       ──calls skill→  flow-convert docs/prd-auth.md       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BASH WRAPPER LAYER (thin)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  bin/flow.sh          bin/flow-prd.sh          bin/flow-convert.sh           │
+│  ───────────          ───────────────          ─────────────────            │
+│  • Parse arguments     • Parse arguments        • Parse arguments            │
+│  • Invoke Claude       • Invoke Claude          • Invoke skill               │
+│                                                                              │
+│  NOTE: Bash does NOT do AI work. Bash ONLY:                                 │
+│        - Parse CLI arguments                                                 │
+│        - Find file paths                                                     │
+│        - Invoke Claude Code commands/skills                                  │
+│        - Display output to user                                              │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      CLAUDE CODE COMMAND/SKILL LAYER                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  .claude/commands/              .claude/skills/                              │
+│  ─────────────────              ──────────────                               │
+│  flow.md                        flow-convert/SKILL.md                        │
+│  flow-prd.md                                                                │
+│  consolidate-memory.md                                                   ┌───┤
+│  create-story-memory.md                                                 │   │
+│                                                                       AGENTS│
+│  NOTE: These are TEXT FILES containing                                  ────┤
+│        instructions that Claude Code EXECUTES.                          │   │
+│        Claude Code READS these files and                                │   │
+│        FOLLOWS the instructions.                                         │   │
+│                                                                          │   │
+│  This is where ALL AI work happens:                                     │   │
+│  - Memory loading                                                        │   │
+│  - Feature relationship analysis                                        │   │
+│  - Context building                                                      │   │
+│  - Agent spawning coordination                                          │   │
+└──────────────────────────────────────────────────────────────────────────┴───┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           SPECIALIST AGENTS LAYER                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  @development-agent    @refactor-agent    @quality-agent   @security-agent  │
+│  ─────────────────    ────────────────    ─────────────   ───────────────  │
+│  • Foundation          • Restructure       • Type safety    • Auth flow      │
+│  • Data layer          • Modularize        • Import aliases  • RLS policies  │
+│  • MCP integration     • UI centralization • Zero 'any'     • Error handling │
+│                                                                              │
+│  @design-agent         @testing-agent      @mobile-app-agent                  │
+│  ─────────────         ────────────────    ─────────────────                  │
+│  • Mobile UI/UX        • Browser testing   • Mobile screens                   │
+│  • Professional design • Console errors    • Offline support                  │
+│                                                                              │
+│  NOTE: Agents are Claude Code subagents.                                     │
+│        Main Claude spawns them using @agent-name syntax.                     │
+│        Each agent has ISOLATED context window.                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          AUTOMATED HOOKS LAYER                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  .claude/hooks/                                                               │
+│  ─────────────                                                               │
+│  post-tool-use-quality.sh       stop-comprehensive-check.sh                  │
+│  ────────────────────────────   ──────────────────────────────               │
+│  • Runs after EVERY tool use    • Runs before story completion              │
+│  • Checks for 'any' types       • Validates entire codebase                  │
+│  • Checks for gradients         • Generates fix tasks if needed              │
+│  • Auto-fixes import paths                                                        │
+│                                                                              │
+│  NOTE: Hooks are AUTOMATIC. Claude Code runs them after tool use.           │
+│        Hooks are bash scripts that Claude Code INVOKES.                      │
+│        Hooks do NOT coordinate - they only check quality.                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Who Does What?
+
+| Layer | Technology | Responsibility |
+|-------|-----------|----------------|
+| **User Interface** | Terminal | User types commands |
+| **Bash Wrappers** | Shell scripts | Parse arguments, invoke Claude Code |
+| **Claude Code (Main)** | Claude Code CLI | Read instructions, do AI work, coordinate agents |
+| **Specialist Agents** | Claude Code subagents | Perform specific tasks (dev, refactor, quality, etc.) |
+| **Hooks** | Bash scripts | Automatic quality checks |
+
+---
+
+## Memory Ecosystem
+
+### Memory Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MEMORY FLOW CYCLE                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│    Existing PRDs          ──load──>   flow-prd                              │
+│    (prd-*.json)                            │                                │
+│         │                                  │                                │
+│         │                                  │                                │
+│         └──────────────load────────────────┘                                │
+│                    │                                                        │
+│                    ▼                                                        │
+│  Consolidated Memories  ──load──>  flow-convert                             │
+│  (consolidated-*.txt)                    │                                 │
+│         │                                   │                              │
+│         │                                   │                              │
+│         └────────────load───────────────────┘                              │
+│                    │                                                        │
+│                    ▼                                                        │
+│  Story Memories        ──load──>  flow.md (execution)                       │
+│  (story-US-*.txt)                       │                                  │
+│         │                                 │                                  │
+│         │                                 │                                  │
+│         └─────────────feed────────────────┘                                  │
+│                      │                                                       │
+│                      ▼                                                       │
+│              New Implementation                                              │
+│                      │                                                       │
+│                      ▼                                                       │
+│              Create Story Memory                                             │
+│                      │                                                       │
+│                      ▼                                                       │
+│              Consolidate (when all done)                                     │
+│                      │                                                       │
+│                      └─────feeds back to Existing PRDs ─────┘                │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Three Memory Layers
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         MEMORY LAYER ARCHITECTURE                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ LAYER 1: Story Memory (Per Story)                                   │    │
+│  │ ────────────────────────────────────────────────────────────────────│    │
+│  │ File: docs/[feature]/story-US-[###]-[title].txt                     │    │
+│  │                                                                      │    │
+│  │ Contents:                                                            │    │
+│  │ • What was implemented (files, components, functions)                │    │
+│  │ • Key decisions made (architecture, design patterns)                 │    │
+│  │ • Challenges resolved (problems and solutions)                       │    │
+│  │ • Integration points (connections to other features)                 │    │
+│  │ • Lessons learned (important takeaways)                              │    │
+│  │                                                                      │    │
+│  │ Created: After each story completes                                  │    │
+│  │ Used by: Next stories in same PRD                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ LAYER 2: Consolidated Memory (Per PRD)                              │    │
+│  │ ────────────────────────────────────────────────────────────────────│    │
+│  │ File: docs/consolidated-[feature].txt                               │    │
+│  │                                                                      │    │
+│  │ Contents (aggressively summarized to ~15K tokens):                   │    │
+│  │ • System overview (brief description)                                │    │
+│  │ • Architecture decisions (tech stack, patterns)                      │    │
+│  │ • Public interfaces (API endpoints, components)                      │    │
+│  │ • Integration patterns (how this connects to other PRDs)             │    │
+│  │ • Related PRDs (dependencies)                                        │    │
+│  │                                                                      │    │
+│  │ Created: When ALL stories in PRD complete                            │    │
+│  │ Used by: New PRDs that depend on this feature                        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ LAYER 3: Cross-PRD Context (During Execution)                       │    │
+│  │ ────────────────────────────────────────────────────────────────────│    │
+│  │ Not a file - assembled dynamically during story execution:           │    │
+│  │                                                                      │    │
+│  │ Contents:                                                            │    │
+│  │ • Related PRD summaries (~3-5K tokens per related PRD)               │    │
+│  │ • Previous story summaries (~10K tokens total)                        │    │
+│  │ • Current story requirements                                          │    │
+│  │                                                                      │    │
+│  │ Assembled: By flow.md before spawning agents                         │    │
+│  │ Used by: Specialist agents during implementation                     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Folder Structure
+
+```
+docs/
+├── authentication/                    # Story memories folder (auto-created)
+│   ├── story-US-001-login.txt        # Story: User login
+│   ├── story-US-002-signup.txt       # Story: User signup
+│   └── story-US-003-reset-password.txt # Story: Password reset
+├── prd-authentication.md              # Human-readable PRD (from flow-prd)
+├── prd-authentication.json            # Machine-readable PRD (from flow-convert)
+└── consolidated-authentication.txt    # Consolidated memory (when PRD complete)
+```
+
+---
+
+## Complete Workflow
+
+### Phase 1: Create PRD (Memory-Aware)
+
+```bash
+flow-prd create "I want a payment processing system"
+```
+
+**What happens internally:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: Create PRD (/flow-prd)                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  INPUT: User message describing feature                                      │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 1: Determine Input Source                                        │    │
+│  │ • Check if plan.md exists                                            │    │
+│  │ • If yes: Use plan.md                                                │    │
+│  │ • If no: Extract features from user message                          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 2.5: LOAD EXISTING CONTEXT (MEMORY AWARENESS)                   │    │
+│  │                                                                      │    │
+│  │ 2.5.1: Scan for Existing PRDs                                       │    │
+│  │   find docs -name "prd-*.json"                                       │    │
+│  │   → prd-auth.json, prd-products.json, prd-orders.json               │    │
+│  │                                                                      │    │
+│  │ 2.5.2: Load Consolidated Memories                                    │    │
+│  │   For each complete PRD:                                             │    │
+│  │   - Architecture Patterns (tech stack, structure)                    │    │
+│  │   - Key Decisions                                                    │    │
+│  │   - Lessons Learned                                                  │    │
+│  │                                                                      │    │
+│  │   Example from prd-auth.json:                                        │    │
+│  │   - Tech: Next.js 14, Supabase, React Query                          │    │
+│  │   - Pattern: Feature-based architecture                              │    │
+│  │   - Lesson: Always generate types first                              │    │
+│  │                                                                      │    │
+│  │ 2.5.3: Load Story Memories                                           │    │
+│  │   find docs -name "story-*.txt"                                      │    │
+│  │   For each story:                                                    │    │
+│  │   - Development process insights                                     │    │
+│  │   - Tech stack learnings                                             │    │
+│  │   - Architecture insights                                            │    │
+│  │   - Integration challenges and solutions                             │    │
+│  │                                                                      │    │
+│  │ 2.5.4: Extract Integration Points                                    │    │
+│  │   - Authentication: Supabase Auth with role-based access             │    │
+│  │   - Database: Supabase (PostgreSQL) with RLS                         │    │
+│  │   - API: REST endpoints in /api/*                                    │    │
+│  │   - State: React Query + Zustand                                     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 2.6: ANALYZE FEATURE RELATIONSHIPS                             │    │
+│  │                                                                      │    │
+│  │ For the new feature:                                                  │    │
+│  │ 1. Does it depend on existing?                                       │    │
+│  │    - Need authentication? → depends_on prd-auth.json                 │    │
+│  │    - Need product data? → depends_on prd-products.json               │    │
+│  │                                                                      │    │
+│  │ 2. Will existing depend on new?                                      │    │
+│  │    - Orders need payments? → depended_by prd-orders.json             │    │
+│  │                                                                      │    │
+│  │ Build RELATIONSHIPS map:                                             │    │
+│  │ {                                                                    │    │
+│  │   prd-auth.json: {                                                   │    │
+│  │     type: "depends_on",                                              │    │
+│  │     reason: "Payments require authenticated users",                   │    │
+│  │     integration: "user sessions, role-based access"                   │    │
+│  │   }                                                                  │    │
+│  │ }                                                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  OUTPUT: docs/prd-[feature].md                                            │
+│          - Context from existing features                                  │
+│          - Related features (depends_on, depended_by)                      │
+│          - User stories with mavenSteps                                    │
+│                                                                              │
+│  AUTO-RUN: flow-convert docs/prd-[feature].md                               │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Phase 2: Convert PRD (Analyze Relationships)
+
+```bash
+flow-convert payments
+```
+
+**What happens internally:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: Convert PRD (flow-convert)                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  INPUT: docs/prd-[feature].md (from Phase 1)                                │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 2: SCAN EXISTING JSON PRDs                                      │    │
+│  │                                                                      │    │
+│  │ find docs -name "prd-*.json"                                         │    │
+│  │ → Build FEATURE_MAP with status, relatedPRDs, consolidatedMemory     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 3: LOAD CONSOLIDATED MEMORIES                                   │    │
+│  │                                                                      │    │
+│  │ From complete PRDs:                                                   │    │
+│  │ - Architecture Decisions (tech_stack, structure, patterns)            │    │
+│  │ - Integration Patterns (auth, database, api, state)                   │    │
+│  │ - Lessons Learned (what worked, what didn't)                         │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 4: ANALYZE FEATURE RELATIONSHIPS                               │    │
+│  │                                                                      │    │
+│  │ 4.1: Extract from markdown PRD                                       │    │
+│  │ 4.2: Cross-reference with existing JSON PRDs                          │    │
+│  │ 4.3: Build relatedPRDs array with metadata                           │    │
+│  │ 4.4: Handle edge cases (missing PRDs, circular deps)                  │    │
+│  │                                                                      │    │
+│  │ relatedPRDs: [                                                        │    │
+│  │   {                                                                  │    │
+│  │     prd: "prd-auth.json",                                            │    │
+│  │     type: "depends_on",                                              │    │
+│  │     status: "complete",                                              │    │
+│  │     reason: "Payments require authenticated users",                   │    │
+│  │     integration: "user sessions, role-based access"                   │    │
+│  │   }                                                                  │    │
+│  │ ]                                                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 5: VALIDATE MCP AVAILABILITY                                    │    │
+│  │                                                                      │    │
+│  • Check which MCPs are configured in Claude Code                        │    │
+│  • Only assign available MCPs to stories                                 │    │
+│  • Leave mcpTools empty {} if uncertain                                  │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 6: BUILD LESSONS LEARNED                                        │    │
+│  │                                                                      │    │
+│  │ Extract from consolidated memories:                                  │    │
+│  │ - Tech stack decisions                                                │    │
+│  │ - Architecture patterns                                               │    │
+│  │ - Integration lessons                                                 │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  OUTPUT: docs/prd-[feature].json                                          │
+│          - relatedPRDs: [] (relationship metadata)                         │
+│          - lessonsLearned: "" (from existing features)                     │
+│          - consolidatedMemory: "" (empty initially)                         │
+│          - userStories: [] (with mavenSteps, mcpTools, priority)           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Phase 3: Execute Flow (With Memory Loading)
+
+```bash
+flow start
+```
+
+**What happens internally:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: Execute Flow (/flow start)                                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ PREREQUISITES CHECK                                                  │    │
+│  │ • docs/ directory exists                                              │    │
+│  │ • PRD files exist (docs/prd-*.json)                                  │    │
+│  │ • At least one incomplete story                                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ SCAN PHASE                                                           │    │
+│  │ • Scan docs/ for all prd-*.json files                                │    │
+│  │ • Check completion status (all stories passes: true?)                │    │
+│  │ • Pick first incomplete PRD (alphabetically)                          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ FOR EACH INCOMPLETE STORY:                                           │    │
+│  │                                                                      │    │
+│  │ ════════════════════════════════════════════════════════════════   │    │
+│  │ MEMORY LOADING PHASE (CRITICAL!)                                     │    │
+│  │ ════════════════════════════════════════════════════════════════   │    │
+│  │                                                                      │    │
+│  │ Step 1: Read PRD's relatedPRDs array                                 │    │
+│  │   cat docs/prd-[feature].json | jq '.relatedPRDs'                   │    │
+│  │                                                                      │    │
+│  │ Step 2: Load consolidated memory from related PRDs                    │    │
+│  │   For each related PRD:                                              │    │
+│  │   - Read docs/consolidated-[feature].txt                             │    │
+│  │   - Extract: Architecture, Integration, Lessons                      │    │
+│  │   - Summarize: ~3-5K tokens per PRD                                  │    │
+│  │                                                                      │    │
+│  │ Step 3: Load previous story memories from same PRD                    │    │
+│  │   find docs/[feature]/story-*.txt                                    │    │
+│  │   For each story memory:                                             │    │
+│  │   - Extract: Implemented, Decisions, Challenges, Lessons             │    │
+│  │   - Total budget: ~10K tokens                                        │    │
+│  │                                                                      │    │
+│  │ Step 4: Build story session with context structure                    │    │
+│  │   CONTEXT = {                                                         │    │
+│  │     relatedPRDs: { architecture, integration, lessons },              │    │
+│  │     previousStories: { implemented, decisions },                     │    │
+│  │     currentStory: { description, acceptanceCriteria }                 │    │
+│  │   }                                                                  │    │
+│  │                                                                      │    │
+│  │ ════════════════════════════════════════════════════════════════   │    │
+│  ════════════════════════════════════════════════════════════════════   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ IMPLEMENTATION PHASE                                                 │    │
+│  │                                                                      │    │
+│  │ For each mavenStep:                                                  │    │
+│  │   1. Determine which agent to spawn:                                 │    │
+│  │      Steps 1,2,7,9 → @development-agent                               │    │
+│  │      Steps 3,4,6 → @refactor-agent                                    │    │
+│  │      Step 5 → @quality-agent                                          │    │
+│  │      Steps 8,10 → @security-agent                                     │    │
+│  │      Step 11 → @design-agent                                          │    │
+│  │                                                                      │    │
+│  │   2. Build agent prompt with FULL CONTEXT:                            │    │
+│  │      @development-agent                                               │    │
+│  │                                                                      │    │
+│  │      ## CONTEXT FROM RELATED FEATURES:                                │    │
+│  │      ### Authentication (prd-auth.json):                             │    │
+│  │      - Auth: Supabase Auth with RLS                                  │    │
+│  │      - User ID: auth.getUser()                                        │    │
+│  │                                                                      │    │
+│  │      ### Products (prd-products.json):                               │    │
+│  │      - API: /api/products/*                                          │    │
+│  │                                                                      │    │
+│  │      ## CONTEXT FROM PREVIOUS STORIES:                                │    │
+│  │      ### US-001: Database schema                                      │    │
+│  │      - Table: tasks (id, title, status)                               │    │
+│  │                                                                      │    │
+│  │      ## YOUR TASK:                                                   │    │
+│  │      [Detailed requirements from PRD]                                 │    │
+│  │                                                                      │    │
+│  │   3. Spawn agent and wait for completion                              │    │
+│  │                                                                      │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ QUALITY CHECKS                                                       │    │
+│  │ • pnpm run typecheck                                                 │    │
+│  │ • Verify no 'any' types, gradients, emojis                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ MEMORY CREATION PHASE (MANDATORY)                                    │    │
+│  │                                                                      │    │
+│  │ 1. Create: docs/[feature]/story-US-[###]-[title].txt                │    │
+│  │    Contents: Implemented, Decisions, Integration, Lessons             │    │
+│  │                                                                      │    │
+│  │ 2. Update PRD: passes: true for story                                │    │
+│  │                                                                      │    │
+│  │ 3. Commit: git commit -m "feat: [US-XXX] [title]"                    │    │
+│  │                                                                      │    │
+│  │ 4. Output: <STORY_COMPLETE> signal                                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│  ═════════════════════════════════════════════════════════════════════════   │
+│                        Move to next story                                   │
+│  ═════════════════════════════════════════════════════════════════════════   │
+│                              │                                               │
+│                              ▼                                               │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ CONSOLIDATION PHASE (when ALL stories complete)                      │    │
+│  │                                                                      │    │
+│  │ 1. Read all story memory files                                       │    │
+│  │ 2. Consolidate into docs/consolidated-[feature].txt                  │    │
+│  │ 3. Target: ~15K tokens (aggressive summarization)                    │    │
+│  │ 4. Output: <ALL_COMPLETE> signal                                     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                              │                                               │
+│                              ▼                                               │
+│                    Continue to next incomplete PRD                          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Commands Reference
+
+### `/flow start [max-iterations]`
+
+Starts autonomous flow execution.
+
+```bash
+/flow start          # Default 10 iterations
+/flow start 20       # Custom iteration limit
+/flow start 1        # Process exactly 1 story then stop
+```
+
+**What happens:**
+1. Validates prerequisites (docs/, PRD files, incomplete stories)
+2. Scans for all PRD files in `docs/`
+3. Identifies incomplete stories (`passes: false`)
+4. For each story:
+   - **MEMORY LOADING PHASE**: Loads related PRD memories + previous story memories
+   - **IMPLEMENTATION PHASE**: Spawns specialist agents for each mavenStep
+   - **QUALITY CHECKS**: Runs typecheck and lint
+   - **MEMORY CREATION PHASE**: Creates story memory file
+   - Commits changes with standardized format
+   - Marks story as complete in PRD
+5. Continues until max iterations or all PRDs complete
 
 ### `/flow status`
 
-Shows current progress and story completion status for all PRDs.
+Shows current progress across all PRDs.
 
 ```bash
 /flow status
@@ -229,36 +661,87 @@ prd-user-auth.json (0/4 complete)
 prd-notifications.json (4/4 complete) ✅
 
 Current focus: prd-task-priority.json
+
+Recent progress:
+  [2026-01-25] prd-task-priority.json - US-003 Added priority dropdown
+  Agents: refactor-agent, quality-agent
 ```
 
-### `/flow continue [max-iterations]`
+### `/flow continue [prd-name] [max-iterations]`
+
+Resumes flow execution from where it left off.
+
 ```bash
-/flow continue              # Continue with current PRD
-/flow continue 5            # Continue with 5 more iterations
-/flow continue task-priority # Continue specific PRD
+/flow continue           # Continue with current PRD
+/flow continue 5         # Continue with 5 more iterations
+/flow continue auth 10   # Continue specific PRD
 ```
-
-Resumes from last iteration after interruption. Can specify which PRD to work on.
 
 ### `/flow reset [prd-name]`
+
+Archives current PRD run and resets for fresh start.
+
 ```bash
-/flow reset              # Prompts to select PRD
-/flow reset task-priority  # Reset specific PRD
+/flow reset           # Prompts to select PRD
+/flow reset auth      # Reset specific PRD
 ```
 
-Archives current PRD run and starts fresh. Other PRDs remain unaffected.
+**What happens:**
+- Creates archive: `archive/YYYY-MM-DD-[feature-name]/`
+- Moves current PRD and progress file to archive
+- Resets all stories to `passes: false`
+- Creates fresh PRD and progress files
+- Prompts for confirmation before archiving
+
+### `/flow test [prd-name]`
+
+Runs comprehensive testing of implemented features.
+
+```bash
+/flow test                    # Test current PRD (auto-detects)
+/flow test authentication     # Test authentication PRD
+/flow test task-priority      # Test task-priority PRD
+```
+
+**What happens:**
+1. Reads PRD to find completed stories
+2. Starts dev server: `pnpm dev`
+3. Opens application using chrome-devtools MCP
+4. Tests user signup/login with standard test user
+5. Tests each completed feature's acceptance criteria
+6. Checks console for errors
+7. Creates error log at `docs/errors-[feature-name].md`
+
+**Test User Credentials:**
+- Email: `revccnt@gmail.com`
+- Password: `Elishiba!90`
+
+### `/flow consolidate [prd-name]`
+
+Fixes errors found during testing (without re-implementing features).
+
+```bash
+/flow consolidate            # Consolidate current PRD
+/flow consolidate auth       # Consolidate authentication PRD
+```
+
+**What happens:**
+1. Reads error log from `docs/errors-[feature-name].md`
+2. Identifies which stories/steps have errors
+3. Re-runs ONLY the affected steps (not entire stories)
+4. Fixes specific errors found during testing
 
 ### `/flow help`
 
-Displays help information.
+Displays comprehensive help information.
 
 ---
 
-## Terminal Commands
+## Terminal Scripts
 
-Maven Flow includes terminal forwarder scripts in the `bin/` directory that allow you to run Maven Flow commands directly from your terminal without typing the `/` prefix.
+Maven Flow includes terminal forwarder scripts in the `bin/` directory.
 
-### Available Terminal Scripts
+### Available Scripts
 
 | Script | Description | Usage Example |
 |--------|-------------|---------------|
@@ -317,126 +800,277 @@ The terminal scripts are simple forwarders - they just pass your input to Claude
 | `flow start 10` | `/flow start 10` |
 | `flow status` | `/flow status` |
 | `flow-prd create auth` | `/flow-prd create auth` |
-| `flow-convert auth` | `/flow-convert auth` |
+| `flow-convert auth` | `flow-convert auth` |
 
-All the actual work (agent coordination, folder creation, memory management) is handled by Claude Code commands, not the terminal scripts.
+All the actual work (agent coordination, memory management, context building) is handled by Claude Code commands, not the terminal scripts.
 
-### Platform-Specific Scripts
+---
 
-**Linux/macOS (Bash):**
-```bash
-./bin/flow.sh start 10
-./bin/flow-prd.sh create authentication
-./bin/flow-convert.sh authentication
+## Maven 10-Step Workflow
+
+| Step | Agent | Color | Description |
+|------|-------|-------|-------------|
+| **1** | development-agent | 🟢 Green | Foundation - Import UI with mock data or create from scratch |
+| **2** | development-agent | 🟢 Green | Package Manager - Convert npm → pnpm |
+| **3** | refactor-agent | 🔵 Blue | Feature Structure - Restructure to feature-based folders |
+| **4** | refactor-agent | 🔵 Blue | Modularization - Split components >300 lines |
+| **5** | quality-agent | 🟣 Purple | Type Safety - No 'any' types, @ aliases |
+| **6** | refactor-agent | 🔵 Blue | UI Centralization - Move to @shared/ui |
+| **7** | development-agent | 🟢 Green | Data Layer - Backend setup, Supabase integration |
+| **8** | security-agent | 🔴 Red | Auth Integration - Firebase + Supabase auth |
+| **9** | development-agent | 🟢 Green | MCP Integration - Connect MCP tools |
+| **10** | security-agent | 🔴 Red | Security & Error Handling |
+| **11** | design-agent | 🩷 Pink | Mobile Design - Professional UI (optional) |
+
+### Step to Agent Mapping
+
 ```
-
-**Windows (PowerShell):**
-```powershell
-.\bin\flow.ps1 start 10
-.\bin\flow-prd.ps1 create authentication
-.\bin\flow-convert.ps1 authentication
-```
-
-**Windows (CMD):**
-```batch
-bin\flow.bat start 10
-bin\flow-prd.bat create authentication
-bin\flow-convert.bat authentication
+┌─────────────────────────────────────────────────────────────┐
+│  Story Maven Steps → Agent Assignment                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Steps 1, 2, 7, 9  →  @development-agent                    │
+│  ─────────────────────────────────────────                   │
+│  • Foundation (UI import or create from scratch)             │
+│  • Package Manager (npm → pnpm)                              │
+│  • Data Layer (backend setup, Supabase)                      │
+│  • MCP Integration (connect external tools)                  │
+│                                                              │
+│  Steps 3, 4, 6    →  @refactor-agent                        │
+│  ─────────────────────────────────────────                   │
+│  • Feature Structure (feature-based folders)                 │
+│  • Modularization (split large components)                   │
+│  • UI Centralization (move to @shared/ui)                    │
+│                                                              │
+│  Step 5           →  @quality-agent                          │
+│  ─────────────────────────────────────────                   │
+│  • Type Safety (no 'any' types, @ aliases)                   │
+│                                                              │
+│  Steps 8, 10     →  @security-agent                         │
+│  ─────────────────────────────────────────                   │
+│  • Auth Integration (Firebase + Supabase)                    │
+│  • Security & Error Handling                                 │
+│                                                              │
+│  Step 11          →  @design-agent (optional)                │
+│  ─────────────────────────────────────────                   │
+│  • Mobile Design (professional UI for Expo/React Native)     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Required Files
+## Specialist Agents
 
-| File Pattern | Purpose | Location |
-|--------------|---------|----------|
-| `prd-[feature-name].json` | Feature PRD with stories, acceptance criteria, pass/fail | `docs/prd-[feature-name].json` |
-| `progress-[feature-name].txt` | Append-only log of learnings and context | `docs/progress-[feature-name].txt` |
-| `AGENTS.md` | Codebase patterns (auto-updated) | `[directory]/AGENTS.md` |
+### development-agent (🟢 Green)
 
-## Multi-PRD File Structure
+**Use for:** Steps 1, 2, 7, 9
+
+**Responsibilities:**
+- Import UI with mock data or create from scratch
+- Convert package manager (npm → pnpm)
+- Set up data layer (Supabase, API clients)
+- Integrate MCP tools
+- Set up project foundation
+
+**Key actions:**
+- Creates base components with mock data
+- Installs and configures Supabase client
+- Sets up API middleware
+- Connects MCP tools (web-search, web-reader, browser)
+- Commits with prefix `feat:`
+
+### refactor-agent (🔵 Blue)
+
+**Use for:** Steps 3, 4, 6
+
+**Responsibilities:**
+- Restructure to feature-based architecture
+- Modularize large components
+- Centralize UI components to @shared/ui
+
+**Key actions:**
+- Moves code to feature-based folders
+- Splits components >300 lines
+- Extracts reusable UI components
+- Enforces architecture rules
+- Commits with prefix `refactor:`
+
+### quality-agent (🟣 Purple)
+
+**Use for:** Step 5
+
+**Responsibilities:**
+- Type safety enforcement
+- Import alias verification
+- Quality standards compliance
+
+**Key actions:**
+- Removes ALL 'any' types (zero tolerance)
+- Converts relative imports to @ aliases
+- Verifies component sizes
+- Blocks on quality violations
+- Auto-fixes import paths
+- Commits with prefix `fix:`
+
+**BLOCKING Issues:**
+- 'any' types in code
+- Gradients in CSS
+- Emojis in UI components
+- Relative imports
+
+### security-agent (🔴 Red)
+
+**Use for:** Steps 8, 10
+
+**Responsibilities:**
+- Authentication flow implementation
+- Security vulnerability checks
+- Error handling setup
+
+**Key actions:**
+- Firebase Auth integration
+- Supabase Row-Level Security (RLS)
+- JWT validation
+- Input sanitization
+- Error boundary implementation
+- Commits with prefix `security:`
+
+### design-agent (🩷 Pink)
+
+**Use for:** Step 11 (optional, mobile apps only)
+
+**Responsibilities:**
+- Professional mobile UI/UX design
+- Apple design methodology application
+
+**Key actions:**
+- Applies professional visual design
+- Implements proper navigation patterns
+- Ensures touch targets (44x44pt minimum)
+- Validates in Expo preview
+- Commits with prefix `design:`
+
+### testing-agent (🟠 Orange)
+
+**Use for:** `/flow test` command (not part of mavenSteps)
+
+**Responsibilities:**
+- Comprehensive application testing
+- Error logging and reporting
+- Browser automation with chrome-devtools MCP
+
+**Key actions:**
+- Opens application using chrome-devtools MCP
+- Tests all completed stories (where `passes: true`)
+- Tests signup/login with standard test user
+- Checks console for errors (logs ALL errors found)
+- Tests each acceptance criterion
+- Creates error log at `docs/errors-[feature-name].md`
+
+**Required MCP:** chrome-devtools (REQUIRED)
+
+**Test Credentials:**
+- Email: `revccnt@gmail.com`
+- Password: `Elishiba!90`
+
+### mobile-app-agent (🔵 Cyan)
+
+**Use for:** Mobile development (React Native + Expo apps)
+
+**Responsibilities:**
+- Mobile screen implementation with Expo Router
+- Offline-first data management with TanStack Query
+- Native UI patterns (swipe, pull-to-refresh, bottom sheets)
+- NativeWind styling (Tailwind for React Native)
+
+**Tech Stack:**
+- Frontend: React Native + Expo
+- Navigation: Expo Router
+- Styling: NativeWind (Tailwind)
+- State: TanStack Query + Zustand
+- Auth: Firebase Authentication
+- Backend: Supabase (shared with web)
+- Push: Firebase Cloud Messaging
+
+---
+
+## Feature-Based Architecture
+
+Maven Flow enforces a strict feature-based structure for all new code:
 
 ```
-docs/
-├── prd-task-priority.json         # Task priority feature PRD
-├── prd-user-auth.json             # User authentication feature PRD
-├── prd-notifications.json         # Notifications feature PRD
-├── progress-task-priority.txt     # Task priority progress log
-├── progress-user-auth.txt         # User auth progress log
-└── progress-notifications.txt     # Notifications progress log
+src/
+├── app/                    # Entry points, routing
+├── features/               # Isolated feature modules
+│   ├── auth/              # Cannot import from other features
+│   │   ├── api/           # API calls
+│   │   ├── components/    # Feature components
+│   │   ├── hooks/         # Custom hooks
+│   │   ├── types/         # TypeScript types
+│   │   └── index.ts       # Public exports
+│   ├── dashboard/
+│   └── [feature-name]/
+├── shared/                # Shared code (no feature imports)
+│   ├── ui/                # Reusable components
+│   ├── api/               # Backend clients (Firebase, Supabase)
+│   └── utils/             # Utilities
+└── [type: "app"]
 ```
 
-## Skills
+### Architecture Rules
 
-**Note:** Skills in Claude Code are invoked automatically based on your request. You don't type `/skill-name` - just describe what you want and Claude will use the appropriate skill.
+| From | Can Import To |
+|------|---------------|
+| features/ | shared/, features/[same feature] |
+| shared/ | shared/ only |
+| app/ | features/, shared/ |
 
-### PRD Creation (flow-prd skill)
+**Import Aliases (no relative imports):**
+- `@shared/*` → `src/shared/*`
+- `@features/*` → `src/features/*`
+- `@app/*` → `src/app/*`
+- `@/*` → `src/*`
 
-Describe your feature to create a PRD. The skill will ask clarifying questions and generate a structured document with user stories, acceptance criteria, and dependencies.
+### Why Feature-Based Architecture?
 
-**Output:** `docs/prd-[feature-name].md`
+| Benefit | Description |
+|---------|-------------|
+| **Isolation** | Features can't accidentally depend on each other |
+| **Merge Safety** | Multiple developers can work on different features |
+| **Clear Boundaries** | ESLint enforces boundaries at compile time |
+| **Easy Deletion** | Delete a feature folder, nothing breaks |
+| **Testability** | Features can be tested independently |
 
-**Example:**
-- "Create a PRD for user authentication"
-- "Write requirements for a task priority feature"
+---
 
-### PRD Conversion (flow-convert skill)
-
-Convert a PRD (markdown or existing format) to `docs/prd-[feature-name].json` format for Maven Flow autonomous execution.
-
-**Output:** `docs/prd-[feature-name].json`
-
-**Example:**
-- "Convert the task priority PRD to JSON format"
-
-**Creates feature-specific JSON with structure:**
-```json
-{
-  "project": "My App",
-  "branchName": "feature/task-priority",
-  "description": "Task priority feature",
-  "userStories": [
-    {
-      "id": "US-001",
-      "title": "Story title",
-      "priority": 1,
-      "passes": false,
-      "mavenSteps": [1, 7],
-      "mcpTools": {
-        "step1": ["supabase"],
-        "step7": ["supabase", "web-search-prime"]
-      },
-      "acceptanceCriteria": ["..."]
-    }
-  ]
-}
-```
-
-**Note:** MCP tools are specified per step (e.g., `step1`, `step7`). Only list MCP names like `"supabase"`, not individual tools. The agent will automatically discover and use available tools from those MCPs.
-
-## Automated Quality Hooks
+## Quality Hooks
 
 Maven Flow includes automated hooks that enforce quality standards during development.
 
 ### PostToolUse Hook
 
-Runs **after every Write/Edit operation:**
+**File:** `.claude/hooks/post-tool-use-quality.sh`
+
+**Runs:** After every Write/Edit operation
 
 ```bash
 Checks:
-  ✅ Relative imports      → should use @ aliases
-  ✅ 'any' types           → should use proper types
-  ✅ File size >300 lines  → needs modularization
-  ✅ Direct API calls      → should use data layer
-  ✅ UI duplication        → should use @shared/ui
-  ✅ Exposed secrets       → security risk
-  ✅ Auth file changes     → security review needed
-  ✅ Environment changes   → validation needed
+  ✅ Relative imports      → Auto-fix to @ aliases
+  ✅ 'any' types           → Should use proper types
+  ✅ Gradients             → Should use solid colors
+  ✅ File size >300 lines  → Needs modularization
+  ✅ Direct API calls      → Should use data layer
+  ✅ UI duplication        → Should use @shared/ui
+  ✅ Exposed secrets       → Security risk
+  ✅ Auth file changes     → Security review needed
 ```
 
 ### Stop Hook
 
-Runs **before completing work:**
+**File:** `.claude/hooks/stop-comprehensive-check.sh`
+
+**Runs:** Before completing work
 
 ```bash
 Checks:
@@ -453,40 +1087,31 @@ Output:
   ❌ BLOCK   → Spawn agents to fix
 ```
 
-## Firebase + Supabase Auth Architecture
+### Zero Tolerance Rules
 
-Maven Flow implements a dual-provider authentication system:
+The following violations will BLOCK commits:
 
-```
-┌─────────────┐
-│   Firebase  │ ← Authentication (email/password)
-└──────┬──────┘
-       │ Firebase UID
-       ↓
-┌─────────────┐
-│  Supabase   │ ← Profile Data (display_name, avatar_url)
-└─────────────┘
-```
+1. **'any' Types - ZERO TOLERANCE**
+   - No `: any`, `: any[]`, `<any>`, `Promise<any>`
+   - Use proper interfaces or `unknown` with type guards
 
-### Sign Up Flow
+2. **Gradients in CSS - ZERO TOLERANCE**
+   - No `linear-gradient`, `radial-gradient`, `conic-gradient`
+   - Use solid professional colors only
 
-```typescript
-1. Create Firebase account → returns Firebase UID
-2. Create Supabase profile with firebase_uid
-3. Return complete user data
-```
+3. **Emojis in UI - ZERO TOLERANCE**
+   - No emojis anywhere in UI components
+   - Use professional icon libraries (lucide-react, heroicons)
 
-### Sign In Flow
+4. **Relative Imports**
+   - No `import { Foo } from './foo'` or `../bar`
+   - Use `@/` aliases for all imports
 
-```typescript
-1. Firebase verifies email/password → returns Firebase UID
-2. Fetch Supabase profile using firebase_uid
-3. Return complete user data
-```
+---
 
 ## Installation
 
-### Quick Install (Simplified Scripts - Recommended)
+### Quick Install (Simplified Scripts)
 
 Use the simplified installation scripts for easy setup:
 
@@ -517,47 +1142,17 @@ install-simple.bat global
 install-simple.bat local
 ```
 
-## Configuration
+### Configuration
 
-### ESLint Boundaries
+#### ESLint Boundaries
 
 Copy `maven-flow/config/eslint.config.mjs` to your project root to enable feature-based architecture enforcement.
 
-### Settings
+#### Settings
 
 The hooks are configured in `.claude/maven-flow/.claude/settings.json`. Ensure the paths match your project structure.
 
-## Tips
-
-### Story Size
-
-Keep stories small enough for one context window (~30-50 files max). Larger stories should be broken down.
-
-### Multiple Features
-
-Create separate PRDs for each feature. The flow will process them in order:
-1. Create PRD for feature A → Convert to `docs/prd-feature-a.json`
-2. Create PRD for feature B → Convert to `docs/prd-feature-b.json`
-3. Run `/flow start` → Processes feature A, then feature B
-
-### Dependencies
-
-Order stories by dependency:
-1. Database schema
-2. Backend API
-3. UI components
-
-### Quality
-
-All quality checks run automatically via hooks. No manual intervention needed.
-
-### Browser Verification
-
-UI stories require browser testing. The flow-iteration agent will:
-1. Start dev server
-2. Navigate to relevant page
-3. Verify changes work as expected
-4. Document verification in progress file
+---
 
 ## Troubleshooting
 
@@ -596,6 +1191,8 @@ UI stories require browser testing. The flow-iteration agent will:
 
 Previous runs are preserved in `archive/YYYY-MM-DD-[feature-name]/`. Other PRDs remain unaffected.
 
+---
+
 ## File Structure
 
 ```
@@ -603,7 +1200,7 @@ maven-flow/                              # Distribution directory
 ├── .claude/
 │   └── settings.json                   # Hook configurations
 ├── agents/
-│   └── flow-iteration.md               # 🟡 Main coordinator
+│   └── [agent definitions]             # Specialist agents
 ├── commands/
 │   └── flow.md                         # /flow slash command
 ├── skills/
@@ -614,9 +1211,10 @@ maven-flow/                              # Distribution directory
 │   └── stop-comprehensive-check.sh    # Pre-completion check
 ├── config/
 │   └── eslint.config.mjs               # Feature boundaries
-├── install-simple.sh                   # ✅ Simplified installation (Linux/macOS)
-├── install-simple.ps1                  # ✅ Simplified installation (PowerShell)
-├── install-simple.bat                  # ✅ Simplified installation (Windows CMD)
+├── bin/                                # Terminal scripts
+│   ├── flow.sh / flow.ps1 / flow.bat
+│   ├── flow-prd.sh / flow-prd.ps1 / flow-prd.bat
+│   └── flow-convert.sh / flow-convert.ps1 / flow-convert.bat
 └── README.md                           # This file
 
 # After Installation
@@ -626,126 +1224,33 @@ maven-flow/                              # Distribution directory
 │   ├── hooks/                          # Quality enforcement hooks
 │   ├── config/                         # ESLint configuration
 │   └── .claude/settings.json           # Hook settings
-├── skills/                             # ✅ Skills in official location
+├── skills/                             # Skills in official location
 │   ├── flow-prd/SKILL.md               # PRD creation skill
 │   └── flow-convert/SKILL.md           # PRD conversion skill
-├── agents/                             # ✅ Global agents location
-│   └── flow-iteration.md               # Main iteration agent
-└── commands/                           # ✅ Global commands location
+├── agents/                             # Global agents location
+│   └── [agent definitions]             # Specialist agents
+└── commands/                           # Global commands location
     └── flow.md                         # /flow command
 ```
 
-## Agent Reference
-
-### flow-iteration (🟡 Yellow)
-
-**Role:** Main coordinator - manages PRD loop and delegates to Maven agents
-
-**Tools:** Read, Write, Edit, MultiEdit, Bash, Grep, Glob, TodoWrite, AskUserQuestion, Task
-
-**Skills:** workflow
-
-**When to use:** Autonomous story-by-story implementation
-
-### development-agent (🟢 Green)
-
-**Role:** Foundation specialist - sets up projects, integrates services
-
-**Tools:** Full access including Task
-
-**Steps:** 1, 2, 7, 9
-
-**When to use:** Project setup, pnpm conversion, data layer, MCP integrations
-
-### refactor-agent (🔵 Blue)
-
-**Role:** Architecture enforcer - restructures code, enforces boundaries
-
-**Tools:** Full development tools
-
-**Steps:** 3, 4, 6
-
-**When to use:** Feature-based structure, modularization, UI consolidation
-
-### quality-agent (🟣 Purple)
-
-**Role:** Quality validator - enforces standards, auto-fixes violations
-
-**Tools:** Read, Write, Edit, MultiEdit, Bash, Grep, Glob, TodoWrite
-
-**Permission Mode:** acceptEdits (can auto-fix)
-
-**Steps:** 5 + repetitive checks
-
-**When to use:** Type safety, import validation, quality standards
-
-### security-agent (🔴 Red)
-
-**Role:** Security guardian - validates auth, checks vulnerabilities
-
-**Tools:** Full security tools
-
-**Steps:** 8, 10
-
-**When to use:** Firebase + Supabase auth, security audits
-
-## Example Workflow
-
-```bash
-# 1. User wants multiple features
-User: "Add user login and task priority features"
-
-# 2. Create PRD for each feature
-User: "Create a PRD for user authentication"
-→ Generates docs/prd-user-auth.md
-
-User: "Create a PRD for task priority"
-→ Generates docs/prd-task-priority.md
-
-# 3. Convert each PRD to JSON
-User: "Convert user auth PRD to JSON"
-→ Creates docs/prd-user-auth.json
-
-User: "Convert task priority PRD to JSON"
-→ Creates docs/prd-task-priority.json
-
-# 4. Start autonomous development
-User: /flow start
-
-# 5. Maven Flow automatically:
-# Scans for PRDs → Finds 2 incomplete PRDs
-# Selects prd-task-priority.json (alphabetically first)
-
-Iteration 1-5: prd-task-priority.json stories
-  → development-agent, refactor-agent, quality-agent
-  → Commits: feat: US-001 through US-005
-  → Updates docs/prd-task-priority.json: all passes: true
-  → PRD complete!
-
-Iteration 6-9: prd-user-auth.json stories
-  → development-agent, security-agent, refactor-agent
-  → Commits: feat: US-001 through US-004
-  → Updates docs/prd-user-auth.json: all passes: true
-  → PRD complete!
-
-# 6. All PRDs complete
-<promise>ALL_FLOWS_COMPLETE</promise>
-```
+---
 
 ## Contributing
 
 Maven Flow is designed to be extensible. To add custom agents or steps:
 
-1. Create new agent file in `maven-flow/agents/`
+1. Create new agent file in `.claude/agents/`
 2. Add unique color in frontmatter
 3. Set `model: inherit` and appropriate `permissionMode`
-4. Update `flow-iteration.md` to include new agent in coordination
+4. Update `.claude/commands/flow.md` to include new agent in coordination
 5. Update this README with new agent details
-
-## License
-
-Maven Flow is part of the Ralph autonomous agent pattern implementation.
 
 ---
 
-**Maven Flow: Autonomous AI development with multi-PRD support and comprehensive quality assurance powered by Claude Code CLI**
+## License
+
+Maven Flow is part of the autonomous AI development pattern implementation.
+
+---
+
+**Maven Flow: Memory-Driven Autonomous AI Development with Multi-PRD Support and Comprehensive Quality Assurance Powered by Claude Code CLI**
