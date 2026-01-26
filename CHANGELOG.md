@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MCP server configurations (supabase, web-search-prime, web-reader, 4_5v_mcp)
 
 ### Changed
-- Updated agent spawning syntax from `Task(subagent_type)` to `@agent-name`
+- **Updated agent spawning to use natural language: "Use the development-agent to work on..."**
 - Enhanced flow-convert with memory loading and relationship analysis
 - Enhanced flow-prd.md with memory awareness and feature relationship detection
 - Enhanced flow.md with detailed memory loading instructions
@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Increased consolidated memory token target from 15K to 30-50K tokens**
 
 ### Fixed
+- **Hook configuration now uses correct Claude Code v1.0.62+ format** (matcher, hooks array structure)
+- **Hook validation script now checks `agent_type` instead of `subagent_type`**
+- **Agent spawning documentation now uses natural language instead of non-existent `@agent-name` syntax**
 - Memory creation now uses AI commands instead of bash scripts
 - Memory files are properly created and consolidated
 - Feature relationships are properly tagged in PRDs
