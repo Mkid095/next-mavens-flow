@@ -318,48 +318,33 @@ Now continue with the standard flow:
 
    This phase is CRITICAL for the memory system. You MUST execute it for EVERY completed story.
 
-   **Mandatory Steps:**
-   1. **Create feature folder:** `mkdir -p docs/[feature]/`
-   2. **Create story memory file:** `docs/[feature]/story-US-[###]-[title].txt`
-   3. **Include:**
+   **Invoke the story memory creation command:**
+
+   ```
+   /create-story-memory docs/prd-[feature].json US-[XXX]
+   ```
+
+   This command will:
+   1. Extract story details from the PRD
+   2. Analyze the git diff to understand what was implemented
+   3. Generate a comprehensive story memory file at:
+      `docs/[feature]/story-US-[###]-[title].txt`
+   4. Include:
       - What was implemented (specific files, functions, components)
       - Key decisions made (architecture choices, design patterns)
       - Technical challenges encountered and how they were resolved
       - Integration points with other features
       - Lessons learned for future work
-   4. **Update PRD JSON:** Set `passes: true` for the completed story
-   5. **Commit changes** with proper format: `feat: [story-id] [story-title]`
-   6. **Output signal:** Output the `<STORY_COMPLETE>` signal to indicate completion
 
-   **Memory file format:**
-   ```markdown
-   ---
-   memoryVersion: 1
-   schemaVersion: 1
-   storyId: US-001
-   storyTitle: [Title]
-   feature: [Feature]
-   completedDate: [Date]
-   agents: development-agent, security-agent
-   ---
-
-   # Story US-001: [Title]
-
-   ## Implemented
-   - List what was actually implemented
-
-   ## Key Decisions
-   - Architecture decisions made
-
-   ## Challenges Resolved
-   - Problems encountered and solutions
-
-   ## Integration Points
-   - How this connects to other features
-
-   ## Lessons Learned
-   - Important takeaways for future work
+   **After the command completes, verify the memory file was created:**
+   ```bash
+   test -f docs/[feature]/story-US-[###]-*.txt && echo "✓ Memory created" || echo "✗ Memory missing"
    ```
+
+   **Then update PRD JSON and commit:**
+   1. Update PRD JSON: Set `passes: true` for the completed story
+   2. Commit changes with proper format: `feat: [story-id] [story-title]`
+   3. Output the `<STORY_COMPLETE>` signal to indicate completion
 
    **⚠️ WARNING:** Do NOT skip or defer memory creation. The memory system depends on these files being created after each story.
 
@@ -367,51 +352,29 @@ Now continue with the standard flow:
 
 6. **CONSOLIDATION PHASE (when ALL stories in PRD complete):**
 
-   When ALL stories in the PRD have `passes: true`, you MUST update the consolidated memory file.
+   When ALL stories in the PRD have `passes: true`, you MUST consolidate all story memories.
 
-   **Mandatory Steps:**
+   **Invoke the consolidation command:**
+
+   ```
+   /consolidate-memory docs/prd-[feature].json
+   ```
+
+   This command will:
    1. **Read all story memory files** from `docs/[feature]/story-US-*.txt`
    2. **Update the consolidated memory file:** `docs/consolidated-[feature].txt`
       - Read existing content first
-      - Append new consolidated information (don't overwrite)
+      - Consolidate all story memories into comprehensive format
       - Update totals: `totalStories` and `completedStories` to actual counts
       - Set `status: completed`
       - Update `consolidatedDate` to current date
-   3. **Target ~15K tokens** - Aggressively summarize to stay within limit
-   4. **Focus on:** Patterns, decisions, interfaces, integration points
+   3. **Target ~30-50K tokens** - Summarize while preserving critical information
+   4. **Focus on:** Patterns, decisions, interfaces, integration points, lessons learned
    5. **Output:** `<ALL_COMPLETE>` signal
 
-   **Consolidated Memory Format:**
-   ```markdown
-   ---
-   memoryVersion: 1
-   schemaVersion: 1
-   feature: [Feature Name]
-   consolidatedDate: [Updated Date]
-   totalStories: 5
-   completedStories: 5
-   status: completed
-   ---
-
-   # [Feature Name] - Consolidated Implementation Memory
-
-   ## System Overview
-   [Brief overview of what was implemented]
-
-   ## Key Architectural Decisions
-   [All technical decisions from all stories]
-
-   ## Public Interfaces
-   [All API endpoints, UI components, integrations]
-
-   ## Integration Patterns
-   [How this feature connects to other PRDs]
-
-   ## Related PRDs
-   [Which PRDs depend on or are related to this one]
-
-   ## Consolidated From Stories
-   US-001: [Title] | US-002: [Title] | ...
+   **After the command completes, verify the consolidated memory was updated:**
+   ```bash
+   grep -q "status: completed" docs/consolidated-[feature].txt && echo "✓ Consolidated" || echo "✗ Consolidation failed"
    ```
 
    **⚠️ IMPORTANT:** This UPDATES the existing `docs/consolidated-[feature].txt` file that was created by flow-prd. Do NOT overwrite - UPDATE it by reading first, then updating the fields.
@@ -2187,12 +2150,12 @@ feat: add user login with email/password authentication
 
 ### Consolidated Memory (PRD-Level)
 
-After ALL stories in a PRD complete, consolidates into `docs/consolidated-[feature].txt` (~15K tokens max)
+After ALL stories in a PRD complete, consolidates into `docs/consolidated-[feature].txt` (~30-50K tokens max)
 
 **Consolidation Rules (HARD CAP):**
 - Summarize AGGRESSIVELY - focus on patterns, decisions, interfaces
 - AVOID repeating step-by-step details already in story files
-- Target ~15K tokens maximum
+- Target ~30-50K tokens maximum
 - Story files remain the detailed source; consolidation is for cross-PRD context
 
 **Consolidation Format:**
@@ -2314,7 +2277,7 @@ After ALL stories in a PRD complete, output this signal:
 **Signal triggers:**
 1. Spawn consolidation agent
 2. Consolidate all story memories into `docs/consolidated-[feature].txt`
-3. Hard cap at ~15K tokens (aggressive summarization)
+3. Hard cap at ~30-50K tokens (aggressive summarization)
 4. Output signal with consolidation path
 
 ---
@@ -2392,7 +2355,7 @@ When processing each story:
 1. Spawning consolidation agent...
    → Reading all story memory files
    → Summarizing patterns, decisions, interfaces
-   → Target: ~15K tokens (hard cap)
+   → Target: ~30-50K tokens (hard cap)
    → [Agent completed successfully]
 
 2. Creating consolidated memory...
@@ -2501,7 +2464,7 @@ Maven Flow uses a three-layer memory ecosystem:
 
 2. **Consolidated Memory** (`docs/consolidated-[feature].txt`)
    - Created when ALL stories in PRD complete
-   - Aggressively summarized to ~15K tokens
+   - Aggressively summarized to ~30-50K tokens
    - Contains: architecture, interfaces, integration patterns
 
 3. **Cross-PRD Context** (assembled dynamically)

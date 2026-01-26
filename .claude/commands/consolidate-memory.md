@@ -205,6 +205,7 @@ Consolidated Memory Length: [characters]
 
 ## Important Notes
 
+- **Target 30-50K tokens**: Summarize comprehensively while staying within this limit to preserve critical information
 - **Be comprehensive**: Include all meaningful patterns and learnings
 - **Be specific**: Use actual examples from the codebase
 - **Be organized**: Group related information together

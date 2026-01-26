@@ -1,28 +1,44 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "PreToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/maven-flow/hooks/post-tool-use-quality.sh\"",
-            "once": false
-          }
-        ]
+        "pattern": ".*",
+        "command": "node",
+        "args": [".claude/hooks/pre-task-flow-validation.js"]
+      }
+    ],
+    "Start": [
+      {
+        "pattern": ".*",
+        "command": "bash",
+        "args": [".claude/hooks/session-restore.sh"]
       }
     ],
     "Stop": [
       {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/maven-flow/hooks/stop-comprehensive-check.sh\"",
-            "once": false
-          }
-        ]
+        "pattern": ".*",
+        "command": "bash",
+        "args": [".claude/hooks/session-save.sh"]
       }
     ]
+  },
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-supabase"]
+    },
+    "web-search-prime": {
+      "command": "npx",
+      "args": ["-y", "@zengooglebing/web-search-prime"]
+    },
+    "web-reader": {
+      "command": "npx",
+      "args": ["-y", "@zengooglebing/web-reader"]
+    },
+    "4_5v_mcp": {
+      "command": "npx",
+      "args": ["-y", "@zengooglebing/4-5v-mcp"],
+      "disabled": false
+    }
   }
 }

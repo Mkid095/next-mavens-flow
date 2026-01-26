@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- MIT License for Maven Flow project
+- MIT License for Maven Flow project (c) 2026 Next Mavens LTD
 - Comprehensive README documentation with memory ecosystem
 - Terminal command reference documentation (bin/README.md)
 - Memory system documentation with three-layer architecture
@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive help section to flow.md
 - uninstall.bat for Windows CMD users
 - Updated uninstall scripts with correct file lists (2026)
+- `.claude/settings.json` for hook configuration
+- Hook configuration for pre-task-validation and session save/restore
+- MCP server configurations (supabase, web-search-prime, web-reader, 4_5v_mcp)
 
 ### Changed
 - Updated agent spawning syntax from `Task(subagent_type)` to `@agent-name`
@@ -27,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced flow-prd.md with memory awareness and feature relationship detection
 - Enhanced flow.md with detailed memory loading instructions
 - Fixed uninstall scripts to remove correct files (2026)
+- **Memory creation now invokes `/create-story-memory` command instead of manual prompts**
+- **Memory consolidation now invokes `/consolidate-memory` command instead of manual prompts**
+- **Increased consolidated memory token target from 15K to 30-50K tokens**
 
 ### Fixed
 - Memory creation now uses AI commands instead of bash scripts
