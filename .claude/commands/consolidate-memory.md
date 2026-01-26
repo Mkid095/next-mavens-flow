@@ -1,6 +1,6 @@
 ---
-name: consolidate-memory
 description: Consolidate all story memories into PRD when all stories complete. AI-powered analysis and synthesis of implementation patterns, decisions, and learnings.
+argument-hint: [prd-file]
 ---
 
 # Memory Consolidation Command

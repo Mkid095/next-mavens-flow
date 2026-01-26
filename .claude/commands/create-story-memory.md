@@ -1,6 +1,6 @@
 ---
-name: create-story-memory
-description: Create intelligent story memory after completion. Analyzes git diff, implementation details, and generates comprehensive memory file.
+description: Create intelligent story memory after story completion. Analyzes git diff, implementation details, and generates comprehensive memory file.
+argument-hint: [prd-file] [story-id]
 ---
 
 # Story Memory Creation Command
