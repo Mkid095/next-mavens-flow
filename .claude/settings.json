@@ -2,23 +2,35 @@
   "hooks": {
     "PreToolUse": [
       {
-        "pattern": ".*",
-        "command": "node",
-        "args": [".claude/hooks/pre-task-flow-validation.js"]
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/pre-task-flow-validation.js"
+          }
+        ]
       }
     ],
-    "Start": [
+    "SessionStart": [
       {
-        "pattern": ".*",
-        "command": "bash",
-        "args": [".claude/hooks/session-restore.sh"]
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/session-restore.sh"
+          }
+        ]
       }
     ],
-    "Stop": [
+    "SessionEnd": [
       {
-        "pattern": ".*",
-        "command": "bash",
-        "args": [".claude/hooks/session-save.sh"]
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/session-save.sh"
+          }
+        ]
       }
     ]
   },

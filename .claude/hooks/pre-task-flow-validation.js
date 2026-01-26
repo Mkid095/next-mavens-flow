@@ -177,7 +177,8 @@ function main() {
     const toolInput = input.tool_input || {};
 
     // Only validate Maven Flow agent spawns
-    if (!toolInput.subagent_type || !MAVEN_FLOW_AGENTS.includes(toolInput.subagent_type)) {
+    // Note: Claude Code hooks provide 'agent_type' field (not 'subagent_type')
+    if (!toolInput.agent_type || !MAVEN_FLOW_AGENTS.includes(toolInput.agent_type)) {
       process.exit(0);
     }
 

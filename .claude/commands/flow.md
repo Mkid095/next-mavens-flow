@@ -53,15 +53,13 @@ When you execute `/flow start` or `/flow continue`:
 
 ## EXACT EXECUTION INSTRUCTIONS (READ CAREFULLY):
 
-**You MUST invoke specialist agents using the @agent-name syntax. Each agent runs in its own isolated context window.**
+**You MUST invoke specialist agents by using natural language to describe the agent and task. Claude Code will automatically delegate to the appropriate agent based on the agent's description field. Each agent runs in its own isolated context window.**
 
 ### For each story, execute each mavenStep by invoking the appropriate agent:
 
 **Step 1, 2, 7, 9 (Development):**
 ```
-@development-agent
-
-You are working on Step [N] of Maven Workflow for story: [US-XXX - Story title]
+Use the development-agent to work on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 
 PRD: docs/prd-[feature].json
 MCPs to use for this step: [from mcpTools.mcpTools.step[N]]
@@ -80,25 +78,25 @@ When complete, output: [STEP_COMPLETE]
 
 **Step 3, 4, 6 (Refactor):**
 ```
-@refactor-agent
+Use the refactor-agent to work on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 [Same prompt structure as above]
 ```
 
 **Step 5 (Quality):**
 ```
-@quality-agent
+Use the quality-agent to work on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 [Same prompt structure as above]
 ```
 
 **Step 8, 10 (Security):**
 ```
-@security-agent
+Use the security-agent to work on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 [Same prompt structure as above]
 ```
 
 **Step 11 (Design):**
 ```
-@design-agent
+Use the design-agent to work on Step [N] of Maven Workflow for story: [US-XXX - Story title]
 [Same prompt structure as above]
 ```
 
@@ -243,7 +241,7 @@ Now continue with the standard flow:
 
    **Example agent prompt with context:**
    ```
-   @development-agent
+   Use the development-agent to work on Step 1 of Maven Workflow for story: US-003 - Add task filtering
 
    You are working on Step 1 of Maven Workflow for story: US-003 - Add task filtering
 
@@ -294,12 +292,12 @@ Now continue with the standard flow:
    **IMPLEMENTATION PHASE:**
    - Read story's mavenSteps array
    - Read story's mcpTools (if specified for each step)
-   - **Spawn specialist agents using @agent-name syntax:**
-     - Step 1, 2, 7, 9 → @development-agent
-     - Step 3, 4, 6 → @refactor-agent
-     - Step 5 → @quality-agent
-     - Step 8, 10 → @security-agent
-     - Step 11 → @design-agent [optional, for mobile apps]
+   - **Spawn specialist agents using natural language:**
+     - Step 1, 2, 7, 9 → "Use the development-agent to work on..."
+     - Step 3, 4, 6 → "Use the refactor-agent to work on..."
+     - Step 5 → "Use the quality-agent to work on..."
+     - Step 8, 10 → "Use the security-agent to work on..."
+     - Step 11 → "Use the design-agent to work on..." [optional, for mobile apps]
    - **Tell agent which MCPs to use with EXPLICIT INSTRUCTIONS at the start of prompt:**
      ```
      *** CRITICAL: MCP TOOLS INSTRUCTION ***
