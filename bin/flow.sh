@@ -517,18 +517,16 @@ echo -e "${GRAY}  Max iterations: ${YELLOW}$MAX_ITERATIONS${NC}"
 echo ""
 
 # Scan PRDs to show initial activity
-echo -e "${CYAN}▶ Scanning PRDs for stories...${NC}"
+echo -ne "${CYAN}▶ Scanning PRDs for stories...${NC}"
 (
-    # Simple spinner while counting
-    for i in {1..3}; do
+    # Simple spinner
+    for i in {1..2}; do
         for frame in "${SPINNER[@]}"; do
-            echo -ne "${CYAN}[${frame}]${NC} Analyzing project...   "
-            sleep 0.1
+            sleep 0.15
         done
     done
-    echo -ne "                                                                \r"
 )
-echo -e "${GREEN}✓ Ready${NC}"
+echo -e "\r${GREEN}✓ Ready${NC}                                        "
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
