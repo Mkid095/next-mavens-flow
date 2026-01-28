@@ -160,6 +160,34 @@ MAGENTA='\033[0;35m'
 WHITE='\033[0;37m'
 NC='\033[0m'
 
+# Spinner animation
+SPINNER=('⠋' '⠙' '⠸' '⠴' '⠦' '⠇' '⠏')
+
+# Function to show spinner while running a command
+show_spinner() {
+    local pid=$1
+    local message="$2"
+    local delay=0.1
+
+    # Save cursor position
+    tput sc
+
+    while kill -0 $pid 2>/dev/null; do
+        for frame in "${SPINNER[@]}"; do
+            # Restore cursor position and draw spinner
+            tput rc
+            echo -ne "${CYAN}[${frame}]${NC} ${message}...   "
+            sleep $delay
+            # Check if process still running
+            kill -0 $pid 2>/dev/null || break
+        done
+    done
+
+    # Clear spinner line
+    tput rc
+    echo -ne "                                                                 \r"
+}
+
 # Session setup
 PROJECT_NAME="$(basename "$(pwd)")"
 SESSION_ID="${PROJECT_NAME}-$(head /dev/urandom | tr -dc a-z0-9 | head -c 8)"
@@ -479,6 +507,22 @@ echo -e "${BLUE}▶ Maven Flow will work in iterations${NC}"
 echo -e "${GRAY}  Each iteration processes ONE incomplete story${NC}"
 echo -e "${GRAY}  Max iterations: ${YELLOW}$MAX_ITERATIONS${NC}"
 echo ""
+
+# Scan PRDs to show initial activity
+echo -e "${CYAN}▶ Scanning PRDs for stories...${NC}"
+(
+    for prd in docs/prd-*.json; do
+        if [ -f "$prd" ]; then
+            for frame in "${SPINNER[@]}"; do
+                echo -ne "${CYAN}[${frame}]${NC} Scanning $(basename "$prd")...   "
+                sleep 0.05
+            done
+        fi
+    done
+    echo -ne "                                                                 \r"
+)
+echo -e "${GREEN}✓ Scan complete${NC}"
+echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -569,9 +613,26 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
-    # Call Claude Code to work on this story
-    result=$(claude --dangerously-skip-permissions "$ITERATION_PROMPT" 2>&1)
+    # Call Claude Code to work on this story with spinner
+    echo -e "${BLUE}▶ Processing: ${YELLOW}$STORY_ID${NC} - ${WHITE}$STORY_TITLE${NC}"
+    echo ""
+
+    # Run Claude Code in background and show spinner
+    claude --dangerously-skip-permissions "$ITERATION_PROMPT" > /tmp/flow_output.txt 2>&1 &
+    CLAUDE_PID=$!
+    show_spinner $CLAUDE_PID "Working on $STORY_ID" &
+    SPINNER_PID=$!
+
+    # Wait for Claude Code to finish
+    wait $CLAUDE_PID 2>/dev/null
     exit_code=$?
+
+    # Kill spinner if still running
+    kill $SPINNER_PID 2>/dev/null || true
+
+    # Display output
+    result=$(cat /tmp/flow_output.txt)
+    rm -f /tmp/flow_output.txt
 
     echo "$result"
     echo ""
