@@ -519,17 +519,16 @@ echo ""
 # Scan PRDs to show initial activity
 echo -e "${CYAN}▶ Scanning PRDs for stories...${NC}"
 (
-    for prd in docs/prd-*.json; do
-        if [ -f "$prd" ]; then
-            for frame in "${SPINNER[@]}"; do
-                echo -ne "${CYAN}[${frame}]${NC} Scanning $(basename "$prd")...   "
-                sleep 0.05
-            done
-        fi
+    # Simple spinner while counting
+    for i in {1..3}; do
+        for frame in "${SPINNER[@]}"; do
+            echo -ne "${CYAN}[${frame}]${NC} Analyzing project...   "
+            sleep 0.1
+        done
     done
-    echo -ne "                                                                 \r"
+    echo -ne "                                                                \r"
 )
-echo -e "${GREEN}✓ Scan complete${NC}"
+echo -e "${GREEN}✓ Ready${NC}"
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
