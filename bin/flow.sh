@@ -494,6 +494,31 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
+    # Calculate story stats
+    TOTAL_STORIES=0
+    COMPLETED_STORIES=0
+    for prd in docs/prd-*.json; do
+        if [ -f "$prd" ]; then
+            total=$(jq '.userStories | length' "$prd" 2>/dev/null || echo "0")
+            completed=$(jq '[.userStories[] | select(.passes == true)] | length' "$prd" 2>/dev/null || echo "0")
+            TOTAL_STORIES=$((TOTAL_STORIES + total))
+            COMPLETED_STORIES=$((COMPLETED_STORIES + completed))
+        fi
+    done
+
+    REMAINING=$((TOTAL_STORIES - COMPLETED_STORIES))
+    if [ $TOTAL_STORIES -gt 0 ]; then
+        PROGRESS=$(( (COMPLETED_STORIES * 100) / TOTAL_STORIES ))
+    else
+        PROGRESS=0
+    fi
+
+    # Show progress
+    echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│  Progress: ${GREEN}$COMPLETED_STORIES${NC}/${CYAN}$TOTAL_STORIES stories${NC}    ${YELLOW}$PROGRESS%%${NC}    ${GRAY}($REMAINING remaining)${NC}│${NC}"
+    echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+
     # Find first incomplete story across all PRDs
     STORY_INFO=""
     PRD_FILE=""
