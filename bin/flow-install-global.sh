@@ -124,6 +124,15 @@ echo -e "${GRAY}  → Installing shell scripts...${NC}"
 (cp -f "$SCRIPT_DIR"/*.sh "$BIN_DIR/" 2>/dev/null) &
 show_spinner $! "Installing shell scripts"
 
+# Step 7b: Copy bin utilities (banner, etc)
+echo -e "${GRAY}  → Installing bin utilities...${NC}"
+if [ -d "$PROJECT_DIR/.claude/bin" ]; then
+    (cp -f "$PROJECT_DIR"/.claude/bin/*.sh "$BIN_DIR/" 2>/dev/null) &
+    show_spinner $! "Installing bin utilities"
+else
+    echo -e "\r${YELLOW}[!]${NC} No .claude/bin directory found                    "
+fi
+
 # Step 8: Make scripts executable
 echo -e "${GRAY}  → Setting executable permissions...${NC}"
 (chmod +x "$BIN_DIR"/*.sh 2>/dev/null) &

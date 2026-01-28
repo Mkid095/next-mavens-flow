@@ -62,7 +62,7 @@ FLOW_COMMANDS=("flow.md" "flow-prd.md" "consolidate-memory.md" "create-story-mem
 FLOW_SKILLS_SUBDIRS=("workflow" "flow-convert")
 FLOW_SKILLS_FILES=("flow-prd-mobile.md")
 FLOW_HOOKS=("session-save.sh" "session-restore.sh" "pre-task-flow-validation.js" "agent-selector.js" "dependency-graph.js" "error-reporter.js" "memory-cache.js" "path-utils.js" "prd-utils.js" "toon-compress.js" "retry-manager.js")
-FLOW_SCRIPTS=("flow.sh" "flow-prd.sh" "flow-convert.sh" "flow-install-global.sh" "flow-uninstall-global.sh" "flow-sync.sh" "flow-status.sh" "flow-continue.sh" "flow-help.sh" "flow-update.sh" "maven-flow-wrapper.sh" "flow.ps1" "flow-prd.ps1" "flow-convert.ps1" "flow-continue.ps1" "flow-help.ps1" "flow-status.ps1" "flow-sync.ps1" "flow-update.ps1" "flow-install-global.ps1" "flow-uninstall-global.ps1")
+FLOW_SCRIPTS=("flow.sh" "flow-prd.sh" "flow-convert.sh" "flow-install-global.sh" "flow-uninstall-global.sh" "flow-sync.sh" "flow-status.sh" "flow-continue.sh" "flow-help.sh" "flow-update.sh" "maven-flow-wrapper.sh" "flow-banner.sh" "flow.ps1" "flow-prd.ps1" "flow-convert.ps1" "flow-continue.ps1" "flow-help.ps1" "flow-status.ps1" "flow-sync.ps1" "flow-update.ps1" "flow-install-global.ps1" "flow-uninstall-global.ps1")
 
 # Step 1: Remove agents
 echo -e "${GRAY}  → Removing Maven Flow agents...${NC}"
