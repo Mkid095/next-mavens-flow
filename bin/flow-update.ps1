@@ -42,7 +42,7 @@ switch ($Command) {
 Write-Host ""
 
 $Prompt = "/flow-update $Command"
-& claude --dangerously-skip-permissions -p $Prompt
+& claude --dangerously-skip-permissions $Prompt
 $ExitCode = $LASTEXITCODE
 
 Write-Host ""

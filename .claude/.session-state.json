@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "timestamp": "2026-01-28T02:45:36Z",
+  "timestamp_ms": 1769568336037,
+  "project_root": "/home/ken/next-mavens-flow",
+  "git": {
+    "branch": "main",
+    "commit": "a31e64294db7631f2dd8338e94dac2165ce18905"
+  },
+  "current": {
+    "prd": "",
+    "story": "",
+    "step": ,
+    "agent": "",
+    "status": "in_progress"
+  }
+}

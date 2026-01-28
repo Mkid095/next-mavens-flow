@@ -62,9 +62,11 @@ if [ "$ALL" = true ] || [ -z "$FEATURE" ]; then
     echo ""
 
     # Find all markdown PRDs
-    PRD_FILES=(docs/prd-*.md 2>/dev/null)
+    shopt -s nullglob
+    PRD_FILES=(docs/prd-*.md)
+    shopt -u nullglob
 
-    if [ ${#PRD_FILES[@]} -eq 0 ] || [ ! -f "${PRD_FILES[0]}" ]; then
+    if [ ${#PRD_FILES[@]} -eq 0 ]; then
         echo -e "${YELLOW}  [!] No markdown PRDs found in docs/${NC}"
         echo ""
         echo -e "${GRAY}  Usage:${NC}"
@@ -101,7 +103,7 @@ if [ "$ALL" = true ] || [ -z "$FEATURE" ]; then
             force_flag="--force"
         fi
 
-        if claude --dangerously-skip-permissions -p "/flow-convert $force_flag $feature" 2>&1; then
+        if claude --dangerously-skip-permissions "/flow-convert $force_flag $feature" 2>&1; then
             echo -e "${GREEN} [OK]${NC}"
             ((success_count++))
         else
@@ -140,7 +142,7 @@ fi
 
 PROMPT="/flow-convert $force_flag $FEATURE"
 
-if claude --dangerously-skip-permissions -p "$PROMPT"; then
+if claude --dangerously-skip-permissions "$PROMPT"; then
     echo ""
     echo -e "${GREEN}+============================================================+${NC}"
     echo -e "${GREEN}|                [OK] CONVERSION COMPLETE                   |${NC}"

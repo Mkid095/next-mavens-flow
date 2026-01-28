@@ -142,7 +142,7 @@ try {
 
         # Stream output in real-time AND capture it for pattern matching
         $claudeOutput = @()
-        & claude --dangerously-skip-permissions -p $PROMPT 2>&1 | ForEach-Object {
+        & claude --dangerously-skip-permissions $PROMPT 2>&1 | ForEach-Object {
             Write-Host $_
             $claudeOutput += $_
         }

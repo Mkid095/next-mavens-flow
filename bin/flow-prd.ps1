@@ -41,7 +41,7 @@ Write-Host "  Forwarding to Claude Code..." -ForegroundColor Gray
 Write-Host ""
 
 $Prompt = "/flow-prd $Description"
-& claude --dangerously-skip-permissions -p $Prompt
+& claude --dangerously-skip-permissions $Prompt
 $ExitCode = $LASTEXITCODE
 
 Write-Host ""

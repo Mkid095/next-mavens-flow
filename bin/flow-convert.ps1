@@ -76,7 +76,7 @@ if ($All -or ($ArgsArray.Count -eq 0 -or $ArgsArray[0] -eq "--all")) {
 
         $forceFlag = if ($Force) { "--force" } else { "" }
         $Prompt = "/flow-convert $forceFlag $feature"
-        $result = & claude --dangerously-skip-permissions -p $Prompt 2>&1
+        $result = & claude --dangerously-skip-permissions $Prompt 2>&1
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host " [OK]" -ForegroundColor Green
@@ -130,7 +130,7 @@ Write-Host ""
 
 $forceFlag = if ($Force) { "--force" } else { "" }
 $Prompt = "/flow-convert $forceFlag $Feature"
-& claude --dangerously-skip-permissions -p $Prompt
+& claude --dangerously-skip-permissions $Prompt
 $ExitCode = $LASTEXITCODE
 
 Write-Host ""

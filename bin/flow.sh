@@ -1,14 +1,22 @@
 #!/bin/bash
 # ============================================================================
-# Maven Flow - Linux Native Bash Implementation
+# Maven Flow - Terminal Wrapper for Claude Code CLI
+# ============================================================================
+#
+# This script is a SIMPLE WRAPPER that delegates to Claude Code commands.
+# The actual Maven workflow (agent spawning, memory loading, etc.) is
+# implemented in .claude/commands/flow.md which runs within Claude Code.
+#
 # ============================================================================
 
 set -e
 
+# Get script directory FIRST (needed by status command)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Default parameters
 MAX_ITERATIONS=100
 SLEEP_SECONDS=2
-DRY_RUN=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -151,9 +159,6 @@ GRAY='\033[0;90m'
 MAGENTA='\033[0;35m'
 WHITE='\033[0;37m'
 NC='\033[0m'
-
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Session setup
 PROJECT_NAME="$(basename "$(pwd)")"
@@ -402,400 +407,209 @@ if [ "$DRY_RUN" = true ]; then
     exit 0
 fi
 
+# MAIN ENTRY POINT
 # ============================================================================
-# Load plan.md context if available
+#
+# This script is a SIMPLE WRAPPER that delegates to Claude Code.
+# All the actual Maven workflow logic (agent spawning, memory loading,
+# PRD processing, etc.) is implemented in .claude/commands/flow.md which
+# runs within Claude Code where agent spawning actually works.
+#
 # ============================================================================
-PLAN_CONTEXT=""
-if [ -f "plan.md" ]; then
-    echo -e "${CYAN}Found plan.md - loading as project context${NC}"
-    PLAN_MD_CONTENT=$(cat plan.md)
-    PLAN_CONTEXT="
 
-*** PROJECT PLAN CONTEXT ***
-The user has a plan.md file with the overall project direction:
-${PLAN_MD_CONTENT}
-"
-    echo -e "${GRAY}Loaded plan.md (${#PLAN_MD_CONTENT} bytes)${NC}"
+# Determine which command to run
+if [ "$CONTINUE" = true ]; then
+    # Continue command - delegate to /flow continue
     echo ""
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║           Maven Flow - Continuing Development             ║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    # Check if docs directory exists
+    if [ ! -d "docs" ]; then
+        echo -e "${RED}[ERROR] No docs/ directory found${NC}"
+        echo ""
+        exit 1
+    fi
+
+    FLOW_PROMPT="/flow continue"
+    if [ "$MAX_ITERATIONS" -ne 100 ]; then
+        FLOW_PROMPT="$FLOW_PROMPT $MAX_ITERATIONS"
+    fi
+
+    echo -e "${BLUE}▶ Continuing from previous session...${NC}"
+    echo -e "${GRAY}  Command: ${YELLOW}$FLOW_PROMPT${NC}"
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    claude --dangerously-skip-permissions "$FLOW_PROMPT"
+    exit $?
 fi
 
-# ============================================================================
-# Function to get first incomplete story
-# ============================================================================
-get_first_incomplete_story() {
-    local prd_files=($(find docs -name "prd-*.json" -type f 2>/dev/null | sort))
+# If we reach this point, it means the user ran "flow start" (default command)
 
-    for prd in "${prd_files[@]}"; do
-        local story=$(jq -r '.userStories[] | select(.passes == false) | "\(.id)|\(.title)|\(.description)"' "$prd" 2>/dev/null | head -1)
-        if [ -n "$story" ]; then
-            echo "$prd|$story"
-            return 0
+echo ""
+echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║           Maven Flow - Starting Autonomous Development      ║${NC}"
+echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+# Check if docs directory exists
+if [ ! -d "docs" ]; then
+    echo -e "${RED}[ERROR] No docs/ directory found${NC}"
+    echo ""
+    echo -e "${YELLOW}To get started:${NC}"
+    echo "  1. Create a PRD using: flow-prd create \"your feature description\""
+    echo "  2. Convert to JSON: flow-convert <feature-name>"
+    echo "  3. Start development: flow start"
+    echo ""
+    exit 1
+fi
+
+# Check if jq is available
+if ! command -v jq &> /dev/null; then
+    echo -e "${RED}[ERROR] jq not found in PATH${NC}"
+    echo -e "${YELLOW}[INFO] Install with: sudo apt-get install jq${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}▶ Maven Flow will work in iterations${NC}"
+echo -e "${GRAY}  Each iteration processes ONE incomplete story${NC}"
+echo -e "${GRAY}  Max iterations: ${YELLOW}$MAX_ITERATIONS${NC}"
+echo ""
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+STORIES_COMPLETED=0
+
+# ============================================================================
+# MAIN ITERATION LOOP
+# ============================================================================
+for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
+    echo ""
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║  Iteration $iteration of $MAX_ITERATIONS${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    # Find first incomplete story across all PRDs
+    STORY_INFO=""
+    PRD_FILE=""
+    STORY_ID=""
+    STORY_TITLE=""
+
+    for prd in docs/prd-*.json; do
+        if [ -f "$prd" ]; then
+            story=$(jq -r '.userStories[] | select(.passes == false) | "\(.id)|\(.title)"' "$prd" 2>/dev/null | head -1)
+            if [ -n "$story" ]; then
+                STORY_INFO="$story"
+                PRD_FILE="$prd"
+                IFS='|' read -r STORY_ID STORY_TITLE <<< "$story"
+                break
+            fi
         fi
     done
 
-    return 1
-}
-
-# ============================================================================
-# Function to spawn specialist agent for a story step
-# ============================================================================
-spawn_agent_for_step() {
-    local story_data="$1"
-    local step="$2"
-    local prd_file="$3"
-
-    IFS='|' read -r story_id story_title story_description <<< "$story_data"
-
-    # Get story details
-    local mcp_tools=$(jq -r ".userStories[] | select(.id == \"$story_id\") | .mcpTools.step$step // empty" "$prd_file" 2>/dev/null)
-
-    # Determine agent type based on step
-    local agent_type=""
-    local agent_name=""
-    case $step in
-        1|2|7|9)
-            agent_type="development-agent"
-            agent_name="Development"
-            ;;
-        3|4|6)
-            agent_type="refactor-agent"
-            agent_name="Refactor"
-            ;;
-        5)
-            agent_type="quality-agent"
-            agent_name="Quality"
-            ;;
-        8|10)
-            agent_type="security-agent"
-            agent_name="Security"
-            ;;
-        11)
-            agent_type="design-agent"
-            agent_name="Design"
-            ;;
-        *)
-            agent_type="development-agent"
-            agent_name="Development"
-            ;;
-    esac
-
-    # Build MCP instruction
-    local mcp_instruction=""
-    if [ "$mcp_tools" != "null" ] && [ "$mcp_tools" != "empty" ]; then
-        mcp_instruction="
-
-*** CRITICAL: MCP TOOLS INSTRUCTION ***
-You MUST use these MCP tools for this step:
-$mcp_tools
-Use these MCP tools to complete your work. DO NOT read files or make assumptions - CHECK FIRST using the MCP.
-"
-    fi
-
-    # Generate agent prompt
-    local agent_prompt="You are the Maven $agent_name Agent (Step $step of Maven Workflow).
-
-STORY: $story_id - $story_title
-
-DESCRIPTION:
-$story_description
-
-PRD FILE: $prd_file$PLAN_CONTEXT$mcp_instruction
-
-## Your Task (Step $step)
-
-Complete Step $step of the Maven workflow for this story:
-- Read the PRD file to understand the full story context
-- Review acceptance criteria
-- Complete the step's work according to Maven Flow standards
-- Ensure NO 'any' types, NO gradients, use @ aliases for imports
-
-## Quality Standards (ZERO TOLERANCE):
-- No 'any' types - use proper TypeScript
-- No gradients - use solid professional colors
-- No relative imports - use @/ aliases
-- Components < 300 lines
-
-## After Completion:
-1. Run: pnpm run typecheck
-2. If errors remain, fix them
-3. Output: [STEP_COMPLETE] when done
-
-Begin Step $step now."
-
-    # Spawn the agent using Task tool
-    echo -e "${CYAN}Spawning $agent_name agent for Step $step...${NC}"
-
-    local result=$(claude --dangerously-skip-permissions -p "$agent_prompt" 2>&1)
-    local exit_code=$?
-
-    if echo "$result" | grep -q "\[STEP_COMPLETE\]"; then
-        echo -e "${GREEN}✓ Step $step complete${NC}"
-        return 0
-    else
-        echo -e "${YELLOW}⚠ Step $step completed (no confirmation signal)${NC}"
-        return 0
-    fi
-}
-
-# ============================================================================
-# Function to process a single story
-# ============================================================================
-process_story() {
-    local prd_file="$1"
-    local story_line="$2"
-
-    IFS='|' read -r story_id story_title story_description <<< "$story_line"
-
-    echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Processing Story: $story_id - $story_title${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
-    echo ""
-
-    # Get maven steps for this story
-    local maven_steps=($(jq -r ".userStories[] | select(.id == \"$story_id\") | .mavenSteps[]" "$prd_file" 2>/dev/null))
-
-    if [ ${#maven_steps[@]} -eq 0 ]; then
-        echo -e "${RED}Error: No mavenSteps found for story $story_id${NC}"
-        return 1
-    fi
-
-    echo -e "${GRAY}Maven Steps: ${maven_steps[*]}${NC}"
-    echo ""
-
-    # Process each step in sequence
-    for step in "${maven_steps[@]}"; do
-        echo -e "${YELLOW}─── Step $step ───${NC}"
-
-        spawn_agent_for_step "$story_line" "$step" "$prd_file"
-
-        # Small pause between steps
-        sleep 1
+    # Check if all stories are complete
+    if [ -z "$STORY_INFO" ]; then
         echo ""
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║           🎉 ALL STORIES COMPLETE! 🎉                     ║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${GRAY}Completed $STORIES_COMPLETED stories in $((iteration - 1)) iterations${NC}"
+        echo ""
+
+        # Trigger consolidation if all stories complete
+        echo -e "${CYAN}▶ Consolidating memory from all completed stories...${NC}"
+        claude --dangerously-skip-permissions "/consolidate-memory" 2>/dev/null || true
+
+        exit 0
+    fi
+
+    # Extract feature name from PRD file
+    FEATURE=$(basename "$PRD_FILE" .json | sed 's/prd-//')
+
+    echo -e "${BLUE}▶ Working on: ${YELLOW}$STORY_ID${NC} ${BLUE}-${NC} ${WHITE}$STORY_TITLE${NC}"
+    echo -e "${GRAY}  PRD: $PRD_FILE${NC}"
+    echo ""
+
+    # Build prompt for this iteration
+    ITERATION_PROMPT="/flow-work-story $PRD_FILE $STORY_ID"
+
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Call Claude Code to work on this story
+    result=$(claude --dangerously-skip-permissions "$ITERATION_PROMPT" 2>&1)
+    exit_code=$?
+
+    echo "$result"
+    echo ""
+
+    # Check if story was marked complete
+    is_complete=$(jq -r ".userStories[] | select(.id == \"$STORY_ID\") | .passes" "$PRD_FILE" 2>/dev/null)
+
+    if [ "$is_complete" = "true" ]; then
+        STORIES_COMPLETED=$((STORIES_COMPLETED + 1))
+        echo -e "${GREEN}[✓] Story $STORY_ID completed!${NC}"
+
+        # Create story memory
+        echo -e "${CYAN}▶ Creating story memory...${NC}"
+        claude --dangerously-skip-permissions "/create-story-memory $PRD_FILE $STORY_ID" 2>/dev/null || true
+        echo ""
+    else
+        echo -e "${YELLOW}[!] Story $STORY_ID not complete, will retry in next iteration${NC}"
+    fi
+
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Check if we should continue (all stories complete)
+    all_complete=true
+    for prd in docs/prd-*.json; do
+        if [ -f "$prd" ]; then
+            incomplete=$(jq '[.userStories[] | select(.passes != true)] | length' "$prd" 2>/dev/null || echo "0")
+            if [ "$incomplete" -gt 0 ]; then
+                all_complete=false
+                break
+            fi
+        fi
     done
 
-    # All steps complete - mark story as done
-    echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}  Story $story_id Complete!${NC}"
-    echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
-    echo ""
-
-    # ⭐ MEMORY STEP 1: Create/Update Story Memory
-    echo -e "${CYAN}Creating story memory...${NC}"
-    if create_story_memory "$prd_file" "$story_id"; then
-        echo -e "${GREEN}✓ Story memory created${NC}"
-    else
-        echo -e "${YELLOW}⚠ Could not create story memory${NC}"
-    fi
-    echo ""
-
-    # Update PRD to mark story as complete
-    echo -e "${CYAN}Updating PRD...${NC}"
-    node -e "
-const fs = require('fs');
-const prd = JSON.parse(fs.readFileSync('$prd_file', 'utf-8'));
-const story = prd.userStories.find(s => s.id === '$story_id');
-if (story) {
-    story.passes = true;
-    fs.writeFileSync('$prd_file', JSON.stringify(prd, null, 2));
-    console.log('Marked $story_id as complete');
-}
-" 2>/dev/null || echo "Could not update PRD (requires Node.js)"
-
-    # Run final quality check
-    echo -e "${CYAN}Running final quality check...${NC}"
-    pnpm run typecheck 2>&1 || echo -e "${YELLOW}⚠ Typecheck had issues - please review${NC}"
-
-    # Commit changes (NOW INCLUDES MEMORY FILE)
-    echo -e "${CYAN}Committing changes...${NC}"
-    git add -A
-    local commit_title="feat: $story_id - $story_title"
-    local commit_body="Co-Authored-By: Maven Flow <flow@maven.dev>"
-
-    git commit -m "$commit_title" -m "$commit_body" 2>/dev/null || echo -e "${YELLOW}⚠ Nothing new to commit${NC}"
-
-    # Push to remote
-    echo -e "${CYAN}Pushing to remote...${NC}"
-    git push 2>&1 || echo -e "${YELLOW}⚠ Push failed (may need manual push)${NC}"
-
-    echo ""
-
-    # ⭐ MEMORY STEP 2: Check if ALL stories in PRD are complete, then consolidate
-    if check_prd_complete "$prd_file"; then
-        echo -e "${PURPLE}═══════════════════════════════════════════════════════${NC}"
-        echo -e "${PURPLE}  All stories in PRD complete!${NC}"
-        echo -e "${PURPLE}═══════════════════════════════════════════════════════${NC}"
+    if [ "$all_complete" = true ]; then
         echo ""
-        echo -e "${CYAN}Consolidating memory from all stories...${NC}"
-
-        # Trigger Claude Code to consolidate memory intelligently
-        echo -e "${CYAN}Triggering AI-powered memory consolidation...${NC}"
-        echo -e "${YELLOW}This will spawn Claude Code to analyze and consolidate memories${NC}"
-
-        # Call Claude Code with consolidate-memory command
-        if claude --prompt "/consolidate-memory $prd_file" --dangerously-skip-permissions 2>&1; then
-            echo -e "${GREEN}✓ Memory consolidation triggered successfully${NC}"
-        else
-            echo -e "${YELLOW}⚠ Consolidation may have issues - please review${NC}"
-        fi
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║           🎉 ALL STORIES COMPLETE! 🎉                     ║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
         echo ""
-    fi
-
-    return 0
-}
-
-# ============================================================================
-# Function to commit and push all changes
-# ============================================================================
-commit_and_push_changes() {
-    echo ""
-    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Commit & Push Changes${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════════════════════${NC}"
-    echo ""
-
-    # Check if there are changes to commit
-    if git diff --quiet && git diff --cached --quiet; then
-        echo -e "${GRAY}No changes to commit${NC}"
-        return 0
-    fi
-
-    # Stage all changes
-    git add -A
-
-    # Create commit message
-    local current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    git commit -m "chore: flow session checkpoint - $current_time" 2>/dev/null || echo -e "${YELLOW}⚠ Nothing new to commit${NC}"
-
-    # Push to remote
-    echo -e "${CYAN}Pushing to remote...${NC}"
-    if git push 2>&1; then
-        echo -e "${GREEN}✓ Pushed to remote${NC}"
-    else
-        echo -e "${YELLOW}⚠ Push failed - please push manually${NC}"
-    fi
-
-    echo ""
-}
-
-# ============================================================================
-# Memory Management Functions
-# ============================================================================
-
-# Function to create/update story memory after completion
-create_story_memory() {
-    local prd_file="$1"
-    local story_id="$2"
-
-    # Trigger Claude Code to create intelligent story memory
-    echo "Triggering AI-powered story memory creation..."
-
-    # Call Claude Code with create-story-memory command
-    if claude --prompt "/create-story-memory $prd_file $story_id" --dangerously-skip-permissions 2>&1; then
-        echo "✓ Story memory created"
-        return 0
-    else
-        echo "⚠ Story memory creation may have issues"
-        return 1
-    fi
-}
-
-# Function to check if all stories in a PRD are complete
-check_prd_complete() {
-    local prd_file="$1"
-
-    # Check if all stories have passes: true
-    local incomplete_count=$(jq '[.userStories[] | select(.passes != true)] | length' "$prd_file" 2>/dev/null)
-
-    if [ "$incomplete_count" -eq 0 ]; then
-        return 0  # All complete
-    else
-        return 1  # Some incomplete
-    fi
-}
-
-# Main flow
-write_header "Maven Flow - Starting"
-
-# Check if plan.md exists for context
-PLAN_CONTEXT=""
-if [ -f "plan.md" ]; then
-    echo -e "${CYAN}Found plan.md - using as additional context${NC}"
-    PLAN_CONTEXT="
-PLAN CONTEXT:
-The user has a plan.md file with overall project direction. Use this as context when making decisions about feature interactions and prioritization.
-"
-fi
-
-# Commit and push any existing changes first
-commit_and_push_changes
-
-# ============================================================================
-# Main Execution Loop
-# ============================================================================
-STORIES_PROCESSED=0
-
-for ((iteration=1; iteration<=MAX_ITERATIONS; iteration++)); do
-    write_iteration_header "$iteration" "$MAX_ITERATIONS"
-
-    # Get first incomplete story
-    local story_result=$(get_first_incomplete_story)
-
-    if [ $? -ne 0 ]; then
-        # No more incomplete stories
-        current_time=$(date +%s)
-        duration=$((current_time - START_TIME))
-        write_complete "$((iteration - 1))" "$duration"
-
-        # Final commit and push
-        commit_and_push_changes
-
-        echo -e "${GREEN}${NC}"
-        echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
-        echo -e "${GREEN}  🎉 ALL STORIES COMPLETE! 🎉${NC}"
-        echo -e "${GREEN}═══════════════════════════════════════════════════════${NC}"
+        echo -e "${GRAY}Completed $STORIES_COMPLETED stories in $iteration iterations${NC}"
         echo ""
+
+        # Trigger consolidation
+        echo -e "${CYAN}▶ Consolidating memory from all completed stories...${NC}"
+        claude --dangerously-skip-permissions "/consolidate-memory" 2>/dev/null || true
+
         exit 0
     fi
 
-    IFS='|' read -r prd_file story_id story_title story_description <<< "$story_result"
-    local story_line="$story_id|$story_title|$story_description"
-
-    # Process this story
-    if process_story "$prd_file" "$story_line"; then
-        STORIES_PROCESSED=$((STORIES_PROCESSED + 1))
-    fi
-
-    # Check if we should continue
-    stats=$(get_story_stats)
-    IFS='|' read -r total completed remaining progress <<< "$stats"
-
-    if [ $total -gt 0 ] && [ $completed -eq $total ]; then
-        # All stories complete
-        current_time=$(date +%s)
-        duration=$((current_time - START_TIME))
-        write_complete "$iteration" "$duration"
-
-        # Final commit and push
-        commit_and_push_changes
-
-        echo ""
-        exit 0
-    fi
-
-    # Small pause between stories
+    # Small pause between iterations
     if [ $iteration -lt $MAX_ITERATIONS ]; then
-        echo ""
-        echo -e "${GRAY}Pausing ${SLEEP_SECONDS}s before next story...${NC}"
+        echo -e "${GRAY}Pausing ${SLEEP_SECONDS}s before next iteration...${NC}"
         sleep "$SLEEP_SECONDS"
-        echo ""
     fi
 done
 
 # Max iterations reached
-write_max_reached "$MAX_ITERATIONS"
+echo ""
+echo -e "${YELLOW}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${YELLOW}║     Reached max iterations ($MAX_ITERATIONS)                 ║${NC}"
+echo -e "${YELLOW}╚════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${GRAY}Stories completed: $STORIES_COMPLETED${NC}"
+echo -e "${GRAY}Run 'flow start' again to continue${NC}"
+echo ""
 
-# Final commit and push before exiting
-commit_and_push_changes
-
-exit 0
+exit 1

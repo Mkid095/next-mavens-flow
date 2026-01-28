@@ -177,7 +177,7 @@ process_story() {
     print_status "EXECUTING" "Running Claude Code for story $story_id..."
 
     # Run Claude Code
-    if claude --dangerously-skip-permissions -p "$prompt"; then
+    if claude --dangerously-skip-permissions "$prompt"; then
         TOTAL_STORIES_COMPLETED=$((TOTAL_STORIES_COMPLETED + 1))
         print_status "SUCCESS" "Story $story_id completed successfully"
         echo ""

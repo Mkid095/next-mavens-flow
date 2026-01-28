@@ -60,7 +60,7 @@ SPINNER_PID=$!
 trap "kill $SPINNER_PID 2>/dev/null" EXIT
 
 # Run Claude command
-if claude --dangerously-skip-permissions -p "$PROMPT"; then
+if claude --dangerously-skip-permissions "$PROMPT"; then
     # Success - kill spinner and show success
     kill $SPINNER_PID 2>/dev/null
     echo -e "\r${GREEN}[✓] Maven Flow updated successfully${NC}                                       "
