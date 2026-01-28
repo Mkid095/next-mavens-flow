@@ -555,10 +555,6 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     if [ "$is_complete" = "true" ]; then
         STORIES_COMPLETED=$((STORIES_COMPLETED + 1))
         echo -e "${GREEN}[✓] Story $STORY_ID completed!${NC}"
-
-        # Create story memory
-        echo -e "${CYAN}▶ Creating story memory...${NC}"
-        claude --dangerously-skip-permissions "/create-story-memory $PRD_FILE $STORY_ID" 2>/dev/null || true
         echo ""
     else
         echo -e "${YELLOW}[!] Story $STORY_ID not complete, will retry in next iteration${NC}"

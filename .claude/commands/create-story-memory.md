@@ -1,153 +1,190 @@
 ---
-description: Create intelligent story memory after story completion. Analyzes git diff, implementation details, and generates comprehensive memory file.
-argument-hint: [prd-file] [story-id]
+description: Create story memory file after completion - quick, actionable
+argument-hint: <prd-file> <story-id>
 ---
 
-# Story Memory Creation Command
+# Create Story Memory - QUICK VERSION
 
-You are creating a story memory file after a story has been completed. This memory will be used for context in future stories.
+**YOU MUST create a story memory file NOW.**
 
-## Trigger
-This command is automatically triggered after a story is marked complete and committed.
+This is called after a story is complete. Work FAST - don't over-analyze.
 
-## Input
-- PRD file path: $1
-- Story ID: $2
+**CRITICAL:** Work in current directory (`$PWD`), NOT command installation directory.
 
-## Your Task
+---
 
-### Step 1: Extract Story Details
+## The Job
 
-1. Read the PRD to get story information:
-   jq ".userStories[] | select(.id == \"$STORY_ID\")" "$PRD_FILE"
+Create a story memory file at: `docs/[feature]/story-us-[###]-[slug].txt`
 
-2. Extract:
-   - Story title
-   - Description
-   - Maven steps executed
-   - Acceptance criteria
-   - Priority
+**Arguments:**
+- `$1` = PRD file (e.g., `docs/prd-abuse-controls.json`)
+- `$2` = Story ID (e.g., `US-001`)
 
-### Step 2: Analyze Implementation
+---
 
-1. Get files changed from the most recent commit:
-   git diff --name-only --diff-filter=A HEAD~1  # Created
-   git diff --name-only --diff-filter=M HEAD~1  # Modified
-   git diff --stat HEAD~1                       # Summary
+## STEP 1: Get Story Info (FAST)
 
-2. Read key files to understand implementation:
-   - Focus on main implementation files
-   - Look for patterns and decisions
-   - Note challenges and solutions
+**Execute:** `cat "$1" | jq ".userStories[] | select(.id == \"$2\")"`
 
-### Step 3: Generate Memory Content
+Extract:
+- `title` - Story title
+- `description` - What it does
+- `mavenSteps` - Steps executed
 
-Create a comprehensive story memory file with actual content (not placeholders):
+---
 
-STORY MEMORY: US-XXX - Story Title
-=========================================================
+## STEP 2: Get Recent Changes (FAST)
 
-COMPLETED: YYYY-MM-DD
-
-STORY DETAILS:
-- ID: US-XXX
-- Title: Story Title
-- Priority: 1
-- Maven Steps: [1, 2, 3, 5]
-- Status: Complete
-
-IMPLEMENTATION SUMMARY:
-[2-3 sentences describing what was actually implemented.
-Include key components, features, and how they work.]
-
-FILES CREATED (X):
-- path/to/file1.ts (Y lines) - [Brief purpose]
-- path/to/file2.tsx (Y lines) - [Brief purpose]
-- path/to/api/resource.ts (Y lines) - [Brief purpose]
-
-FILES MODIFIED (X):
-- path/to/file.ts - [What changed]
-- path/to/config.json - [What changed]
-
-KEY DECISIONS:
-1. [Decision 1]
-   - Rationale: [Why this decision was made]
-   - Impact: [What this enables]
-
-2. [Decision 2]
-   - Rationale: [Why this decision was made]
-   - Impact: [What this enables]
-
-INTEGRATION POINTS:
-- [Connection to Feature A]: [How it integrates]
-- [Uses Shared Component X]: [For what purpose]
-- [Will Connect to Future Feature Y]: [How it's prepared]
-
-CHALLENGES RESOLVED:
-1. [Challenge]
-   - Problem: [What was wrong]
-   - Solution: [How it was fixed]
-   - Lesson: [What to remember]
-
-2. [Challenge]
-   - Problem: [What was wrong]
-   - Solution: [How it was fixed]
-   - Lesson: [What to remember]
-
-LESSONS LEARNED:
-1. [Learning about development process]
-2. [Learning about the tech stack]
-3. [Learning about architecture]
-
-CODE PATTERNS ESTABLISHED:
-typescript
-// [Pattern name]
-[Show actual code example of pattern used]
+**Execute:**
+```bash
+# Recent commits (last 3)
+git log --oneline -3 2>/dev/null || echo "No git history"
 ```
 
-- Usage: [When to use this pattern]
-- Benefits: [Why this pattern is good]
+If git fails, just note: "No git repository - memory created from PRD only"
 
-ACCEPTANCE CRITERIA:
-- [Criteria 1] - [How it was verified]
-- [Criteria 2] - [How it was verified]
-- [Criteria 3] - [How it was verified]
+---
 
-### Step 4: Write Memory File
+## STEP 3: Get Feature Name
 
-1. Determine file location:
-   - Feature name from PRD filename
-   - Format: docs/[feature]/story-us-[###]-[slug-title].txt
+**Execute:**
+```bash
+feature=$(basename "$1" .json | sed 's/prd-//')
+```
 
-2. Create directory if needed:
-   mkdir -p "docs/[feature]"
+---
 
-3. Write memory file
+## STEP 4: Create Memory File
 
-### Step 5: Commit Memory File
+**Execute:**
+```bash
+mkdir -p "docs/$feature"
+```
 
-git add "docs/[feature]/story-*.txt"
-git commit -m "docs: add story memory for US-XXX"
+**Write to:** `docs/$feature/story-us-$(echo $2 | tr '[:upper:]' '[:lower:]' | tr ' ' '-').txt`
 
-## Output
+**Use this template (FILL IT IN):**
 
-When complete, output:
+```
+---
+memoryVersion: 1
+storyId: $2
+storyTitle: [from jq]
+completedDate: $(date +%Y-%m-%d)
+---
 
+STORY: $2 - [TITLE]
+========================
+
+DESCRIPTION:
+[story description]
+
+MAVEN STEPS COMPLETED:
+[steps from jq]
+
+IMPLEMENTATION SUMMARY:
+[2-3 sentences what was built]
+
+KEY FILES:
+[List main files created/modified]
+
+DECISIONS MADE:
+[Any important choices]
+
+INTEGRATION POINTS:
+[How this connects to other features]
+
+LESSONS LEARNED:
+[What to remember for future stories]
+```
+
+---
+
+## STEP 5: Output Marker
+
+**Output exactly:**
+
+```
 <STORY_MEMORY_CREATED>
-Story: US-XXX - Story Title
-Memory File: docs/[feature]/story-us-xxx-title.txt
-Content Length: [characters]
+Story: $2 - [TITLE]
+Memory File: [path to file]
+Content Length: [character count]
 </STORY_MEMORY_CREATED>
+```
 
-## Important Notes
+---
 
-- Be specific: Use actual filenames, line counts, code examples
-- Be meaningful: Fill all sections with real content, not placeholders
-- Be useful: Write for your future self (or another developer)
-- Be honest: Include challenges and what didn't work
-- Think forward: What would help someone working on a related story?
+## CRITICAL: BE FAST
 
-The story memory will be:
-1. Included in consolidated memory when PRD is complete
-2. Available as context for future stories
-3. A reference for understanding implementation decisions
+- Don't read every file - just list them
+- Don't over-analyze - capture the key points
+- If git fails, just use PRD info
+- If unsure, keep it brief
+
+The goal is a useful memory reference, not a comprehensive documentation.
+
+---
+
+## Example
+
+Input: `/create-story-memory docs/prd-abuse-controls.json US-001`
+
+Output:
+```bash
+# Get story
+jq '.userStories[] | select(.id == "US-001")' docs/prd-abuse-controls.json
+# → Gets title, description, steps
+
+# Get feature name
+basename docs/prd-abuse-controls.json .json | sed 's/prd-//'
+# → "abuse-controls"
+
+# Create directory
+mkdir -p docs/abuse-controls
+
+# Write memory
+cat > docs/abuse-controls/story-us-001-define-hard-caps.txt << 'EOF'
+---
+memoryVersion: 1
+storyId: US-001
+storyTitle: Define Hard Caps
+completedDate: 2026-01-28
+---
+
+STORY: US-001 - Define Hard Caps
+========================
+
+DESCRIPTION: Define hard caps for API rate limiting and abuse prevention
+
+MAVEN STEPS COMPLETED: [1]
+
+IMPLEMENTATION SUMMARY:
+Created rate limiting configuration with hard caps for API endpoints. Defined maximum request rates per user and per API key.
+
+KEY FILES:
+- src/config/rate-limits.ts - Rate limit definitions
+- src/middleware/rate-limit.ts - Rate limiting middleware
+
+DECISIONS MADE:
+- Used token bucket algorithm for rate limiting
+- Set default caps at 1000 requests/hour per user
+
+INTEGRATION POINTS:
+- Connects to authentication system for user identification
+- Will be used by abuse-detection feature
+
+LESSONS LEARNED:
+- Rate limits should be configurable per environment
+- Need to add monitoring for rate limit hits
+EOF
+
+# Output marker
+echo "<STORY_MEMORY_CREATED>
+Story: US-001 - Define Hard Caps
+Memory File: docs/abuse-controls/story-us-001-define-hard-caps.txt
+Content Length: $(wc -c < docs/abuse-controls/story-us-001-define-hard-caps.txt)
+</STORY_MEMORY_CREATED>"
+```
+
+Done! Returns to flow.sh immediately.

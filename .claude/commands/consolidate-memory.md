@@ -1,215 +1,207 @@
 ---
-description: Consolidate all story memories into PRD when all stories complete. AI-powered analysis and synthesis of implementation patterns, decisions, and learnings.
+description: Consolidate story memories when PRD complete - quick, actionable
 argument-hint: [prd-file]
 ---
 
-# Memory Consolidation Command
+# Consolidate Memory - QUICK VERSION
 
-You are consolidating all story memories from a completed PRD into a single, coherent consolidated memory.
+**YOU MUST consolidate all story memories into ONE file NOW.**
 
-## Trigger
-This command is automatically triggered when all stories in a PRD are marked as complete (`passes: true`).
+This is called when ALL stories in a PRD are complete. Work FAST.
 
-## Input
-- PRD file path provided as argument: `$1`
-- All story memory files in `docs/[feature]/story-*.txt`
+**CRITICAL:** Work in current directory (`$PWD`), NOT command installation directory.
 
-## Your Task
+---
 
-### Step 1: Read and Understand
+## The Job
 
-1. **Read the PRD file** to understand the feature:
-   ```bash
-   cat "$PRD_FILE"
-   ```
+Read all story memory files and create ONE consolidated memory file at: `docs/consolidated-[feature].txt`
 
-2. **Find all story memory files**:
-   ```bash
-   find docs/[feature]/story-*.txt -type f | sort
-   ```
+---
 
-3. **Read each story memory file** to understand:
-   - What was implemented
-   - Key decisions made
-   - Challenges resolved
-   - Lessons learned
-   - Code patterns established
+## STEP 1: Get Feature Name
 
-### Step 2: Extract and Synthesize
-
-From all story memories, extract and organize:
-
-**Architecture Decisions:**
-- Tech stack choices
-- Project structure
-- Design patterns
-- Integration approaches
-
-**Implementation Patterns:**
-- Component structure
-- API patterns
-- State management
-- Error handling
-
-**Key Learnings:**
-- What worked well
-- What didn't work
-- Lessons for future work
-
-**Story Summaries:**
-- Brief summary of each story
-- What each story accomplished
-
-### Step 3: Create Consolidated Memory
-
-Write a comprehensive consolidated memory following this structure:
-
-```markdown
-# Consolidated Memory: [Feature Name]
-
-## Project Overview
-[Brief 2-3 sentence description of what was built]
-
-## Architecture Decisions
-
-### Tech Stack
-- **Framework**: [Why this choice]
-- **Database**: [Why this choice]
-- **Language**: [TypeScript approach, strict mode]
-- **Styling**: [Tailwind/CSS approach]
-- **State Management**: [Approach and why]
-
-### Project Structure
-```
-src/
-├── features/[feature-name]/
-│   ├── components/     [What goes here]
-│   ├── api/            [What goes here]
-│   ├── hooks/          [What goes here]
-│   ├── types/          [What goes here]
-│   └── index.ts        [Public API]
-└── shared/
-    ├── ui/             [Shared components]
-    ├── lib/            [Utilities]
-    └── [other shared]   [As needed]
-```
-
-**Key Principles:**
-- [Principle 1 from implementation]
-- [Principle 2 from implementation]
-
-## Integration Patterns
-
-### Data Layer
-[How database/API integration works]
-
-### State Management
-[How state is managed across the app]
-
-### Component Communication
-[How components talk to each other]
-
-## Common Patterns
-
-### Component Structure
-```typescript
-// Standard component pattern
-[Show actual pattern used]
-```
-
-### API Pattern
-```typescript
-// Standard API call pattern
-[Show actual pattern used]
-```
-
-### Error Handling
-```typescript
-// Error handling approach
-[Show actual pattern used]
-```
-
-### Type Safety
-```typescript
-// Type definitions approach
-[Show actual pattern used]
-```
-
-## Story Summaries
-
-### US-XXX-001: [Story Title]
-[Brief summary of what was implemented]
-
-### US-XXX-002: [Story Title]
-[Brief summary of what was implemented]
-
-[... one summary per story ...]
-
-## Key Learnings
-
-### What Worked Well
-- [Learning 1]
-- [Learning 2]
-
-### Challenges Resolved
-- [Challenge 1 and how it was solved]
-- [Challenge 2 and how it was solved]
-
-### Lessons for Future Work
-- [Lesson 1]
-- [Lesson 2]
-
-## Integration Points
-- [How this feature connects to other features]
-- [What other features need to know]
-
-## Next Considerations
-- [What to consider for future enhancements]
-- [Technical debt items]
-- [Improvement opportunities]
-```
-
-### Step 4: Update PRD
-
-1. Read the current PRD
-2. Update the `consolidatedMemory` field with your consolidated memory
-3. Write the updated PRD back
-
+**Execute:**
 ```bash
-# Use jq to update the PRD
-jq --arg memory "$CONSOLIDATED_MEMORY" \
-   '.consolidatedMemory = $memory' \
-   "$PRD_FILE" > /tmp/prd-temp.json && \
-   mv /tmp/prd-temp.json "$PRD_FILE"
+if [ -n "$1" ]; then
+    feature=$(basename "$1" .json | sed 's/prd-//')
+else
+    # Find first PRD if not specified
+    prd=$(find docs -name "prd-*.json" -type f | head -1)
+    feature=$(basename "$prd" .json | sed 's/prd-//')
+fi
 ```
 
-### Step 5: Commit Changes
+---
 
+## STEP 2: Find All Story Memories
+
+**Execute:**
 ```bash
-git add "$PRD_FILE"
-git commit -m "docs: consolidate memory for [feature-name]"
-git push
+find docs/$feature/story-*.txt -type f | sort
 ```
 
-## Output
+---
 
-When complete, output:
+## STEP 3: Read and Synthesize
+
+**For each story memory:**
+1. Read the file
+2. Extract key info (story ID, title, what was built, decisions, lessons)
+3. Keep it brief - 5-10 lines per story max
+
+---
+
+## STEP 4: Create Consolidated Memory
+
+**Write to:** `docs/consolidated-$feature.txt`
+
+**Use this template:**
 
 ```
-<MEMORY_CONSOLIDATED>
-Feature: [feature-name]
+---
+memoryType: consolidated
+feature: [feature name]
+createdDate: $(date +%Y-%m-%d)
+totalStories: [count]
+---
+
+CONSOLIDATED MEMORY: [FEATURE NAME]
+====================================
+
+TECH STACK:
+[Main technologies, frameworks, libraries used]
+
+ARCHITECTURE:
+[Project structure, key patterns, organization]
+
+STORY SUMMARIES:
+================
+
+[STORY-ID] - [Title]
+- Implemented: [what was built]
+- Key decisions: [important choices]
+- Lessons: [what to remember]
+
+[STORY-ID] - [Title]
+- Implemented: [what was built]
+- Key decisions: [important choices]
+- Lessons: [what to remember]
+
+[Continue for all stories...]
+
+INTEGRATION POINTS:
+[How this feature connects to others]
+
+IMPORTANT PATTERNS:
+[Reusable code patterns, conventions established]
+
+KNOWN ISSUES / FUTURE WORK:
+[What's left todo, known limitations, future improvements]
+```
+
+---
+
+## STEP 5: Output Marker
+
+**Output exactly:**
+
+```
+<CONSOLIDATED_MEMORY_CREATED>
+Feature: [feature name]
+Memory File: docs/consolidated-[feature].txt
 Stories Processed: [count]
-Consolidated Memory Length: [characters]
-</MEMORY_CONSOLIDATED>
+Total Length: [character count]
+</CONSOLIDATED_MEMORY_CREATED>
 ```
 
-## Important Notes
+---
 
-- **Target 30-50K tokens**: Summarize comprehensively while staying within this limit to preserve critical information
-- **Be comprehensive**: Include all meaningful patterns and learnings
-- **Be specific**: Use actual examples from the codebase
-- **Be organized**: Group related information together
-- **Be concise**: Avoid repetition, focus on what matters
-- **Think forward**: Write for someone who will work on this next
+## CRITICAL: BE FAST
 
-The consolidated memory will be loaded as context for future stories in related PRDs, so make it useful!
+- Don't over-analyze - capture the essentials
+- Don't read every source file - use what's in story memories
+- Keep summaries brief (5-10 lines per story)
+- If something is unclear, make a reasonable judgment
+- The goal is useful context, not perfect documentation
+
+---
+
+## Example
+
+Input: `/consolidate-memory docs/prd-abuse-controls.json`
+
+```bash
+# Get feature name
+feature="abuse-controls"
+
+# Find story memories
+find docs/abuse-controls/story-*.txt
+# → docs/abuse-controls/story-us-001-define-hard-caps.txt
+# → docs/abuse-controls/story-us-002-rate-limiting.txt
+
+# Read each memory, extract key info
+
+# Create consolidated memory
+cat > docs/consolidated-abuse-controls.txt << 'EOF'
+---
+memoryType: consolidated
+feature: abuse-controls
+createdDate: 2026-01-28
+totalStories: 2
+---
+
+CONSOLIDATED MEMORY: ABUSE CONTROLS
+====================================
+
+TECH STACK:
+- Next.js 14 with App Router
+- Supabase for rate limit storage
+- Redis for distributed caching
+- TypeScript
+
+ARCHITECTURE:
+- Feature-based structure under src/features/abuse-controls/
+- Middleware layer for request interception
+- Config-driven rate limiting rules
+
+STORY SUMMARIES:
+================
+
+US-001 - Define Hard Caps
+- Implemented: Rate limit configuration system with hard caps
+- Key decisions: Used token bucket algorithm, set 1000 req/hour default
+- Lessons: Rate limits should be environment-configurable
+
+US-002 - Rate Limiting Middleware
+- Implemented: Express middleware for rate limit enforcement
+- Key decisions: IP-based and user-based limiting, Redis for distributed state
+- Lessons: Need monitoring for rate limit hits, consider burst allowances
+
+INTEGRATION POINTS:
+- Connects to authentication system for user identification
+- API gateway uses these limits for all endpoints
+- Will be extended by abuse-detection feature
+
+IMPORTANT PATTERNS:
+- Rate limit rules are defined in config files, not hardcoded
+- Middleware chain: rate limiting → auth → handler
+- Fallback to local limits if Redis unavailable
+
+KNOWN ISSUES / FUTURE WORK:
+- Add admin UI for managing rate limits
+- Implement burst allowance for traffic spikes
+- Add metrics/monitoring for limit violations
+- Consider per-endpoint rate limits
+EOF
+
+# Output marker
+echo "<CONSOLIDATED_MEMORY_CREATED>
+Feature: abuse-controls
+Memory File: docs/consolidated-abuse-controls.txt
+Stories Processed: 2
+Total Length: $(wc -c < docs/consolidated-abuse-controls.txt)
+</CONSOLIDATED_MEMORY_CREATED>"
+```
+
+Done! Returns immediately.
