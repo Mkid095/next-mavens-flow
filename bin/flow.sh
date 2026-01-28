@@ -508,14 +508,16 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
 
     REMAINING=$((TOTAL_STORIES - COMPLETED_STORIES))
     if [ $TOTAL_STORIES -gt 0 ]; then
-        PROGRESS=$(( (COMPLETED_STORIES * 100) / TOTAL_STORIES ))
+        # Use awk for decimal percentage calculation
+        PROGRESS=$(awk "BEGIN {printf \"%.1f\", ($COMPLETED_STORIES * 100.0) / $TOTAL_STORIES}")
     else
-        PROGRESS=0
+        PROGRESS="0.0"
     fi
 
-    # Show progress
+    # Show progress with proper alignment
+    PROGRESS_BAR=$(printf "│  Progress: ${GREEN}%3d${NC}/${CYAN}%-3d stories    ${YELLOW}%6s${NC}    ${GRAY}(%3d remaining)${NC} │" "$COMPLETED_STORIES" "$TOTAL_STORIES" "$PROGRESS%" "$REMAINING")
     echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│  Progress: ${GREEN}$COMPLETED_STORIES${NC}/${CYAN}$TOTAL_STORIES stories${NC}    ${YELLOW}$PROGRESS%%${NC}    ${GRAY}($REMAINING remaining)${NC}│${NC}"
+    echo -e "${CYAN}$PROGRESS_BAR${NC}"
     echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
     echo ""
 
