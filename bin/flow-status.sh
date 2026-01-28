@@ -3,6 +3,14 @@
 # Maven Flow - Status Script
 # ============================================================================
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source banner
+if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/flow-banner.sh"
+fi
+
 # Colors
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -10,6 +18,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 GRAY='\033[0;90m'
 NC='\033[0m'
+
+# Show ASCII banner
+show_flow_banner
 
 # Check if jq is available
 if ! command -v jq &> /dev/null; then

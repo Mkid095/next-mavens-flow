@@ -6,6 +6,14 @@
 
 set -e
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source banner
+if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/flow-banner.sh"
+fi
+
 # Colors
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -23,6 +31,9 @@ DESCRIPTION="$*"
 
 # Print header
 print_header() {
+    # Show ASCII banner
+    show_flow_banner
+
     echo ""
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${CYAN}║      Maven Flow - PRD Generator & Requirements Analyst     ║${NC}"

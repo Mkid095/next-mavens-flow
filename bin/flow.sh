@@ -14,6 +14,11 @@ set -e
 # Get script directory FIRST (needed by status command)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Source banner
+if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/flow-banner.sh"
+fi
+
 # Default parameters
 MAX_ITERATIONS=100
 SLEEP_SECONDS=2
@@ -477,6 +482,9 @@ if [ "$CONTINUE" = true ]; then
 fi
 
 # If we reach this point, it means the user ran "flow start" (default command)
+
+# Show ASCII banner
+show_flow_banner
 
 echo ""
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
