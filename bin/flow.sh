@@ -127,17 +127,46 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         help|--help|-h)
-            echo "Maven Flow - Autonomous Development Orchestrator"
-            echo ""
-            echo "Usage:"
-            echo "  flow start [--dry-run] [max-iterations]  - Start flow (default: 100 iterations)"
-            echo "  flow status                                  - Show current status"
-            echo "  flow continue                                - Continue from previous session"
-            echo "  flow reset                                   - Reset session state"
-            echo "  flow help                                    - Show this help"
-            echo ""
-            echo "Options:"
-            echo "  --dry-run    Show what would happen without making changes"
+            cat << 'HELP'
+
+ __    __     ______     __   __   ______     __   __     ______        ______   __         ______     __     __
+/\ "-./  \   /\  __ \   /\ \ / /  /\  ___\   /\ "-.\ \   /\  ___\      /\  ___\ /\ \       /\  __ \   /\ \  _ \ \
+\ \ \-./\ \  \ \  __ \  \ \ \/   \ \  __\   \ \ \-.  \  \ \___  \     \ \  __\ \ \ \____  \ \ \/\ \  \ \ \/ ".\ \
+ \ \_\ \ \_\  \ \_\ \_\  \ \__|    \ \_____\  \ \_\\"\_\  \/\_____\     \ \_\    \ \_____\  \_____\  \ \__/".~\_\
+  \/_/  \/_/   \/_/\/_/   \/_/      \/_____/   \/_/ \/_/   \/_____/      \/_/     \/_____/   \/_____/   \/_/   \_/
+
+Maven Flow - Autonomous AI Development System
+═════════════════════════════════════════════════════════════════════════════════════════════
+
+MAIN COMMANDS
+  flow start [iterations]     Start autonomous development (default: 100 iterations)
+  flow status                 Show project progress and story completion
+  flow continue               Resume from previous session
+  flow reset                  Reset session state and start fresh
+  flow help, flow --help      Show this help screen
+
+PRD WORKFLOW
+  flow-prd [description]      Generate a new PRD from scratch or plan.md
+  flow-convert [feature]      Convert markdown PRD to JSON format
+                              Use --all to convert all PRDs
+                              Use --force to reconvert existing JSON files
+
+MAINTENANCE
+  flow-update [description]   Update Maven Flow system from GitHub
+
+OPTIONS
+  --dry-run                   Show what would happen without making changes
+  -h, --help, help            Show help screen
+
+WORKFLOW
+  1. Create PRD:    flow-prd "your feature description"
+  2. Convert:       flow-convert feature-name
+  3. Develop:       flow start
+
+GETTING STARTED
+  GitHub: https://github.com/Mkid095/next-mavens-flow
+
+HELP
             exit 0
             ;;
         --dry-run)
