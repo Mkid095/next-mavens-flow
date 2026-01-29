@@ -364,10 +364,17 @@ cleanup() {
     local session_id=$(cat "$SESSION_FILE" 2>/dev/null || echo "")
 
     if [ -n "$session_id" ]; then
-        # Source lock library for cleanup function
+        # Clean up all locks for this session
         if [ -f ".claude/lib/lock.sh" ]; then
             source .claude/lib/lock.sh
-            clear_all_session_locks "$session_id"
+            # Remove all lock files owned by this session
+            for lock_data in .flow-locks/*.data; do
+                [ -f "$lock_data" ] || continue
+                local owner=$(jq -r '.sessionId // empty' "$lock_data" 2>/dev/null)
+                if [ "$owner" = "$session_id" ]; then
+                    rm -f "${lock_data%.data}" "${lock_data}"
+                fi
+            done
         fi
     fi
 
@@ -591,6 +598,9 @@ else
     exit 1
 fi
 
+# Set heartbeat interval if not defined
+FLOW_HEARTBEAT_INTERVAL=${FLOW_HEARTBEAT_INTERVAL:-60}
+
 # Start heartbeat loop (mandatory - background)
 (
     while true; do
@@ -598,7 +608,7 @@ fi
         update_session_heartbeats "$SESSION_ID"
     done
 ) &
-local heartbeat_pid=$!
+heartbeat_pid=$!
 echo $heartbeat_pid > .flow-heartbeat-pid
 
 # Cleanup heartbeat on exit (in addition to session cleanup)
