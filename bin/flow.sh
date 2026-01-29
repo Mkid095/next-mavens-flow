@@ -216,9 +216,9 @@ show_spinner() {
 
     while kill -0 $pid 2>/dev/null; do
         for frame in "${SPINNER[@]}"; do
-            # Restore cursor position and draw spinner
+            # Restore cursor position and draw spinner only
             tput rc
-            echo -ne "${CYAN}[${frame}]${NC} ${message}...   "
+            echo -ne "${CYAN}[${frame}]${NC}   "
             sleep $delay
             # Check if process still running
             kill -0 $pid 2>/dev/null || break
@@ -681,6 +681,8 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     fi
 
     # Parse result from find_and_lock_story
+    # Get the last line (contains "prd_file|story_id") - first line is session ID
+    result=$(echo "$result" | tail -1)
     PRD_FILE=$(echo "$result" | cut -d'|' -f1)
     STORY_ID=$(echo "$result" | cut -d'|' -f2)
 
