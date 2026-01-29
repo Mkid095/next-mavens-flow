@@ -2,6 +2,16 @@
 # Maven Flow Convert - PowerShell wrapper
 param([string[]]$ArgsArray)
 
+# Get script directory
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Source banner
+$BannerPath = Join-Path $ScriptDir "Banner.ps1"
+if (Test-Path $BannerPath) {
+    . $BannerPath
+    Show-FlowBanner
+}
+
 $BoxTop =    "+============================================================+"
 $BoxTitle =  "|           Maven Flow - PRD Format Converter               |"
 $BoxBottom = "+============================================================+"

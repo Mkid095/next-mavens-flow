@@ -2,6 +2,16 @@
 # Maven Flow PRD - PowerShell wrapper
 param([Parameter(ValueFromRemainingArguments)]$ArgsArray)
 
+# Get script directory
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Source banner
+$BannerPath = Join-Path $ScriptDir "Banner.ps1"
+if (Test-Path $BannerPath) {
+    . $BannerPath
+    Show-FlowBanner
+}
+
 Write-Host ""
 Write-Host "+============================================================+" -ForegroundColor Cyan
 Write-Host "|        Maven Flow - PRD Generator & Requirements Analyst    |" -ForegroundColor Cyan

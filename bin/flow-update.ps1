@@ -2,6 +2,16 @@
 # Maven Flow Update - PowerShell wrapper
 param([string[]]$ArgsArray)
 
+# Get script directory
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Source banner
+$BannerPath = Join-Path $ScriptDir "Banner.ps1"
+if (Test-Path $BannerPath) {
+    . $BannerPath
+    Show-FlowBanner
+}
+
 $Command = if ($ArgsArray) { $ArgsArray -join " " } else { "sync" }
 
 Write-Host ""

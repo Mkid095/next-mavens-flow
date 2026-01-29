@@ -10,8 +10,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source banner
-if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
-    source "$SCRIPT_DIR/flow-banner.sh"
+if [ -f "$SCRIPT_DIR/../.claude/bin/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/../.claude/bin/flow-banner.sh"
+    show_flow_banner
 fi
 
 # Colors
@@ -26,8 +27,8 @@ NC='\033[0m'
 # Animation frames
 SPINNER=('⠋' '⠙' '⠸' '⠴' '⠦' '⠇' '⠏')
 
-# Get description
-DESCRIPTION="$*"
+# Get command
+COMMAND="${1:-sync}"
 
 # Print header
 print_header() {
@@ -35,55 +36,66 @@ print_header() {
     show_flow_banner
 
     echo ""
-    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║          Maven Flow - System Updater & Maintenance         ║${NC}"
-    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${CYAN}+============================================================+${NC}"
+    echo -e "${CYAN}|          Maven Flow - System Updater & Maintenance        |${NC}"
+    echo -e "${CYAN}+============================================================+${NC}"
     echo ""
 }
 
 # Show what we're doing
 print_header
 
-if [ -z "$DESCRIPTION" ]; then
-    echo -e "${BLUE}▶ Updating Maven Flow System${NC}"
-    echo -e "${GRAY}  → Checking for updates and applying latest improvements${NC}"
-else
-    echo -e "${BLUE}▶ Updating Maven Flow:${NC} ${YELLOW}$DESCRIPTION${NC}"
-    echo -e "${GRAY}  → Applying updates and enhancements${NC}"
-fi
+case "$COMMAND" in
+    check)
+        echo -e "${YELLOW}[INFO] Checking for updates...${NC}"
+        echo -e "${GRAY}  [INFO] Comparing with GitHub repository${NC}"
+        ;;
+    sync)
+        echo -e "${YELLOW}[INFO] Updating Maven Flow...${NC}"
+        echo -e "${GRAY}  [INFO] Fetching latest changes${NC}"
+        echo -e "${GRAY}  [INFO] Syncing components${NC}"
+        ;;
+    force)
+        echo -e "${YELLOW}[INFO] Force updating...${NC}"
+        echo -e "${GRAY}  [INFO] Reinstalling all components${NC}"
+        ;;
+    help)
+        echo -e "${CYAN}Maven Flow Updater Commands:${NC}"
+        echo ""
+        echo -e "  ${YELLOW}flow-update check${NC}    Check for updates"
+        echo -e "  ${YELLOW}flow-update sync${NC}     Fetch and apply updates"
+        echo -e "  ${YELLOW}flow-update force${NC}    Force reinstall"
+        echo ""
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}[ERROR] Unknown command: $COMMAND${NC}"
+        echo -e "${GRAY}[INFO] Run 'flow-update help' for options${NC}"
+        exit 1
+        ;;
+esac
 echo ""
 
 # Build the prompt
-PROMPT="/flow-update $DESCRIPTION"
+PROMPT="/flow-update $COMMAND"
 
-# Start a background spinner while Claude runs
-(
-    while true; do
-        for frame in "${SPINNER[@]}"; do
-            echo -ne "\r${CYAN}  [${frame}] Updating Maven Flow...${NC}"
-            sleep 0.1
-        done
-    done
-) &
-SPINNER_PID=$!
-
-# Trap to ensure spinner is killed on exit
-trap "kill $SPINNER_PID 2>/dev/null" EXIT
+# Show processing message
+echo -e "${CYAN}[INFO] Processing update...${NC}"
 
 # Run Claude command
 if claude --dangerously-skip-permissions "$PROMPT"; then
-    # Success - kill spinner and show success
-    kill $SPINNER_PID 2>/dev/null
-    echo -e "\r${GREEN}[✓] Maven Flow updated successfully${NC}                                       "
     echo ""
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}+============================================================+${NC}"
+    echo -e "${GREEN}|                 [OK] UPDATE COMPLETE                       |${NC}"
+    echo -e "${GREEN}+============================================================+${NC}"
+    echo ""
     echo -e "${GRAY}System ready:${NC}"
-    echo -e "  ${GREEN}→${NC} Run: ${YELLOW}flow start${NC} to continue development"
-    echo -e "  ${GREEN}→${NC} Run: ${YELLOW}flow status${NC} to see current state"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  [INFO] Run: ${YELLOW}flow start${NC} to continue development"
+    echo -e "  [INFO] Run: ${YELLOW}flow status${NC} to see current state"
 else
-    # Error - kill spinner and show error
-    kill $SPINNER_PID 2>/dev/null
-    echo -e "\r${RED}[X] Error updating Maven Flow${NC}                                             "
+    echo ""
+    echo -e "${RED}+============================================================+${NC}"
+    echo -e "${RED}|               [ERROR] UPDATE FAILED                        |${NC}"
+    echo -e "${RED}+============================================================+${NC}"
     exit 1
 fi

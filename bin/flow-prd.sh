@@ -10,8 +10,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source banner
-if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
-    source "$SCRIPT_DIR/flow-banner.sh"
+if [ -f "$SCRIPT_DIR/../.claude/bin/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/../.claude/bin/flow-banner.sh"
+    show_flow_banner
 fi
 
 # Colors
@@ -35,55 +36,55 @@ print_header() {
     show_flow_banner
 
     echo ""
-    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║      Maven Flow - PRD Generator & Requirements Analyst     ║${NC}"
-    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${CYAN}+============================================================+${NC}"
+    echo -e "${CYAN}|      Maven Flow - PRD Generator & Requirements Analyst    |${NC}"
+    echo -e "${CYAN}+============================================================+${NC}"
     echo ""
 }
+
+# If description contains "plan.md", use plan mode
+if [[ "$DESCRIPTION" == *"plan.md"* ]] || [[ "$DESCRIPTION" == "plan" ]]; then
+    DESCRIPTION="plan"
+fi
 
 # Show what we're doing
 print_header
 
-if [ -z "$DESCRIPTION" ]; then
-    echo -e "${BLUE}▶ Generating PRD from scratch${NC}"
-    echo -e "${GRAY}  → Interactive mode - Claude will guide you through requirements${NC}"
+# Determine mode
+if [ "$DESCRIPTION" = "plan" ]; then
+    echo -e "${BLUE}[MODE]${NC} ${GREEN}PLAN (reading plan.md)${NC}"
+elif [[ "$DESCRIPTION" == fix* ]]; then
+    echo -e "${BLUE}[MODE]${NC} ${YELLOW}FIX (updating existing PRDs)${NC}"
+elif [ -z "$DESCRIPTION" ]; then
+    echo -e "${BLUE}[MODE]${NC} ${CYAN}SINGLE PRD (from description)${NC}"
+    echo -e "${GRAY}  [INFO] Interactive mode - Claude will guide you through requirements${NC}"
 else
-    echo -e "${BLUE}▶ Generating PRD for:${NC} ${YELLOW}$DESCRIPTION${NC}"
-    echo -e "${GRAY}  → Creating comprehensive Product Requirements Document${NC}"
+    echo -e "${BLUE}[MODE]${NC} ${CYAN}SINGLE PRD (from description)${NC}"
+    echo -e "${GRAY}  [INFO] Creating comprehensive Product Requirements Document${NC}"
+    echo -e "${BLUE}[DESCRIPTION]${NC} ${YELLOW}$DESCRIPTION${NC}"
 fi
 echo ""
 
 # Build the prompt
 PROMPT="/flow-prd $DESCRIPTION"
 
-# Start a background spinner while Claude runs
-(
-    while true; do
-        for frame in "${SPINNER[@]}"; do
-            echo -ne "\r${CYAN}  [${frame}] Generating PRD...${NC}"
-            sleep 0.1
-        done
-    done
-) &
-SPINNER_PID=$!
-
-# Trap to ensure spinner is killed on exit
-trap "kill $SPINNER_PID 2>/dev/null" EXIT
+# Show processing message
+echo -e "${CYAN}[INFO] Generating PRD...${NC}"
 
 # Run Claude command
 if claude --dangerously-skip-permissions "$PROMPT"; then
-    # Success - kill spinner and show success
-    kill $SPINNER_PID 2>/dev/null
-    echo -e "\r${GREEN}[✓] PRD generated successfully${NC}                                         "
     echo ""
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}+============================================================+${NC}"
+    echo -e "${GREEN}|                   [OK] PRD GENERATED                     |${NC}"
+    echo -e "${GREEN}+============================================================+${NC}"
+    echo ""
     echo -e "${GRAY}Next steps:${NC}"
-    echo -e "  ${GREEN}→${NC} Run: ${YELLOW}flow start${NC} to begin development"
-    echo -e "  ${GREEN}→${NC} Or:  ${YELLOW}flow-convert <prd-file>${NC} to convert existing PRD"
-    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "  [INFO] Run: ${YELLOW}flow start${NC} to begin development"
+    echo -e "  [INFO] Or:   ${YELLOW}flow-convert <prd-file>${NC} to convert existing PRD"
 else
-    # Error - kill spinner and show error
-    kill $SPINNER_PID 2>/dev/null
-    echo -e "\r${RED}[X] Error generating PRD${NC}                                               "
+    echo ""
+    echo -e "${RED}+============================================================+${NC}"
+    echo -e "${RED}|                 [ERROR] GENERATION FAILED                  |${NC}"
+    echo -e "${RED}+============================================================+${NC}"
     exit 1
 fi

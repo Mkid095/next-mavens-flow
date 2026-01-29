@@ -2,11 +2,29 @@
 # Maven Flow Status Command
 # Self-contained script to show PRD status
 
+# Get script directory
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Source banner
+$BannerPath = Join-Path $ScriptDir "Banner.ps1"
+if (Test-Path $BannerPath) {
+    . $BannerPath
+    Show-FlowBanner
+}
+
 Write-Host ""
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host "                    Maven Flow - Project Status                     " -ForegroundColor Cyan
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host ""
+
+# Check if jq is available
+$jqExe = Get-Command "jq" -ErrorAction SilentlyContinue
+if (-not $jqExe) {
+    Write-Host "  [ERROR] jq not found in PATH" -ForegroundColor Red
+    Write-Host "  [INFO] Install: winget install jq OR chocolatey install jq" -ForegroundColor Yellow
+    exit 1
+}
 
 $prdFiles = @(Get-ChildItem -Path "docs" -Filter "prd-*.json" -ErrorAction SilentlyContinue)
 if ($prdFiles.Count -eq 0) {
@@ -116,6 +134,71 @@ Write-Host ")" -NoNewline -ForegroundColor Gray
 Write-Host (" " * [math]::Max(0, 12 - $overallCountDisplay.Length)) -NoNewline
 Write-Host "│" -ForegroundColor Cyan
 Write-Host "└────────────────────────────────────────────────────────────────────┘" -ForegroundColor Cyan
+
+# Lock status (must match constants from lock.sh)
+$FLOW_HEARTBEAT_TIMEOUT = 300
+
+# Show lock status
+function Show-LockStatus {
+    if (-not (Test-Path ".flow-locks")) {
+        return
+    }
+
+    Write-Host ""
+    Write-Host "Story Locks:" -ForegroundColor Cyan
+
+    $lockFiles = Get-ChildItem -Path ".flow-locks" -Filter "*.lock.data" -ErrorAction SilentlyContinue
+    $found = $false
+
+    foreach ($lockData in $lockFiles) {
+        $found = $true
+        $lockInfo = Get-Content $lockData.FullName -Raw | ConvertFrom-Json
+
+        $storyId = $lockInfo.storyId
+        $sessionId = $lockInfo.sessionId
+        $pid = $lockInfo.pid
+        $lockedAt = $lockInfo.lockedAt
+        $lastHeartbeat = $lockInfo.lastHeartbeat
+
+        $now = [int][double]::Parse((Get-Date -UFormat %s))
+        $age = $now - $lockedAt
+        $heartbeatAge = $now - $lastHeartbeat
+
+        # PID + heartbeat AND logic: BOTH must be valid for "alive"
+        $status = "unknown"
+        $icon = ""
+        try {
+            $process = Get-Process -Id $pid -ErrorAction Stop
+            if ($heartbeatAge -lt $FLOW_HEARTBEAT_TIMEOUT) {
+                $status = "owner alive"
+                $icon = "[LOCKED]"
+                Write-Host "  " -NoNewline
+                Write-Host $icon -ForegroundColor Green -NoNewline
+            } else {
+                $status = "owner dead (reclaimable)"
+                $icon = "[STALE]"
+                Write-Host "  " -NoNewline
+                Write-Host $icon -ForegroundColor Yellow -NoNewline
+            }
+        } catch {
+            $status = "owner dead (reclaimable)"
+            $icon = "[STALE]"
+            Write-Host "  " -NoNewline
+            Write-Host $icon -ForegroundColor Yellow -NoNewline
+        }
+
+        $ageStr = "$([math]::Floor($age / 60))m"
+        $shortSessionId = if ($sessionId.Length -gt 8) { $sessionId.Substring(0, 8) } else { $sessionId }
+        Write-Host " $storyId - session $shortSessionId - $status ($ageStr old)"
+    }
+
+    if (-not $found) {
+        Write-Host "  No active locks" -ForegroundColor Gray
+    }
+}
+
+# Show lock status
+Show-LockStatus
 
 Write-Host ""
 Write-Host "  Run 'flow-continue' to resume, or 'flow-help' for more commands" -ForegroundColor Gray

@@ -229,6 +229,39 @@ for dir in "${MANIFEST_DIRS[@]}"; do
 done
 
 # -------------------------
+# STEP 4: ADD TO SHELL PATH
+# -------------------------
+log "[STEP 4] Adding to shell PATH..." yellow
+
+BIN_DIR="$TARGET_DIR/bin"
+PATH_ENTRY="export PATH=\"$BIN_DIR:\$PATH\""
+
+# Detect shell config file
+SHELL_CONFIG=""
+if [ -n "$BASH_VERSION" ]; then
+    SHELL_CONFIG="$HOME/.bashrc"
+elif [ -n "$ZSH_VERSION" ]; then
+    SHELL_CONFIG="$HOME/.zshrc"
+fi
+
+# Add to shell config if detected
+if [ -n "$SHELL_CONFIG" ] && [ -f "$SHELL_CONFIG" ]; then
+    if grep -q "Maven Flow" "$SHELL_CONFIG" 2>/dev/null; then
+        log "  [SKIP] Already in $SHELL_CONFIG" cyan
+    else
+        if [ "$DRY_RUN" = false ]; then
+            echo "" >> "$SHELL_CONFIG"
+            echo "# Maven Flow - Added by install.sh" >> "$SHELL_CONFIG"
+            echo "$PATH_ENTRY" >> "$SHELL_CONFIG"
+        fi
+        log "  [ADD] Added to PATH in $SHELL_CONFIG" green
+    fi
+else
+    log "  [INFO] Shell config not found. Add this to your shell profile:" cyan
+    log "  $PATH_ENTRY" cyan
+fi
+
+# -------------------------
 # DONE
 # -------------------------
 log ""
@@ -255,3 +288,11 @@ log "    flow start [n]           # Start autonomous development" gray
 log "    flow status              # Check progress" gray
 log "    flow-prd create ...      # Create PRD" gray
 log "    flow-convert <feature>   # Convert PRD to JSON" gray
+log ""
+log "[!] Action Required:" yellow
+if [ -n "$SHELL_CONFIG" ]; then
+    log "  Run:  source $SHELL_CONFIG  (or restart your terminal)" gray
+else
+    log "  Add bin/ to your PATH" gray
+fi
+log ""

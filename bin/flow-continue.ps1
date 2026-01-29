@@ -5,6 +5,16 @@ param([int]$MaxIterations = 100, [int]$SleepSeconds = 2)
 
 $ErrorActionPreference = 'Continue'
 
+# Get script directory
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Source banner
+$BannerPath = Join-Path $ScriptDir "Banner.ps1"
+if (Test-Path $BannerPath) {
+    . $BannerPath
+    Show-FlowBanner
+}
+
 $projectName = (Split-Path -Leaf (Get-Location))
 $startTime = Get-Date
 $sessionId = "$projectName-" + (New-Guid).Guid.Substring(0, 8)

@@ -7,8 +7,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source banner if available
-if [ -f "$SCRIPT_DIR/flow-banner.sh" ]; then
-    source "$SCRIPT_DIR/flow-banner.sh"
+if [ -f "$SCRIPT_DIR/../.claude/bin/flow-banner.sh" ]; then
+    source "$SCRIPT_DIR/../.claude/bin/flow-banner.sh"
+    show_flow_banner
 fi
 
 # Colors
