@@ -695,7 +695,8 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     echo ""
 
     # Run Claude Code in background and show spinner
-    claude --dangerously-skip-permissions "$ITERATION_PROMPT" > /tmp/flow_output.txt 2>&1 &
+    # Pass SESSION_ID as environment variable
+    SESSION_ID="$SESSION_ID" claude --dangerously-skip-permissions "$ITERATION_PROMPT" > /tmp/flow_output.txt 2>&1 &
     CLAUDE_PID=$!
     show_spinner $CLAUDE_PID "Working on $STORY_ID" &
     SPINNER_PID=$!
