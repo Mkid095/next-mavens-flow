@@ -25,6 +25,13 @@ if errorlevel 1 (
 )
 
 echo.
-echo [OK] Installation complete. You can close this window.
+echo [OK] Installation complete.
+echo.
+echo [!] ACTION REQUIRED:
+echo   Run this command to start using Maven Flow immediately:
+echo     . $PROFILE
+echo.
+echo   Or restart your PowerShell session.
+echo.
 pause
 exit /b 0

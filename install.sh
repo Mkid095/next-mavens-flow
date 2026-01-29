@@ -233,8 +233,11 @@ done
 # -------------------------
 log "[STEP 4] Adding to shell PATH..." yellow
 
-BIN_DIR="$TARGET_DIR/bin"
-PATH_ENTRY="export PATH=\"$BIN_DIR:\$PATH\""
+# Use the CURRENT repository's bin directory (not the installed one)
+REPO_BIN_DIR="$SCRIPT_DIR/bin"
+PATH_ENTRY="export PATH=\"$REPO_BIN_DIR:\$PATH\""
+
+log "  [INFO] Adding to PATH: $REPO_BIN_DIR" cyan
 
 # Detect shell config file
 SHELL_CONFIG=""
@@ -261,6 +264,10 @@ else
     log "  $PATH_ENTRY" cyan
 fi
 
+# Add to current session so it works immediately
+export PATH="$REPO_BIN_DIR:$PATH"
+log "  [INFO] Added to current session PATH" cyan
+
 # -------------------------
 # DONE
 # -------------------------
@@ -283,13 +290,17 @@ log "    /flow status             # Check progress" gray
 log "    /flow-prd create ...     # Create PRD" gray
 log "    /flow-convert <feature>  # Convert PRD to JSON" gray
 log ""
-log "  Terminal Commands (via bin/flow):" cyan
+log "  Terminal Commands (now available from any directory):" cyan
 log "    flow start [n]           # Start autonomous development" gray
 log "    flow status              # Check progress" gray
 log "    flow-prd create ...      # Create PRD" gray
 log "    flow-convert <feature>   # Convert PRD to JSON" gray
 log ""
-log "[!] Action Required:" yellow
+log "[!] ACTION REQUIRED:" yellow
+if [ -n "$SHELL_CONFIG" ]; then
+    log "  Run:  source $SHELL_CONFIG  (or restart your terminal)" gray
+fi
+log ""
 if [ -n "$SHELL_CONFIG" ]; then
     log "  Run:  source $SHELL_CONFIG  (or restart your terminal)" gray
 else

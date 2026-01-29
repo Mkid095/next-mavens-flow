@@ -221,13 +221,18 @@ foreach ($dir in $ManifestDirs) {
 }
 
 # -------------------------
-# STEP 4: ADD TO PATH (PowerShell only)
+# STEP 4: ADD TO PATH
 # -------------------------
-Log "[STEP 4] Adding to PowerShell PATH..." "Yellow"
+Log "[STEP 4] Adding to PATH..." "Yellow"
 
-$BinDir = Join-Path $TargetDir "bin"
+# Use the CURRENT repository's bin directory (not the installed one)
+$RepoBinDir = Join-Path $ScriptDir "bin"
 $ProfilePath = $PROFILE
-$PathEntry = "`$env:Path += `";$BinDir`""
+
+# For PowerShell - add to current session and profile
+$PathEntry = "`$env:Path += `";$RepoBinDir`""
+
+Log "  [INFO] Adding to PATH: $RepoBinDir" "Cyan"
 
 # Ensure profile exists
 if (-not (Test-Path $ProfilePath)) {
@@ -240,7 +245,7 @@ if (-not (Test-Path $ProfilePath)) {
 # Check if PATH entry already exists
 if (Test-Path $ProfilePath) {
     $content = Get-Content $ProfilePath -Raw -ErrorAction SilentlyContinue
-    if ($content -and $content -match [regex]::Escape($BinDir)) {
+    if ($content -and $content -match [regex]::Escape($RepoBinDir)) {
         Log "  [SKIP] Already in PowerShell PATH" "Gray"
     } else {
         if (-not $DryRun) {
@@ -254,7 +259,7 @@ if (Test-Path $ProfilePath) {
 
 # Also add to .bashrc for Git Bash/WSL users
 $BashrcPath = Join-Path $env:USERPROFILE ".bashrc"
-$BashPathEntry = "export PATH=`"$BinDir`:`$PATH`""
+$BashPathEntry = "export PATH=`"$RepoBinDir`:`$PATH`""
 
 if (Test-Path $BashrcPath) {
     $bashContent = Get-Content $BashrcPath -Raw -ErrorAction SilentlyContinue
@@ -269,6 +274,10 @@ if (Test-Path $BashrcPath) {
         Log "  [ADD] Added to .bashrc PATH" "Green"
     }
 }
+
+# Add to current session so it works immediately without restart
+$env:Path += ";$RepoBinDir"
+Log "  [INFO] Added to current session PATH" "Cyan"
 
 # -------------------------
 # DONE
@@ -292,9 +301,12 @@ Log "    /flow status             # Check progress" "Gray"
 Log "    /flow-prd create ...     # Create PRD" "Gray"
 Log "    /flow-convert <feature>  # Convert PRD to JSON" "Gray"
 Log ""
-Log "  Terminal Commands (via bin/flow):" "Cyan"
+Log "  Terminal Commands (now available from any directory):" "Cyan"
 Log "    flow start [n]           # Start autonomous development" "Gray"
 Log "    flow status              # Check progress" "Gray"
 Log "    flow-prd create ...      # Create PRD" "Gray"
 Log "    flow-convert <feature>   # Convert PRD to JSON" "Gray"
+Log ""
+Log "[!] ACTION REQUIRED:" "Yellow"
+Log "  Run:  . `$PROFILE  (or restart your PowerShell session)" "Gray"
 Log ""
