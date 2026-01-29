@@ -17,7 +17,49 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 GRAY='\033[0;90m'
+MAGENTA='\033[0;35m'
 NC='\033[0m'
+
+# Must match constants from lock.sh
+FLOW_HEARTBEAT_TIMEOUT=300
+
+# Show lock status
+show_lock_status() {
+    [ -d .flow-locks ] || return 0
+
+    echo -e "\n${CYAN}Story Locks:${NC}"
+
+    local found=0
+    for lock_data in .flow-locks/*.lock.data; do
+        [ -f "$lock_data" ] || continue
+        found=1
+
+        local story_id=$(jq -r '.storyId' "$lock_data")
+        local session_id=$(jq -r '.sessionId' "$lock_data")
+        local pid=$(jq -r '.pid' "$lock_data")
+        local locked_at=$(jq -r '.lockedAt' "$lock_data")
+        local last_heartbeat=$(jq -r '.lastHeartbeat' "$lock_data")
+
+        local now=$(date +%s)
+        local age=$((now - locked_at))
+        local heartbeat_age=$((now - last_heartbeat))
+
+        # PID + heartbeat AND logic: BOTH must be valid for "alive"
+        local status="unknown"
+        if kill -0 "$pid" 2>/dev/null && [ "$heartbeat_age" -lt "$FLOW_HEARTBEAT_TIMEOUT" ]; then
+            status="owner alive"
+            icon="${GREEN}[LOCKED]${NC}"
+        else
+            status="owner dead (reclaimable)"
+            icon="${YELLOW}[STALE]${NC}"
+        fi
+
+        local age_str="$((age / 60))m"
+        echo -e "  ${icon} ${story_id} - session ${session_id:0:8} - ${status} (${age_str} old)"
+    done
+
+    [ $found -eq 0 ] && echo -e "  ${GRAY}No active locks${NC}"
+}
 
 # Show ASCII banner
 show_flow_banner
@@ -86,6 +128,11 @@ if [ -n "$prd_list" ]; then
 fi
 
 echo -e "${CYAN}════════════════════════════════════════${NC}"
+
+# Show lock status
+show_lock_status
+
+echo ""
 
 if [ $total -gt 0 ] && [ $completed -eq $total ]; then
     echo -e "${GREEN}[OK] All stories complete!${NC}"

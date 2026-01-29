@@ -120,7 +120,15 @@ while [[ $# -gt 0 ]]; do
                 fi
             fi
 
-            # Perform reset
+            # Perform reset - clear locks if session exists
+            if [ -f ".flow-session" ]; then
+                local session_id=$(cat .flow-session 2>/dev/null || echo "")
+                if [ -f ".claude/lib/lock.sh" ] && [ -n "$session_id" ]; then
+                    source .claude/lib/lock.sh
+                    clear_all_session_locks "$session_id"
+                    echo -e "${GREEN}[OK] Cleared locks for session ${session_id:0:8}...${NC}"
+                fi
+            fi
             rm -f .flow-session
             echo -e "${GREEN}[OK] Session reset${NC}"
             echo ""
@@ -353,6 +361,16 @@ write_max_reached() {
 
 # Cleanup function
 cleanup() {
+    local session_id=$(cat "$SESSION_FILE" 2>/dev/null || echo "")
+
+    if [ -n "$session_id" ]; then
+        # Source lock library for cleanup function
+        if [ -f ".claude/lib/lock.sh" ]; then
+            source .claude/lib/lock.sh
+            clear_all_session_locks "$session_id"
+        fi
+    fi
+
     rm -f "$SESSION_FILE"
 }
 
@@ -563,6 +581,38 @@ echo ""
 STORIES_COMPLETED=0
 
 # ============================================================================
+# Source lock library and start heartbeat loop
+# ============================================================================
+# Source lock library (defines FLOW_HEARTBEAT_INTERVAL constant and functions)
+if [ -f ".claude/lib/lock.sh" ]; then
+    source .claude/lib/lock.sh
+else
+    echo -e "${RED}[ERROR] Lock library not found at .claude/lib/lock.sh${NC}"
+    exit 1
+fi
+
+# Start heartbeat loop (mandatory - background)
+(
+    while true; do
+        sleep "$FLOW_HEARTBEAT_INTERVAL"
+        update_session_heartbeats "$SESSION_ID"
+    done
+) &
+local heartbeat_pid=$!
+echo $heartbeat_pid > .flow-heartbeat-pid
+
+# Cleanup heartbeat on exit (in addition to session cleanup)
+heartbeat_cleanup() {
+    local heartbeat_pid_file=".flow-heartbeat-pid"
+    if [ -f "$heartbeat_pid_file" ]; then
+        local hp=$(cat "$heartbeat_pid_file" 2>/dev/null || echo "")
+        [ -n "$hp" ] && kill $hp 2>/dev/null || true
+        rm -f "$heartbeat_pid_file"
+    fi
+}
+trap heartbeat_cleanup EXIT
+
+# ============================================================================
 # MAIN ITERATION LOOP
 # ============================================================================
 for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
@@ -599,26 +649,12 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
     echo ""
 
-    # Find first incomplete story across all PRDs
-    STORY_INFO=""
+    # Find and lock next story using filesystem lock
     PRD_FILE=""
     STORY_ID=""
     STORY_TITLE=""
 
-    for prd in docs/prd-*.json; do
-        if [ -f "$prd" ]; then
-            story=$(jq -r '.userStories[] | select(.passes == false) | "\(.id)|\(.title)"' "$prd" 2>/dev/null | head -1)
-            if [ -n "$story" ]; then
-                STORY_INFO="$story"
-                PRD_FILE="$prd"
-                IFS='|' read -r STORY_ID STORY_TITLE <<< "$story"
-                break
-            fi
-        fi
-    done
-
-    # Check if all stories are complete
-    if [ -z "$STORY_INFO" ]; then
+    if ! result=$(find_and_lock_story "$SESSION_ID"); then
         echo ""
         echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
         echo -e "${GREEN}║           🎉 ALL STORIES COMPLETE! 🎉                     ║${NC}"
@@ -633,6 +669,13 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
 
         exit 0
     fi
+
+    # Parse result from find_and_lock_story
+    PRD_FILE=$(echo "$result" | cut -d'|' -f1)
+    STORY_ID=$(echo "$result" | cut -d'|' -f2)
+
+    # Get story title from PRD
+    STORY_TITLE=$(jq -r ".userStories[] | select(.id==\"$STORY_ID\") | .title" "$PRD_FILE" 2>/dev/null || echo "Unknown")
 
     # Extract feature name from PRD file
     FEATURE=$(basename "$PRD_FILE" .json | sed 's/prd-//')
@@ -677,9 +720,12 @@ for ((iteration=1; iteration<=$MAX_ITERATIONS; iteration++)); do
     if [ "$is_complete" = "true" ]; then
         STORIES_COMPLETED=$((STORIES_COMPLETED + 1))
         echo -e "${GREEN}[✓] Story $STORY_ID completed!${NC}"
+        # Unlock this story (story-scoped, not session-scoped)
+        unlock_story "$PRD_FILE" "$STORY_ID" "$SESSION_ID"
         echo ""
     else
         echo -e "${YELLOW}[!] Story $STORY_ID not complete, will retry in next iteration${NC}"
+        # Keep lock for retry - story remains locked to this session
     fi
 
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
