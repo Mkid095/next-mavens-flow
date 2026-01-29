@@ -74,16 +74,32 @@ SYNC_ITEMS=(
   ".claude/adrs/003-feature-based-folder-structure.md"
   ".claude/adrs/004-specialist-agent-coordination.md"
 
-  # Bin
+  # Bin (.claude/bin - internal scripts)
   ".claude/bin/flow-banner.sh"
+  ".claude/bin/flow-convert.sh"
   ".claude/bin/flow-install-global.sh"
   ".claude/bin/flow-install-user.sh"
+
+  # Bin (project bin/ - main wrapper scripts to ~/.claude/bin)
+  "bin/flow.sh:.claude/bin/flow.sh"
+  "bin/flow-status.sh:.claude/bin/flow-status.sh"
+  "bin/test-locks.sh:.claude/bin/test-locks.sh"
 )
 
 # Sync each item
 for item in "${SYNC_ITEMS[@]}"; do
-  src="$SRC_DIR/$item"
-  dst="$DST_DIR/$item"
+  # Check if item uses source:destination format
+  if [[ "$item" == *:* ]]; then
+    src_path="${item%%:*}"
+    dst_rel="${item#*:}"
+    src="$SRC_DIR/$src_path"
+    dst="$DST_DIR/$dst_rel"
+    item_label="$src_path -> $dst_rel"
+  else
+    src="$SRC_DIR/$item"
+    dst="$DST_DIR/$item"
+    item_label="$item"
+  fi
 
   # Create destination directory
   dst_dir=$(dirname "$dst")
@@ -97,7 +113,7 @@ for item in "${SYNC_ITEMS[@]}"; do
       sed -i 's/\r$//' "$dst"
       chmod +x "$dst"
     fi
-    echo -e "${GREEN}✓${NC} Synced: $item"
+    echo -e "${GREEN}✓${NC} Synced: $item_label"
   else
     echo -e "${YELLOW}⚠${NC} Source not found: $src"
   fi

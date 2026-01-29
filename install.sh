@@ -143,8 +143,12 @@ MANIFEST_FILES["adrs/004-specialist-agent-coordination.md"]=".claude/adrs/004-sp
 
 # Bin
 MANIFEST_FILES["bin/flow-banner.sh"]=".claude/bin/flow-banner.sh"
+MANIFEST_FILES["bin/flow-convert.sh"]=".claude/bin/flow-convert.sh"
 MANIFEST_FILES["bin/flow-install-global.sh"]=".claude/bin/flow-install-global.sh"
 MANIFEST_FILES["bin/flow-install-user.sh"]=".claude/bin/flow-install-user.sh"
+MANIFEST_FILES["bin/flow.sh"]=".claude/bin/flow.sh"
+MANIFEST_FILES["bin/flow-status.sh"]=".claude/bin/flow-status.sh"
+MANIFEST_FILES["bin/test-locks.sh"]=".claude/bin/test-locks.sh"
 
 # -------------------------
 # START
