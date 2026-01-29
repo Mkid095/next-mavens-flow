@@ -27,6 +27,29 @@ Process ONE user story through all its mavenSteps. Load context from memory. Spa
 
 ---
 
+## STEP 0: Acquire Story Lock (CRITICAL)
+
+Before starting work, you MUST acquire a lock for this story to prevent concurrent modifications.
+
+**Execute:**
+```bash
+# Source lock library
+source .claude/lib/lock.sh
+
+# Acquire lock for this story
+if ! acquire_story_lock "$1" "$2" "$SESSION_ID"; then
+    echo "ERROR: Story $2 is already being worked on by another session"
+    exit 1
+fi
+
+# Set up trap to release lock on exit
+trap 'release_story_lock "$1" "$2" "$SESSION_ID"' EXIT
+```
+
+**Note:** `$SESSION_ID` should be set by the caller (flow.sh), default to `manual-$$` if not set.
+
+---
+
 ## STEP 1: Read the Story Details
 
 **Execute:** `cat "$1" | jq '.userStories[] | select(.id == "$2")'`
@@ -182,6 +205,11 @@ Begin Step [N] now.
 
 **Wait until you see:** `[STEP_COMPLETE]`
 
+**Then update heartbeat** (to keep your lock alive):
+```bash
+update_session_heartbeats "${SESSION_ID:-manual-$$}"
+```
+
 Then continue to the next step.
 
 ---
@@ -223,6 +251,8 @@ git commit -m "feat: $2 - $story_title"
 ```
 <STORY_COMPLETE>
 ```
+
+**Note:** The story lock will be automatically released by the EXIT trap set in Step 0.
 
 ---
 
