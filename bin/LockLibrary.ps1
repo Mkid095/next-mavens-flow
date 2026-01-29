@@ -465,23 +465,3 @@ function Clear-SessionLocks {
     }
 }
 
-# Export functions
-Export-ModuleMember -Function @(
-    'Ensure-LockDir',
-    'Get-PrdLockPath',
-    'Get-StoryLockPath',
-    'Update-Heartbeat',
-    'Test-LockStale',
-    'Acquire-PrdLock',
-    'Release-PrdLock',
-    'Test-PrdLocked',
-    'Get-PrdLockInfo',
-    'Acquire-StoryLock',
-    'Release-StoryLock',
-    'Test-StoryLocked',
-    'Get-ActiveLocks',
-    'Remove-StaleLocks',
-    'Unlock-PrdForce',
-    'Update-SessionHeartbeats',
-    'Clear-SessionLocks'
-)
