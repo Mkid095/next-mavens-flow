@@ -14,5 +14,3 @@ function Show-FlowBanner {
 
     Write-Host $banner -ForegroundColor Cyan
 }
-
-Export-ModuleMember -Function Show-FlowBanner

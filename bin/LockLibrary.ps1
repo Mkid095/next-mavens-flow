@@ -378,7 +378,7 @@ function Get-ActiveLocks {
             "story" {
                 $prdFile = $lockData.prdFile
                 $storyId = $lockData.storyId
-                Write-Host "Story Lock: $prdFile:$storyId (session: $session, pid: $pid)"
+                Write-Host "Story Lock: $prdFile : $storyId (session: $session, pid: $pid)"
             }
         }
     }
