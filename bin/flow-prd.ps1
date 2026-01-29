@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Maven Flow PRD - PowerShell wrapper
 param([Parameter(ValueFromRemainingArguments)]$ArgsArray)
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Maven Flow Update - PowerShell wrapper
 param([string[]]$ArgsArray)
 

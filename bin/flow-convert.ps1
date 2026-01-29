@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Maven Flow Convert - PowerShell wrapper
 param([string[]]$ArgsArray)
 

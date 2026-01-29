@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 # -------------------------
 $HomeClaude = Join-Path $env:USERPROFILE ".claude"
 
-# Maven Flow files to remove (updated 2026)
+# Maven Flow agents to remove (updated 2026)
 $FlowAgents = @(
     "development.md",
     "quality.md",
@@ -25,59 +25,66 @@ $FlowAgents = @(
     "debugging-agent.md"
 )
 
+# Maven Flow commands to remove (updated 2026)
 $FlowCommands = @(
     "flow.md",
+    "flow-mobile.md",
     "flow-prd.md",
+    "flow-convert.md",
+    "flow-update.md",
+    "flow-work-story.md",
     "consolidate-memory.md",
-    "create-story-memory.md",
-    "flow-convert.md"
+    "create-story-memory.md"
 )
 
+# Maven Flow skill subdirectories to remove
 $FlowSkillsSubdirs = @(
-    "workflow",
-    "flow-convert"
+    "flow-convert",
+    "workflow"
 )
 
+# Maven Flow skill files to remove
 $FlowSkillFiles = @(
     "flow-prd-mobile.md"
 )
 
+# Maven Flow hooks to remove (legacy + maven-flow)
 $FlowHooks = @(
     "session-save.sh",
-    "session-restore.sh",
-    "pre-task-flow-validation.js",
-    "agent-selector.js",
-    "dependency-graph.js",
-    "error-reporter.js",
-    "memory-cache.js",
-    "path-utils.js",
-    "prd-utils.js",
-    "toon-compress.js",
-    "retry-manager.js"
+    "session-restore.sh"
 )
 
-$FlowScripts = @(
-    "flow.sh",
-    "flow-prd.sh",
-    "flow-convert.sh",
-    "flow-install-global.sh",
-    "flow-uninstall-global.sh",
-    "flow-sync.sh",
-    "flow-status.sh",
-    "flow-continue.sh",
-    "flow-help.sh",
-    "flow-update.sh",
-    "maven-flow-wrapper.sh",
-    "flow.ps1",
-    "flow-prd.ps1",
-    "flow-convert.ps1",
-    "flow-continue.ps1",
-    "flow-help.ps1",
-    "flow-status.ps1",
-    "flow-sync.ps1",
-    "flow-update.ps1",
-    "flow-install-global.ps1",
-    "flow-uninstall-global.ps1"
+# Maven Flow maven-flow subdirectory to remove entirely
+$FlowMavenFlowSubdirs = @(
+    "hooks",
+    "config",
+    ".claude"
+)
+
+# Maven Flow lib files to remove
+$FlowLibFiles = @(
+    "lock.sh"
+)
+
+# Maven Flow shared docs to remove
+$FlowSharedFiles = @(
+    "agent-patterns.md",
+    "mcp-tools.md",
+    "prd-json-schema.md",
+    "required-mcps.md"
+)
+
+# Maven Flow ADRs to remove
+$FlowAdrFiles = @(
+    "001-story-level-mcp-assignment.md",
+    "002-multi-prd-architecture.md",
+    "003-feature-based-folder-structure.md",
+    "004-specialist-agent-coordination.md"
+)
+
+# Maven Flow bin files to remove
+$FlowBinFiles = @(
+    "flow-banner.sh"
 )
 
 # -------------------------
@@ -104,8 +111,11 @@ Log "  - Agents from ~/.claude/agents/" "Gray"
 Log "  - Commands from ~/.claude/commands/" "Gray"
 Log "  - Skills from ~/.claude/skills/" "Gray"
 Log "  - Hooks from ~/.claude/hooks/" "Gray"
-Log "  - Scripts from ~/.claude/bin/" "Gray"
-Log "  - Old maven-flow subfolder (if exists)" "Gray"
+Log "  - Maven Flow from ~/.claude/maven-flow/" "Gray"
+Log "  - Lib files from ~/.claude/lib/" "Gray"
+Log "  - Shared docs from ~/.claude/shared/" "Gray"
+Log "  - ADRs from ~/.claude/adrs/" "Gray"
+Log "  - Bin files from ~/.claude/bin/" "Gray"
 Log ""
 
 $confirm = Read-Host "Continue? (y/N)"
@@ -204,52 +214,87 @@ if ($removedCount -eq 0) {
 }
 
 # -------------------------
-# REMOVE SCRIPTS
+# REMOVE MAVEN-FLOW SUBDIRECTORY
 # -------------------------
-Log "[STEP 6] Removing Maven Flow scripts..." "Yellow"
-$binDir = Join-Path $HomeClaude "bin"
+Log "[STEP 6] Removing Maven Flow subdirectory..." "Yellow"
+$mavenFlowDir = Join-Path $HomeClaude "maven-flow"
+if (Test-Path $mavenFlowDir) {
+    Remove-Item $mavenFlowDir -Recurse -Force
+    Log "  [REMOVE] $mavenFlowDir" "Green"
+} else {
+    Log "  No maven-flow directory found" "Gray"
+}
+
+# -------------------------
+# REMOVE LIB FILES
+# -------------------------
+Log "[STEP 7] Removing Maven Flow lib files..." "Yellow"
+$libDir = Join-Path $HomeClaude "lib"
 $removedCount = 0
-foreach ($script in $FlowScripts) {
-    $scriptPath = Join-Path $binDir $script
-    if (Test-Path $scriptPath) {
-        Remove-Item $scriptPath -Force
-        Log "  [REMOVE] $scriptPath" "Green"
+foreach ($libFile in $FlowLibFiles) {
+    $libPath = Join-Path $libDir $libFile
+    if (Test-Path $libPath) {
+        Remove-Item $libPath -Force
+        Log "  [REMOVE] $libPath" "Green"
         $removedCount++
     }
 }
 if ($removedCount -eq 0) {
-    Log "  No Maven Flow scripts found" "Gray"
+    Log "  No Maven Flow lib files found" "Gray"
 }
 
 # -------------------------
-# REMOVE OLD MAVEN-FLOW SUBFOLDER
+# REMOVE SHARED DOCS
 # -------------------------
-Log "[STEP 7] Removing old maven-flow subfolder..." "Yellow"
-$oldMavenFlowDir = Join-Path $HomeClaude "maven-flow"
-if (Test-Path $oldMavenFlowDir) {
-    Remove-Item $oldMavenFlowDir -Recurse -Force
-    Log "  [REMOVE] $oldMavenFlowDir" "Green"
-} else {
-    Log "  No old maven-flow directory found" "Gray"
-}
-
-# -------------------------
-# REMOVE PATH ENTRY FROM SHELL CONFIG
-# -------------------------
-Log "[STEP 8] Removing PATH entry from shell config..." "Yellow"
-$shellConfig = Join-Path $env:USERPROFILE ".bashrc"
-if (Test-Path $shellConfig) {
-    $content = Get-Content $shellConfig -Raw
-    if ($content -match "Maven Flow") {
-        $newContent = $content -replace "(?ms)# Maven Flow.*?(?=`n|$)", ""
-        $newContent = $newContent -replace "(?ms)export PATH=.*?\.claude/bin.*?(?=`n|$)", ""
-        Set-Content $shellConfig $newContent.Trim()
-        Log "  [CLEAN] Removed Maven Flow entries from $shellConfig" "Green"
-    } else {
-        Log "  No Maven Flow entries in $shellConfig" "Gray"
+Log "[STEP 8] Removing Maven Flow shared docs..." "Yellow"
+$sharedDir = Join-Path $HomeClaude "shared"
+$removedCount = 0
+foreach ($sharedFile in $FlowSharedFiles) {
+    $sharedPath = Join-Path $sharedDir $sharedFile
+    if (Test-Path $sharedPath) {
+        Remove-Item $sharedPath -Force
+        Log "  [REMOVE] $sharedPath" "Green"
+        $removedCount++
     }
-} else {
-    Log "  $shellConfig not found" "Gray"
+}
+if ($removedCount -eq 0) {
+    Log "  No Maven Flow shared docs found" "Gray"
+}
+
+# -------------------------
+# REMOVE ADRS
+# -------------------------
+Log "[STEP 9] Removing Maven Flow ADRs..." "Yellow"
+$adrsDir = Join-Path $HomeClaude "adrs"
+$removedCount = 0
+foreach ($adrFile in $FlowAdrFiles) {
+    $adrPath = Join-Path $adrsDir $adrFile
+    if (Test-Path $adrPath) {
+        Remove-Item $adrPath -Force
+        Log "  [REMOVE] $adrPath" "Green"
+        $removedCount++
+    }
+}
+if ($removedCount -eq 0) {
+    Log "  No Maven Flow ADRs found" "Gray"
+}
+
+# -------------------------
+# REMOVE BIN FILES
+# -------------------------
+Log "[STEP 10] Removing Maven Flow bin files..." "Yellow"
+$binDir = Join-Path $HomeClaude "bin"
+$removedCount = 0
+foreach ($binFile in $FlowBinFiles) {
+    $binPath = Join-Path $binDir $binFile
+    if (Test-Path $binPath) {
+        Remove-Item $binPath -Force
+        Log "  [REMOVE] $binPath" "Green"
+        $removedCount++
+    }
+}
+if ($removedCount -eq 0) {
+    Log "  No Maven Flow bin files found" "Gray"
 }
 
 # -------------------------
@@ -260,7 +305,5 @@ Log "=============================================" "Blue"
 Log "[OK] Maven Flow Uninstall Complete" "Green"
 Log "=============================================" "Blue"
 Log ""
-Log "Action required:" "Yellow"
-Log "  Run: source ~/.bashrc" "Gray"
-Log "  Or restart your terminal" "Gray"
+Log "Note: You may need to restart Claude Code for changes to take effect." "Yellow"
 Log ""

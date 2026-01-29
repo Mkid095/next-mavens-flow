@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # ============================================================================
 # Maven Flow Sync Script
 # Syncs changes between global installation and project source

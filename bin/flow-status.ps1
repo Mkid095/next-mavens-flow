@@ -1,4 +1,5 @@
-﻿# Maven Flow Status Command
+#!/usr/bin/env pwsh
+# Maven Flow Status Command
 # Self-contained script to show PRD status
 
 Write-Host ""

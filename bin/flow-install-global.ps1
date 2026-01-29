@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # ============================================================================
 # Maven Flow Global Installer (Windows PowerShell)
 # Installs Flow components directly to Claude folders

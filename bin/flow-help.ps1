@@ -1,4 +1,5 @@
-﻿# Maven Flow Help Command
+#!/usr/bin/env pwsh
+# Maven Flow Help Command
 # Self-contained script to show help
 
 Write-Host ""

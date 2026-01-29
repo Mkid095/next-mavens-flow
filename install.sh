@@ -69,20 +69,82 @@ safe_delete() {
 # MANIFEST (THE SOURCE OF TRUTH)
 # -------------------------
 MANIFEST_DIRS=(
+    "adrs"
     "agents"
     "commands"
+    "hooks"
+    "lib"
     "maven-flow/hooks"
     "maven-flow/config"
     "maven-flow/.claude"
-    "skills"
+    "shared"
+    "skills/flow-convert"
+    "skills/workflow"
+    "bin"
 )
 
+# Declare arrays for file mapping
 declare -A MANIFEST_FILES
-MANIFEST_FILES["agents"]=".claude/agents/*.md"
-MANIFEST_FILES["commands"]=".claude/commands/*.md"
-MANIFEST_FILES["maven-flow/hooks"]=".claude/maven-flow/hooks/*.sh"
-MANIFEST_FILES["maven-flow/config"]=".claude/maven-flow/config/*.mjs"
+
+# Commands
+MANIFEST_FILES["commands/flow.md"]=".claude/commands/flow.md"
+MANIFEST_FILES["commands/flow-mobile.md"]=".claude/commands/flow-mobile.md"
+MANIFEST_FILES["commands/flow-prd.md"]=".claude/commands/flow-prd.md"
+MANIFEST_FILES["commands/flow-convert.md"]=".claude/commands/flow-convert.md"
+MANIFEST_FILES["commands/flow-update.md"]=".claude/commands/flow-update.md"
+MANIFEST_FILES["commands/flow-work-story.md"]=".claude/commands/flow-work-story.md"
+MANIFEST_FILES["commands/consolidate-memory.md"]=".claude/commands/consolidate-memory.md"
+MANIFEST_FILES["commands/create-story-memory.md"]=".claude/commands/create-story-memory.md"
+
+# Agents
+MANIFEST_FILES["agents/development.md"]=".claude/agents/development.md"
+MANIFEST_FILES["agents/refactor.md"]=".claude/agents/refactor.md"
+MANIFEST_FILES["agents/security.md"]=".claude/agents/security.md"
+MANIFEST_FILES["agents/quality.md"]=".claude/agents/quality.md"
+MANIFEST_FILES["agents/design.md"]=".claude/agents/design.md"
+MANIFEST_FILES["agents/mobile-app.md"]=".claude/agents/mobile-app.md"
+MANIFEST_FILES["agents/testing.md"]=".claude/agents/testing.md"
+MANIFEST_FILES["agents/debugging-agent.md"]=".claude/agents/debugging-agent.md"
+MANIFEST_FILES["agents/Project-Auditor.md"]=".claude/agents/Project-Auditor.md"
+
+# Hooks (legacy - kept for compatibility)
+MANIFEST_FILES["hooks/session-save.sh"]=".claude/hooks/session-save.sh"
+MANIFEST_FILES["hooks/session-restore.sh"]=".claude/hooks/session-restore.sh"
+
+# Maven Flow Hooks
+MANIFEST_FILES["maven-flow/hooks/post-tool-use-quality.sh"]=".claude/maven-flow/hooks/post-tool-use-quality.sh"
+MANIFEST_FILES["maven-flow/hooks/stop-comprehensive-check.sh"]=".claude/maven-flow/hooks/stop-comprehensive-check.sh"
+MANIFEST_FILES["maven-flow/hooks/incremental-check.sh"]=".claude/maven-flow/hooks/incremental-check.sh"
+MANIFEST_FILES["maven-flow/hooks/create-memory.sh"]=".claude/maven-flow/hooks/create-memory.sh"
+
+# Maven Flow Config
+MANIFEST_FILES["maven-flow/config/eslint.config.mjs"]=".claude/maven-flow/config/eslint.config.mjs"
 MANIFEST_FILES["maven-flow/.claude/settings.json"]=".claude/maven-flow/.claude/settings.json"
+
+# Lib
+MANIFEST_FILES["lib/lock.sh"]=".claude/lib/lock.sh"
+
+# Shared docs
+MANIFEST_FILES["shared/agent-patterns.md"]=".claude/shared/agent-patterns.md"
+MANIFEST_FILES["shared/mcp-tools.md"]=".claude/shared/mcp-tools.md"
+MANIFEST_FILES["shared/prd-json-schema.md"]=".claude/shared/prd-json-schema.md"
+MANIFEST_FILES["shared/required-mcps.md"]=".claude/shared/required-mcps.md"
+
+# Skills
+MANIFEST_FILES["skills/flow-convert/SKILL.md"]=".claude/skills/flow-convert/SKILL.md"
+MANIFEST_FILES["skills/workflow/SKILL.md"]=".claude/skills/workflow/SKILL.md"
+MANIFEST_FILES["skills/flow-prd-mobile.md"]=".claude/skills/flow-prd-mobile.md"
+
+# ADRs
+MANIFEST_FILES["adrs/001-story-level-mcp-assignment.md"]=".claude/adrs/001-story-level-mcp-assignment.md"
+MANIFEST_FILES["adrs/002-multi-prd-architecture.md"]=".claude/adrs/002-multi-prd-architecture.md"
+MANIFEST_FILES["adrs/003-feature-based-folder-structure.md"]=".claude/adrs/003-feature-based-folder-structure.md"
+MANIFEST_FILES["adrs/004-specialist-agent-coordination.md"]=".claude/adrs/004-specialist-agent-coordination.md"
+
+# Bin
+MANIFEST_FILES["bin/flow-banner.sh"]=".claude/bin/flow-banner.sh"
+MANIFEST_FILES["bin/flow-install-global.sh"]=".claude/bin/flow-install-global.sh"
+MANIFEST_FILES["bin/flow-install-user.sh"]=".claude/bin/flow-install-user.sh"
 
 # -------------------------
 # START
@@ -111,21 +173,15 @@ log "[STEP 2] Syncing managed files..." yellow
 MANAGED_FILES=()
 
 for target_rel in "${!MANIFEST_FILES[@]}"; do
-    source_glob="$SCRIPT_DIR/${MANIFEST_FILES[$target_rel]}"
+    source_rel="${MANIFEST_FILES[$target_rel]}"
+    src="$SCRIPT_DIR/$source_rel"
+    dest="$TARGET_DIR/$target_rel"
 
-    if ls $source_glob 1> /dev/null 2>&1; then
-        for src in $source_glob; do
-            if [ -f "$src" ]; then
-                if [[ "$target_rel" == *.json ]]; then
-                    dest="$TARGET_DIR/$target_rel"
-                else
-                    dest="$TARGET_DIR/$target_rel/$(basename "$src")"
-                fi
-
-                safe_copy "$src" "$dest"
-                MANAGED_FILES+=("$(realpath "$dest" 2>/dev/null || readlink -f "$dest" 2>/dev/null || echo "$dest")")
-            fi
-        done
+    if [ -f "$src" ]; then
+        safe_copy "$src" "$dest"
+        MANAGED_FILES+=("$(realpath "$dest" 2>/dev/null || readlink -f "$dest" 2>/dev/null || echo "$dest")")
+    else
+        log "  [SKIP] Source not found: $src" cyan
     fi
 done
 
@@ -189,3 +245,9 @@ log "    /flow start              # Start autonomous development" gray
 log "    /flow status             # Check progress" gray
 log "    /flow-prd create ...     # Create PRD" gray
 log "    /flow-convert <feature>  # Convert PRD to JSON" gray
+log ""
+log "  Terminal Commands (via bin/flow):" cyan
+log "    flow start [n]           # Start autonomous development" gray
+log "    flow status              # Check progress" gray
+log "    flow-prd create ...      # Create PRD" gray
+log "    flow-convert <feature>   # Convert PRD to JSON" gray
