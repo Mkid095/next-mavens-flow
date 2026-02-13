@@ -153,16 +153,30 @@ if [ "$FORCE" = true ]; then
 fi
 
 PROMPT="/flow-convert $force_flag $FEATURE"
+JSON_PATH="docs/prd-$FEATURE.json"
 
 if claude --dangerously-skip-permissions "$PROMPT"; then
-    echo ""
-    echo -e "${GREEN}+============================================================+${NC}"
-    echo -e "${GREEN}|                [OK] CONVERSION COMPLETE                   |${NC}"
-    echo -e "${GREEN}+============================================================+${NC}"
-    echo ""
-    echo -e "${GRAY}  Created: docs/prd-$FEATURE.json${NC}"
-    echo ""
-    echo -e "${YELLOW}  Next: ${GRAY}flow start    Begin development${NC}"
+    # Verify the output file was actually created
+    if [ -f "$JSON_PATH" ]; then
+        echo ""
+        echo -e "${GREEN}+============================================================+${NC}"
+        echo -e "${GREEN}|                [OK] CONVERSION COMPLETE                   |${NC}"
+        echo -e "${GREEN}+============================================================+${NC}"
+        echo ""
+        echo -e "${GRAY}  Created: $JSON_PATH${NC}"
+        echo ""
+        echo -e "${YELLOW}  Next: ${GRAY}flow start    Begin development${NC}"
+    else
+        echo ""
+        echo -e "${RED}+============================================================+${NC}"
+        echo -e "${RED}|              [ERROR] CONVERSION FAILED                    |${NC}"
+        echo -e "${RED}+============================================================+${NC}"
+        echo ""
+        echo -e "${RED}  Claude returned success but no JSON file was created.${NC}"
+        echo -e "${GRAY}  Expected: $JSON_PATH${NC}"
+        echo -e "${GRAY}  Make sure docs/prd-$FEATURE.md exists and has valid content.${NC}"
+        exit 1
+    fi
 else
     echo ""
     echo -e "${RED}+============================================================+${NC}"

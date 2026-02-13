@@ -1,4 +1,5 @@
 ---
+name: consolidate-memory
 description: Consolidate story memories when PRD complete - quick, actionable
 argument-hint: [prd-file]
 ---

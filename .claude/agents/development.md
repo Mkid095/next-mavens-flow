@@ -263,8 +263,8 @@ pnpm install
 1. **ALWAYS read console logs** - Check for errors, warnings, failed requests
 2. **FIX any issues found** - Never mark complete with console errors
 3. **Use standard test credentials:**
-   - Email: `revccnt@gmail.com`
-   - Password: `Elishiba!90`
+   - Email: `${TEST_USER_EMAIL}`
+   - Password: `${TEST_USER_PASSWORD}`
 4. **Create this user first** during signup/account testing
 5. **Use this account** for all subsequent testing
 6. **For multi-role apps:** Implement role switching, NOT separate accounts
@@ -279,7 +279,7 @@ pnpm install
 7. Re-test after fixes to verify clean console
 
 **Role Switching (for multi-role apps):**
-- Log in as `revccnt@gmail.com`
+- Log in as `${TEST_USER_EMAIL}`
 - Use role switcher to change roles (e.g., SUPER_ADMIN → SHOP_OWNER → SHOP_EMPLOYEE)
 - Test each role's features
 - Do NOT create separate accounts for each role

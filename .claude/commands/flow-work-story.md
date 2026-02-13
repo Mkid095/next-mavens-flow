@@ -1,4 +1,5 @@
 ---
+name: flow-work-story
 description: Work on ONE story through Maven workflow - loads memory, spawns agents, marks complete
 argument-hint: <prd-file> <story-id>
 ---

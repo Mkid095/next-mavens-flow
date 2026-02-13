@@ -299,8 +299,8 @@ Ensure `tsconfig.json` has paths configured.
    - Network errors
 
 ### Standard Test Credentials
-- **Email:** `revccnt@gmail.com`
-- **Password:** `Elishiba!90`
+- **Email:** `${TEST_USER_EMAIL}`
+- **Password:** `${TEST_USER_PASSWORD}`
 
 **Process:**
 1. Start dev server: `pnpm dev`
@@ -360,7 +360,7 @@ Both hooks check for violations and BLOCK on:
 - [ ] API calls use data layer
 - [ ] Colors use professional palette
 - [ ] **Browser tested** (if web app): Console is clean, no errors
-- [ ] **Test user created**: revccnt@gmail.com / Elishiba!90
+- [ ] **Test user created**: ${TEST_USER_EMAIL} / ${TEST_USER_PASSWORD}
 - [ ] **All flows tested** with test user credentials
 - [ ] TypeScript compiles
 - [ ] ESLint passes

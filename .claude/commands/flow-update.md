@@ -1,4 +1,5 @@
 ---
+name: flow-update
 description: Update Maven Flow from GitHub and sync with installations
 argument-hint: [check | sync | force] | help
 ---

@@ -1,11 +1,11 @@
 #!/usr/bin/env pwsh
 # ============================================================================
-# Maven Flow Sync Script
+# Maven Flow Sync Script (Windows PowerShell)
 # Syncs changes between global installation and project source
 # ============================================================================
 
 param(
-    [ValidateSet("Pull", "Push", "Status", "Auto")]
+    [ValidateSet("Pull", "Push", "Status", "Auto", "Help")]
     [string]$Direction = "Auto",
 
     [switch]$Force,
@@ -15,42 +15,79 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Colors
-$Cyan = "`e[36m"
-$Green = "`e[32m"
-$Yellow = "`e[33m"
-$Blue = "`e[34m"
-$Red = "`e[31m"
-$Gray = "`e[37m"
-$Reset = "`e[0m"
+# Colors (using $([char]0x1b) for better compatibility)
+$Esc = [char]0x1b
+$Cyan = "${Esc}[36m"
+$Green = "${Esc}[32m"
+$Yellow = "${Esc}[33m"
+$Blue = "${Esc}[34m"
+$Red = "${Esc}[31m"
+$Gray = "${Esc}[90m"
+$Reset = "${Esc}[0m"
 
 function Print-Header {
     Write-Host ""
-    Write-Host "${Cyan}╔════════════════════════════════════════════════════════════╗${Reset}"
-    Write-Host "${Cyan}║              Maven Flow - Sync Manager                      ║${Reset}"
-    Write-Host "${Cyan}╚════════════════════════════════════════════════════════════╝${Reset}"
+    Write-Host "${Cyan}+============================================================+${Reset}"
+    Write-Host "${Cyan}|              Maven Flow - Sync Manager                     |${Reset}"
+    Write-Host "${Cyan}+============================================================+${Reset}"
     Write-Host ""
 }
 
 Print-Header
 
-# Get paths
-$BinDir = Split-Path -Parent $PSScriptRoot
+# Get paths - $PSScriptRoot is already the bin directory
+$BinDir = $PSScriptRoot
 $ProjectDir = Split-Path -Parent $BinDir
 $GlobalBinDir = Join-Path $env:USERPROFILE ".claude\bin"
 
-# Files to sync
+# Ensure global bin directory exists
+if (-not (Test-Path $GlobalBinDir)) {
+    New-Item -ItemType Directory -Force -Path $GlobalBinDir | Out-Null
+    Write-Host "${Gray}Created global bin directory: $GlobalBinDir${Reset}"
+}
+
+# All PowerShell scripts and batch files to sync
 $SyncFiles = @(
+    # PowerShell scripts
     "flow.ps1",
     "flow-prd.ps1",
     "flow-convert.ps1",
-    "flow-update.ps1"
+    "flow-update.ps1",
+    "flow-status.ps1",
+    "flow-continue.ps1",
+    "flow-help.ps1",
+    "flow-sync.ps1",
+    "flow-test.ps1",
+    "flow-consolidate.ps1",
+    "flow-work-story.ps1",
+    "flow-install-global.ps1",
+    "Banner.ps1",
+    "LockLibrary.ps1"
+    # Note: .bat files are wrappers, sync them too
 )
 
-function Get-FileHash {
+$SyncBatFiles = @(
+    "flow.bat",
+    "flow-prd.bat",
+    "flow-convert.bat",
+    "flow-update.bat",
+    "flow-status.bat",
+    "flow-continue.bat",
+    "flow-help.bat",
+    "flow-sync.bat",
+    "flow-test.bat",
+    "flow-consolidate.bat",
+    "flow-work-story.bat"
+)
+
+function Get-FileHashCustom {
     param([string]$Path)
     if (Test-Path $Path) {
-        return (Get-FileHash -Path $Path -Algorithm SHA256).Hash
+        try {
+            return (Get-FileHash -Path $Path -Algorithm SHA256 -ErrorAction SilentlyContinue).Hash
+        } catch {
+            return $null
+        }
     }
     return $null
 }
@@ -61,8 +98,8 @@ function Compare-Files {
         [string]$Dest
     )
 
-    $sourceHash = Get-FileHash -Path $Source
-    $destHash = Get-FileHash -Path $Dest
+    $sourceHash = Get-FileHashCustom -Path $Source
+    $destHash = Get-FileHashCustom -Path $Dest
 
     if ($null -eq $sourceHash) { return "SourceMissing" }
     if ($null -eq $destHash) { return "DestMissing" }
@@ -70,31 +107,49 @@ function Compare-Files {
     return "Different"
 }
 
+# Show help
+if ($Direction -eq "Help") {
+    Write-Host "${Cyan}Usage: flow-sync [command] [options]${Reset}"
+    Write-Host ""
+    Write-Host "Commands:"
+    Write-Host "  Auto      Auto-detect sync direction (default)"
+    Write-Host "  Status    Show sync status only"
+    Write-Host "  Pull      Pull from global (~/.claude/bin) to project"
+    Write-Host "  Push      Push from project to global"
+    Write-Host "  Help      Show this help"
+    Write-Host ""
+    Write-Host "Options:"
+    Write-Host "  -Force    Force sync even if files match"
+    Write-Host "  -Verbose  Show detailed output"
+    exit 0
+}
+
 # Auto-detect direction
 if ($Direction -eq "Auto") {
-    Write-Host "${Blue}▶ Auto-detecting sync direction...${Reset}"
+    Write-Host "${Blue}>> Auto-detecting sync direction...${Reset}"
     Write-Host ""
 
     $globalNewer = 0
     $projectNewer = 0
+    $allFiles = $SyncFiles + $SyncBatFiles
 
-    foreach ($file in $SyncFiles) {
+    foreach ($file in $allFiles) {
         $globalPath = Join-Path $GlobalBinDir $file
         $projectPath = Join-Path $BinDir $file
 
-        if (Test-Path $globalPath -and Test-Path $projectPath) {
+        if ((Test-Path $globalPath) -and (Test-Path $projectPath)) {
             $globalTime = (Get-Item $globalPath).LastWriteTime
             $projectTime = (Get-Item $projectPath).LastWriteTime
 
             if ($globalTime -gt $projectTime) {
                 $globalNewer++
                 if ($Verbose) {
-                    Write-Host "  ${Gray}Global is newer: ${Cyan}${file}${Reset} ($($globalTime.ToString('yyyy-MM-dd HH:mm:ss')))"
+                    Write-Host "  ${Gray}Global is newer: ${Cyan}${file}${Reset}"
                 }
             } elseif ($projectTime -gt $globalTime) {
                 $projectNewer++
                 if ($Verbose) {
-                    Write-Host "  ${Gray}Project is newer: ${Cyan}${file}${Reset} ($($projectTime.ToString('yyyy-MM-dd HH:mm:ss')))"
+                    Write-Host "  ${Gray}Project is newer: ${Cyan}${file}${Reset}"
                 }
             }
         }
@@ -102,13 +157,13 @@ if ($Direction -eq "Auto") {
 
     if ($globalNewer -gt $projectNewer) {
         $Direction = "Pull"
-        Write-Host "  ${Yellow}→ Pull mode${Reset} (Global is newer)"
+        Write-Host "  ${Yellow}-> Pull mode${Reset} (Global is newer)"
     } elseif ($projectNewer -gt $globalNewer) {
         $Direction = "Push"
-        Write-Host "  ${Yellow}→ Push mode${Reset} (Project is newer)"
+        Write-Host "  ${Yellow}-> Push mode${Reset} (Project is newer)"
     } else {
         $Direction = "Status"
-        Write-Host "  ${Green}→ Status mode${Reset} (Everything in sync)"
+        Write-Host "  ${Green}-> Status mode${Reset} (Everything in sync)"
     }
     Write-Host ""
 }
@@ -116,26 +171,33 @@ if ($Direction -eq "Auto") {
 # Execute sync based on direction
 switch ($Direction) {
     "Status" {
-        Write-Host "${Blue}▶ Checking sync status...${Reset}"
+        Write-Host "${Blue}>> Checking sync status...${Reset}"
         Write-Host ""
 
         $allSynced = $true
-        foreach ($file in $SyncFiles) {
+        $allFiles = $SyncFiles + $SyncBatFiles
+
+        foreach ($file in $allFiles) {
             $globalPath = Join-Path $GlobalBinDir $file
             $projectPath = Join-Path $BinDir $file
+
+            # Skip if file doesn't exist in project
+            if (-not (Test-Path $projectPath)) {
+                continue
+            }
 
             $status = Compare-Files -Source $globalPath -Dest $projectPath
 
             switch ($status) {
                 "Same" {
-                    Write-Host "  ${Green}[✓]${Reset} ${Cyan}${file}${Reset} - In sync"
+                    Write-Host "  ${Green}[OK]${Reset} ${Cyan}${file}${Reset} - In sync"
                 }
                 "SourceMissing" {
-                    Write-Host "  ${Red}[!]${Reset} ${Cyan}${file}${Reset} - Missing in global"
+                    Write-Host "  ${Yellow}[?]${Reset} ${Cyan}${file}${Reset} - Not in global (use push)"
                     $allSynced = $false
                 }
                 "DestMissing" {
-                    Write-Host "  ${Red}[!]${Reset} ${Cyan}${file}${Reset} - Missing in project"
+                    Write-Host "  ${Yellow}[?]${Reset} ${Cyan}${file}${Reset} - Not in project (use pull)"
                     $allSynced = $false
                 }
                 "Different" {
@@ -154,10 +216,13 @@ switch ($Direction) {
     }
 
     "Pull" {
-        Write-Host "${Blue}▶ Pulling from global to project...${Reset}"
+        Write-Host "${Blue}>> Pulling from global to project...${Reset}"
         Write-Host ""
 
-        foreach ($file in $SyncFiles) {
+        $pulled = 0
+        $allFiles = $SyncFiles + $SyncBatFiles
+
+        foreach ($file in $allFiles) {
             $globalPath = Join-Path $GlobalBinDir $file
             $projectPath = Join-Path $BinDir $file
 
@@ -166,9 +231,10 @@ switch ($Direction) {
             if ($status -eq "Different" -or $status -eq "DestMissing" -or $Force) {
                 if (Test-Path $globalPath) {
                     Copy-Item -Force $globalPath $projectPath
-                    Write-Host "  ${Green}[✓]${Reset} ${Cyan}${file}${Reset} - Pulled from global"
+                    Write-Host "  ${Green}[OK]${Reset} ${Cyan}${file}${Reset} - Pulled from global"
+                    $pulled++
                 } else {
-                    Write-Host "  ${Red}[!]${Reset} ${Cyan}${file}${Reset} - Not found in global"
+                    Write-Host "  ${Gray}[skip]${Reset} ${Cyan}${file}${Reset} - Not found in global"
                 }
             } elseif ($status -eq "Same") {
                 Write-Host "  ${Gray}[=]${Reset} ${Cyan}${file}${Reset} - Already in sync"
@@ -176,37 +242,50 @@ switch ($Direction) {
         }
 
         Write-Host ""
-        Write-Host "${Green}Pull complete!${Reset}"
+        if ($pulled -gt 0) {
+            Write-Host "${Green}Pull complete! Updated $pulled file(s).${Reset}"
+        } else {
+            Write-Host "${Green}All files already in sync.${Reset}"
+        }
     }
 
     "Push" {
-        Write-Host "${Blue}▶ Pushing from project to global...${Reset}"
+        Write-Host "${Blue}>> Pushing from project to global...${Reset}"
         Write-Host ""
 
-        foreach ($file in $SyncFiles) {
+        $pushed = 0
+        $allFiles = $SyncFiles + $SyncBatFiles
+
+        foreach ($file in $allFiles) {
             $globalPath = Join-Path $GlobalBinDir $file
             $projectPath = Join-Path $BinDir $file
+
+            # Skip if file doesn't exist in project
+            if (-not (Test-Path $projectPath)) {
+                continue
+            }
 
             $status = Compare-Files -Source $globalPath -Dest $projectPath
 
             if ($status -eq "Different" -or $status -eq "SourceMissing" -or $Force) {
-                if (Test-Path $projectPath) {
-                    Copy-Item -Force $projectPath $globalPath
-                    Write-Host "  ${Green}[✓]${Reset} ${Cyan}${file}${Reset} - Pushed to global"
-                } else {
-                    Write-Host "  ${Red}[!]${Reset} ${Cyan}${file}${Reset} - Not found in project"
-                }
+                Copy-Item -Force $projectPath $globalPath
+                Write-Host "  ${Green}[OK]${Reset} ${Cyan}${file}${Reset} - Pushed to global"
+                $pushed++
             } elseif ($status -eq "Same") {
                 Write-Host "  ${Gray}[=]${Reset} ${Cyan}${file}${Reset} - Already in sync"
             }
         }
 
         Write-Host ""
-        Write-Host "${Green}Push complete!${Reset}"
-        Write-Host ""
-        Write-Host "${Yellow}[!] Note: Restart terminal to use updated global scripts${Reset}"
+        if ($pushed -gt 0) {
+            Write-Host "${Green}Push complete! Updated $pushed file(s).${Reset}"
+            Write-Host ""
+            Write-Host "${Yellow}[!] Note: Restart terminal to use updated global scripts${Reset}"
+        } else {
+            Write-Host "${Green}All files already in sync.${Reset}"
+        }
     }
 }
 
 Write-Host ""
-Write-Host "${Cyan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${Reset}"
+Write-Host "${Cyan}============================================================${Reset}"

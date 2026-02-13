@@ -1,4 +1,5 @@
 ---
+name: create-story-memory
 description: Create story memory file after completion - quick, actionable
 argument-hint: <prd-file> <story-id>
 ---

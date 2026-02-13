@@ -713,8 +713,8 @@ Runs comprehensive testing of implemented features.
 7. Creates error log at `docs/errors-[feature-name].md`
 
 **Test User Credentials:**
-- Email: `revccnt@gmail.com`
-- Password: `Elishiba!90`
+- Email: `${TEST_USER_EMAIL}`
+- Password: `${TEST_USER_PASSWORD}`
 
 ### `/flow consolidate [prd-name]`
 
@@ -971,8 +971,8 @@ All the actual work (agent coordination, memory management, context building) is
 **Required MCP:** chrome-devtools (REQUIRED)
 
 **Test Credentials:**
-- Email: `revccnt@gmail.com`
-- Password: `Elishiba!90`
+- Email: `${TEST_USER_EMAIL}`
+- Password: `${TEST_USER_PASSWORD}`
 
 ### mobile-app-agent (🔵 Cyan)
 

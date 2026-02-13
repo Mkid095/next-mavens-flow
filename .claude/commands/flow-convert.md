@@ -1,4 +1,5 @@
 ---
+name: flow-convert
 description: Convert Markdown PRDs to JSON format for Maven Flow
 argument-hint: [feature-name]
 ---

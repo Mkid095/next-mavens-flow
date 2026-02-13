@@ -141,14 +141,11 @@ MANIFEST_FILES["adrs/002-multi-prd-architecture.md"]=".claude/adrs/002-multi-prd
 MANIFEST_FILES["adrs/003-feature-based-folder-structure.md"]=".claude/adrs/003-feature-based-folder-structure.md"
 MANIFEST_FILES["adrs/004-specialist-agent-coordination.md"]=".claude/adrs/004-specialist-agent-coordination.md"
 
-# Bin
+# Bin (helper scripts in .claude/bin - main CLI is in repo bin/ which is added to PATH)
 MANIFEST_FILES["bin/flow-banner.sh"]=".claude/bin/flow-banner.sh"
 MANIFEST_FILES["bin/flow-convert.sh"]=".claude/bin/flow-convert.sh"
 MANIFEST_FILES["bin/flow-install-global.sh"]=".claude/bin/flow-install-global.sh"
 MANIFEST_FILES["bin/flow-install-user.sh"]=".claude/bin/flow-install-user.sh"
-MANIFEST_FILES["bin/flow.sh"]=".claude/bin/flow.sh"
-MANIFEST_FILES["bin/flow-status.sh"]=".claude/bin/flow-status.sh"
-MANIFEST_FILES["bin/test-locks.sh"]=".claude/bin/test-locks.sh"
 
 # -------------------------
 # START

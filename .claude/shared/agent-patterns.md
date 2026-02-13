@@ -84,8 +84,14 @@ Co-Authored-By: NEXT MAVENS <info@nextmavens.com>"
 - Common issues to fix: JavaScript errors, failed API calls, network errors, missing resources
 
 ### Test User Credentials (Standard Across All Projects)
-- **Email:** `revccnt@gmail.com`
-- **Password:** `Elishiba!90`
+- **Email:** `${TEST_USER_EMAIL}` (set via environment variable)
+- **Password:** `${TEST_USER_PASSWORD}` (set via environment variable)
+
+**Setup:** Add to your `.env` or shell profile:
+```bash
+export TEST_USER_EMAIL="your-test-email@example.com"
+export TEST_USER_PASSWORD="your-test-password"
+```
 
 **Process:**
 1. **Create this user** first during account/signup testing
@@ -95,13 +101,13 @@ Co-Authored-By: NEXT MAVENS <info@nextmavens.com>"
 
 ### Role Switching for Multi-Role Testing
 When testing features that require different user roles (e.g., SUPER_ADMIN, SHOP_OWNER, SHOP_EMPLOYEE):
-- **First:** Create the base user with `revccnt@gmail.com`
+- **First:** Create the base user with `${TEST_USER_EMAIL}`
 - **Then:** Add role switching functionality to the application
 - **Switch roles** within the same portal/session to test each role
 - **Do NOT** create separate accounts for each role - use role switching
 
 **Example Role Switching Flow:**
-1. Log in as `revccnt@gmail.com`
+1. Log in as `${TEST_USER_EMAIL}`
 2. Use role switcher to change to SUPER_ADMIN role
 3. Test SUPER_ADMIN features
 4. Switch to SHOP_OWNER role
@@ -112,7 +118,7 @@ When testing features that require different user roles (e.g., SUPER_ADMIN, SHOP
 ### Testing Checklist
 - [ ] Console is clear (no errors, no warnings)
 - [ ] All API calls succeed (check Network tab)
-- [ ] Test user `revccnt@gmail.com` can log in
+- [ ] Test user `${TEST_USER_EMAIL}` can log in
 - [ ] All user flows work end-to-end
 - [ ] Role switching works (if multi-role app)
 - [ ] Fix any console errors found

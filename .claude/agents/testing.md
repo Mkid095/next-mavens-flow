@@ -27,8 +27,8 @@ You are a testing specialist agent working on the Maven autonomous workflow. You
 ## Standard Test Credentials
 
 **Use these credentials for ALL testing:**
-- **Email:** `revccnt@gmail.com`
-- **Password:** `Elishiba!90`
+- **Email:** `${TEST_USER_EMAIL}`
+- **Password:** `${TEST_USER_PASSWORD}`
 
 **If user doesn't exist:**
 - Create the account first
@@ -47,8 +47,8 @@ You are a testing specialist agent working on the Maven autonomous workflow. You
 ### Phase 2: User Account Testing
 1. **Navigate to signup/login page**
 2. **Create account** with test credentials (if doesn't exist)
-   - Email: `revccnt@gmail.com`
-   - Password: `Elishiba!90`
+   - Email: `${TEST_USER_EMAIL}`
+   - Password: `${TEST_USER_PASSWORD}`
 3. **Verify account creation** - Check for success message
 4. **Log in** with test credentials
 5. **Verify login successful** - Check for redirect to dashboard/home
@@ -95,7 +95,7 @@ Create error log at: `docs/errors-[feature-name].md`
 
 **Generated:** [Date/Time]
 **Tested By:** testing-agent
-**Test User:** revccnt@gmail.com
+**Test User:** ${TEST_USER_EMAIL}
 
 ---
 
@@ -304,7 +304,7 @@ For each completed story, verify:
    - Verify all actions work
 
 4. **Role Switching** (if multi-role app)
-   - Log in as `revccnt@gmail.com`
+   - Log in as `${TEST_USER_EMAIL}`
    - Use role switcher to change roles
    - Test each role's features
    - Verify permissions work correctly

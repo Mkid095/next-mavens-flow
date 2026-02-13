@@ -26,18 +26,39 @@ print_header() {
 
 # Get directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN_DIR="$(dirname "$SCRIPT_DIR")"
+# SCRIPT_DIR is already the bin/ directory - no need to go up
+BIN_DIR="$SCRIPT_DIR"
 PROJECT_DIR="$(dirname "$BIN_DIR")"
 
 GLOBAL_BIN_DIR="$HOME/.claude/bin"
 
-# Files to sync
-SYNC_FILES=("flow.sh" "flow-prd.sh" "flow-convert.sh" "flow-update.sh")
+# Ensure global bin directory exists
+mkdir -p "$GLOBAL_BIN_DIR"
 
-# Get file hash
+# All shell scripts to sync
+SYNC_FILES=(
+    "flow.sh"
+    "flow-prd.sh"
+    "flow-convert.sh"
+    "flow-update.sh"
+    "flow-status.sh"
+    "flow-continue.sh"
+    "flow-help.sh"
+    "flow-sync.sh"
+    "flow-test.sh"
+    "flow-consolidate.sh"
+    "flow-work-story.sh"
+    "flow-install-global.sh"
+    "flow-uninstall-global.sh"
+    "maven-flow-wrapper.sh"
+    "test-locks.sh"
+)
+
+# Get file hash - cross-platform
 get_file_hash() {
     if [ -f "$1" ]; then
-        sha256sum "$1" | cut -d' ' -f1
+        # Try sha256sum first (Linux), fall back to shasum (macOS)
+        sha256sum "$1" 2>/dev/null | cut -d' ' -f1 || shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1 || echo ""
     else
         echo ""
     fi
@@ -62,6 +83,17 @@ compare_files() {
     fi
 }
 
+# Get file modification time - cross-platform
+get_file_mtime() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        # Try stat -c (Linux), fall back to stat -f (macOS/BSD)
+        stat -c %Y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
 # Parse command
 DIRECTION="${1:-auto}"
 FORCE=false
@@ -70,11 +102,11 @@ VERBOSE=false
 shift
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --force)
+        --force|-f)
             FORCE=true
             shift
             ;;
-        --verbose)
+        --verbose|-v)
             VERBOSE=true
             shift
             ;;
@@ -99,15 +131,15 @@ if [ "$DIRECTION" = "auto" ]; then
         project_path="$BIN_DIR/$file"
 
         if [ -f "$global_path" ] && [ -f "$project_path" ]; then
-            global_time=$(stat -c %Y "$global_path" 2>/dev/null || stat -f %m "$global_path")
-            project_time=$(stat -c %Y "$project_path" 2>/dev/null || stat -f %m "$project_path")
+            global_time=$(get_file_mtime "$global_path")
+            project_time=$(get_file_mtime "$project_path")
 
-            if [ "$global_time" -gt "$project_time" ]; then
+            if [ "$global_time" -gt "$project_time" ] 2>/dev/null; then
                 ((global_newer++))
                 if [ "$VERBOSE" = true ]; then
                     echo "  ${GRAY}Global is newer: ${CYAN}${file}${NC}"
                 fi
-            elif [ "$project_time" -gt "$global_time" ]; then
+            elif [ "$project_time" -gt "$global_time" ] 2>/dev/null; then
                 ((project_newer++))
                 if [ "$VERBOSE" = true ]; then
                     echo "  ${GRAY}Project is newer: ${CYAN}${file}${NC}"
@@ -140,6 +172,11 @@ case $DIRECTION in
             global_path="$GLOBAL_BIN_DIR/$file"
             project_path="$BIN_DIR/$file"
 
+            # Skip if file doesn't exist in project
+            if [ ! -f "$project_path" ]; then
+                continue
+            fi
+
             status=$(compare_files "$global_path" "$project_path")
 
             case $status in
@@ -147,11 +184,11 @@ case $DIRECTION in
                     echo "  ${GREEN}[✓]${NC} ${CYAN}${file}${NC} - In sync"
                     ;;
                 "SourceMissing")
-                    echo "  ${RED}[!]${NC} ${CYAN}${file}${NC} - Missing in global"
+                    echo "  ${YELLOW}[?]${NC} ${CYAN}${file}${NC} - Not in global (use push)"
                     all_synced=false
                     ;;
                 "DestMissing")
-                    echo "  ${RED}[!]${NC} ${CYAN}${file}${NC} - Missing in project"
+                    echo "  ${YELLOW}[?]${NC} ${CYAN}${file}${NC} - Not in project (use pull)"
                     all_synced=false
                     ;;
                 "Different")
@@ -173,6 +210,7 @@ case $DIRECTION in
         echo -e "${BLUE}▶ Pulling from global to project...${NC}"
         echo ""
 
+        pulled=0
         for file in "${SYNC_FILES[@]}"; do
             global_path="$GLOBAL_BIN_DIR/$file"
             project_path="$BIN_DIR/$file"
@@ -182,9 +220,11 @@ case $DIRECTION in
             if [ "$status" = "Different" ] || [ "$status" = "DestMissing" ] || [ "$FORCE" = true ]; then
                 if [ -f "$global_path" ]; then
                     cp -f "$global_path" "$project_path"
+                    chmod +x "$project_path"
                     echo "  ${GREEN}[✓]${NC} ${CYAN}${file}${NC} - Pulled from global"
+                    ((pulled++))
                 else
-                    echo "  ${RED}[!]${NC} ${CYAN}${file}${NC} - Not found in global"
+                    echo "  ${GRAY}[skip]${NC} ${CYAN}${file}${NC} - Not found in global"
                 fi
             elif [ "$status" = "Same" ]; then
                 echo "  ${GRAY}[=]${NC} ${CYAN}${file}${NC} - Already in sync"
@@ -192,36 +232,68 @@ case $DIRECTION in
         done
 
         echo ""
-        echo -e "${GREEN}Pull complete!${NC}"
+        if [ $pulled -gt 0 ]; then
+            echo -e "${GREEN}Pull complete! Updated ${pulled} file(s).${NC}"
+        else
+            echo -e "${GREEN}All files already in sync.${NC}"
+        fi
         ;;
 
     "push")
         echo -e "${BLUE}▶ Pushing from project to global...${NC}"
         echo ""
 
+        pushed=0
         for file in "${SYNC_FILES[@]}"; do
             global_path="$GLOBAL_BIN_DIR/$file"
             project_path="$BIN_DIR/$file"
 
+            # Skip if file doesn't exist in project
+            if [ ! -f "$project_path" ]; then
+                continue
+            fi
+
             status=$(compare_files "$global_path" "$project_path")
 
             if [ "$status" = "Different" ] || [ "$status" = "SourceMissing" ] || [ "$FORCE" = true ]; then
-                if [ -f "$project_path" ]; then
-                    cp -f "$project_path" "$global_path"
-                    chmod +x "$global_path"
-                    echo "  ${GREEN}[✓]${NC} ${CYAN}${file}${NC} - Pushed to global"
-                else
-                    echo "  ${RED}[!]${NC} ${CYAN}${file}${NC} - Not found in project"
-                fi
+                cp -f "$project_path" "$global_path"
+                chmod +x "$global_path"
+                echo "  ${GREEN}[✓]${NC} ${CYAN}${file}${NC} - Pushed to global"
+                ((pushed++))
             elif [ "$status" = "Same" ]; then
                 echo "  ${GRAY}[=]${NC} ${CYAN}${file}${NC} - Already in sync"
             fi
         done
 
         echo ""
-        echo -e "${GREEN}Push complete!${NC}"
+        if [ $pushed -gt 0 ]; then
+            echo -e "${GREEN}Push complete! Updated ${pushed} file(s).${NC}"
+            echo ""
+            echo -e "${YELLOW}[!] Note: Restart terminal to use updated global scripts${NC}"
+        else
+            echo -e "${GREEN}All files already in sync.${NC}"
+        fi
+        ;;
+
+    "help"|"-h"|"--help")
+        echo -e "${CYAN}Usage: flow-sync [command] [options]${NC}"
         echo ""
-        echo -e "${YELLOW}[!] Note: Restart terminal to use updated global scripts${NC}"
+        echo "Commands:"
+        echo "  auto      Auto-detect sync direction (default)"
+        echo "  status    Show sync status only"
+        echo "  pull      Pull from global (~/.claude/bin) to project"
+        echo "  push      Push from project to global"
+        echo "  help      Show this help"
+        echo ""
+        echo "Options:"
+        echo "  --force, -f    Force sync even if files match"
+        echo "  --verbose, -v  Show detailed output"
+        ;;
+
+    *)
+        echo -e "${RED}Unknown command: ${DIRECTION}${NC}"
+        echo -e "${YELLOW}Use: flow-sync [auto|status|pull|push|help]${NC}"
+        exit 1
         ;;
 esac
 

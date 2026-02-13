@@ -1,4 +1,5 @@
 ---
+name: flow-mobile
 description: Mobile development setup and workflow for Maven Flow
 argument-hint: setup | status | sync | help
 ---

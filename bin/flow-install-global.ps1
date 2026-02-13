@@ -60,8 +60,8 @@ Print-Header
 Write-Host "${Blue}▶ Installing Maven Flow globally${Reset}"
 Write-Host ""
 
-# Get script directory
-$BinDir = Split-Path -Parent $PSScriptRoot
+# Get script directory - $PSScriptRoot is already the bin directory
+$BinDir = $PSScriptRoot
 $ProjectDir = Split-Path -Parent $BinDir
 
 # Claude directories

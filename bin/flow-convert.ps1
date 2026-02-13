@@ -144,16 +144,29 @@ $Prompt = "/flow-convert $forceFlag $Feature"
 & claude --dangerously-skip-permissions $Prompt
 $ExitCode = $LASTEXITCODE
 
+# Verify the output file was actually created
+$JsonPath = "docs/prd-$Feature.json"
+$FileCreated = Test-Path $JsonPath
+
 Write-Host ""
-if ($ExitCode -eq 0) {
+if ($ExitCode -eq 0 -and $FileCreated) {
     Write-Host "+============================================================+" -ForegroundColor Green
     Write-Host "|                [OK] CONVERSION COMPLETE                   |" -ForegroundColor Green
     Write-Host "+============================================================+" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  Created: docs/prd-$Feature.json" -ForegroundColor Gray
+    Write-Host "  Created: $JsonPath" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Next: " -NoNewline -ForegroundColor Yellow
     Write-Host "flow start    Begin development" -ForegroundColor Gray
+} elseif ($ExitCode -eq 0 -and -not $FileCreated) {
+    Write-Host "+============================================================+" -ForegroundColor Red
+    Write-Host "|              [ERROR] CONVERSION FAILED                    |" -ForegroundColor Red
+    Write-Host "+============================================================+" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  Claude returned success but no JSON file was created." -ForegroundColor Red
+    Write-Host "  Expected: $JsonPath" -ForegroundColor Gray
+    Write-Host "  Make sure docs/prd-$Feature.md exists and has valid content." -ForegroundColor Gray
+    $ExitCode = 1
 } else {
     Write-Host "+============================================================+" -ForegroundColor Red
     Write-Host "|              [ERROR] CONVERSION FAILED                    |" -ForegroundColor Red

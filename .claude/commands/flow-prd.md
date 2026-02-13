@@ -1,4 +1,5 @@
 ---
+name: flow-prd
 description: Generate PRD markdown from user message or plan.md with memory loading - NO QUESTIONS
 argument-hint: "[message describing what to build]"
 ---

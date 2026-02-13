@@ -62,6 +62,7 @@ function Safe-Delete {
 # -------------------------
 # MANIFEST (THE SOURCE OF TRUTH)
 # -------------------------
+# Directory paths are relative to TargetDir (e.g., ~/.claude)
 $ManifestDirs = @(
     "adrs",
     "agents",
@@ -77,71 +78,70 @@ $ManifestDirs = @(
     "bin"
 )
 
-# Explicit file mappings (source -> destination relative to target)
+# Explicit file mappings (destination -> source relative to repository root)
+# NOTE: Destination paths are relative to TargetDir (e.g., ~/.claude)
+#       Source paths are relative to ScriptDir (repository root)
 $ManifestFiles = @{
     # Commands
-    ".claude\commands\flow.md" = ".claude\commands\flow.md"
-    ".claude\commands\flow-mobile.md" = ".claude\commands\flow-mobile.md"
-    ".claude\commands\flow-prd.md" = ".claude\commands\flow-prd.md"
-    ".claude\commands\flow-convert.md" = ".claude\commands\flow-convert.md"
-    ".claude\commands\flow-update.md" = ".claude\commands\flow-update.md"
-    ".claude\commands\flow-work-story.md" = ".claude\commands\flow-work-story.md"
-    ".claude\commands\consolidate-memory.md" = ".claude\commands\consolidate-memory.md"
-    ".claude\commands\create-story-memory.md" = ".claude\commands\create-story-memory.md"
+    "commands\flow.md" = ".claude\commands\flow.md"
+    "commands\flow-mobile.md" = ".claude\commands\flow-mobile.md"
+    "commands\flow-prd.md" = ".claude\commands\flow-prd.md"
+    "commands\flow-convert.md" = ".claude\commands\flow-convert.md"
+    "commands\flow-update.md" = ".claude\commands\flow-update.md"
+    "commands\flow-work-story.md" = ".claude\commands\flow-work-story.md"
+    "commands\consolidate-memory.md" = ".claude\commands\consolidate-memory.md"
+    "commands\create-story-memory.md" = ".claude\commands\create-story-memory.md"
 
     # Agents
-    ".claude\agents\development.md" = ".claude\agents\development.md"
-    ".claude\agents\refactor.md" = ".claude\agents\refactor.md"
-    ".claude\agents\security.md" = ".claude\agents\security.md"
-    ".claude\agents\quality.md" = ".claude\agents\quality.md"
-    ".claude\agents\design.md" = ".claude\agents\design.md"
-    ".claude\agents\mobile-app.md" = ".claude\agents\mobile-app.md"
-    ".claude\agents\testing.md" = ".claude\agents\testing.md"
-    ".claude\agents\debugging-agent.md" = ".claude\agents\debugging-agent.md"
-    ".claude\agents\Project-Auditor.md" = ".claude\agents\Project-Auditor.md"
+    "agents\development.md" = ".claude\agents\development.md"
+    "agents\refactor.md" = ".claude\agents\refactor.md"
+    "agents\security.md" = ".claude\agents\security.md"
+    "agents\quality.md" = ".claude\agents\quality.md"
+    "agents\design.md" = ".claude\agents\design.md"
+    "agents\mobile-app.md" = ".claude\agents\mobile-app.md"
+    "agents\testing.md" = ".claude\agents\testing.md"
+    "agents\debugging-agent.md" = ".claude\agents\debugging-agent.md"
+    "agents\Project-Auditor.md" = ".claude\agents\Project-Auditor.md"
 
     # Hooks (legacy - kept for compatibility)
-    ".claude\hooks\session-save.sh" = ".claude\hooks\session-save.sh"
-    ".claude\hooks\session-restore.sh" = ".claude\hooks\session-restore.sh"
+    "hooks\session-save.sh" = ".claude\hooks\session-save.sh"
+    "hooks\session-restore.sh" = ".claude\hooks\session-restore.sh"
 
     # Maven Flow Hooks
-    ".claude\maven-flow\hooks\post-tool-use-quality.sh" = ".claude\maven-flow\hooks\post-tool-use-quality.sh"
-    ".claude\maven-flow\hooks\stop-comprehensive-check.sh" = ".claude\maven-flow\hooks\stop-comprehensive-check.sh"
-    ".claude\maven-flow\hooks\incremental-check.sh" = ".claude\maven-flow\hooks\incremental-check.sh"
-    ".claude\maven-flow\hooks\create-memory.sh" = ".claude\maven-flow\hooks\create-memory.sh"
+    "maven-flow\hooks\post-tool-use-quality.sh" = ".claude\maven-flow\hooks\post-tool-use-quality.sh"
+    "maven-flow\hooks\stop-comprehensive-check.sh" = ".claude\maven-flow\hooks\stop-comprehensive-check.sh"
+    "maven-flow\hooks\incremental-check.sh" = ".claude\maven-flow\hooks\incremental-check.sh"
+    "maven-flow\hooks\create-memory.sh" = ".claude\maven-flow\hooks\create-memory.sh"
 
     # Maven Flow Config
-    ".claude\maven-flow\config\eslint.config.mjs" = ".claude\maven-flow\config\eslint.config.mjs"
-    ".claude\maven-flow\.claude\settings.json" = ".claude\maven-flow\.claude\settings.json"
+    "maven-flow\config\eslint.config.mjs" = ".claude\maven-flow\config\eslint.config.mjs"
+    "maven-flow\.claude\settings.json" = ".claude\maven-flow\.claude\settings.json"
 
     # Lib
-    ".claude\lib\lock.sh" = ".claude\lib\lock.sh"
+    "lib\lock.sh" = ".claude\lib\lock.sh"
 
     # Shared docs
-    ".claude\shared\agent-patterns.md" = ".claude\shared\agent-patterns.md"
-    ".claude\shared\mcp-tools.md" = ".claude\shared\mcp-tools.md"
-    ".claude\shared\prd-json-schema.md" = ".claude\shared\prd-json-schema.md"
-    ".claude\shared\required-mcps.md" = ".claude\shared\required-mcps.md"
+    "shared\agent-patterns.md" = ".claude\shared\agent-patterns.md"
+    "shared\mcp-tools.md" = ".claude\shared\mcp-tools.md"
+    "shared\prd-json-schema.md" = ".claude\shared\prd-json-schema.md"
+    "shared\required-mcps.md" = ".claude\shared\required-mcps.md"
 
     # Skills
-    ".claude\skills\flow-convert\SKILL.md" = ".claude\skills\flow-convert\SKILL.md"
-    ".claude\skills\workflow\SKILL.md" = ".claude\skills\workflow\SKILL.md"
-    ".claude\skills\flow-prd-mobile.md" = ".claude\skills\flow-prd-mobile.md"
+    "skills\flow-convert\SKILL.md" = ".claude\skills\flow-convert\SKILL.md"
+    "skills\workflow\SKILL.md" = ".claude\skills\workflow\SKILL.md"
+    "skills\flow-prd-mobile.md" = ".claude\skills\flow-prd-mobile.md"
 
     # ADRs
-    ".claude\adrs\001-story-level-mcp-assignment.md" = ".claude\adrs\001-story-level-mcp-assignment.md"
-    ".claude\adrs\002-multi-prd-architecture.md" = ".claude\adrs\002-multi-prd-architecture.md"
-    ".claude\adrs\003-feature-based-folder-structure.md" = ".claude\adrs\003-feature-based-folder-structure.md"
-    ".claude\adrs\004-specialist-agent-coordination.md" = ".claude\adrs\004-specialist-agent-coordination.md"
+    "adrs\001-story-level-mcp-assignment.md" = ".claude\adrs\001-story-level-mcp-assignment.md"
+    "adrs\002-multi-prd-architecture.md" = ".claude\adrs\002-multi-prd-architecture.md"
+    "adrs\003-feature-based-folder-structure.md" = ".claude\adrs\003-feature-based-folder-structure.md"
+    "adrs\004-specialist-agent-coordination.md" = ".claude\adrs\004-specialist-agent-coordination.md"
 
-    # Bin
-    ".claude\bin\flow-banner.sh" = ".claude\bin\flow-banner.sh"
-    ".claude\bin\flow-convert.sh" = ".claude\bin\flow-convert.sh"
-    ".claude\bin\flow-install-global.sh" = ".claude\bin\flow-install-global.sh"
-    ".claude\bin\flow-install-user.sh" = ".claude\bin\flow-install-user.sh"
-    ".claude\bin\flow.sh" = ".claude\bin\flow.sh"
-    ".claude\bin\flow-status.sh" = ".claude\bin\flow-status.sh"
-    ".claude\bin\test-locks.sh" = ".claude\bin\test-locks.sh"
+    # Bin (helper scripts in .claude/bin - main CLI is in repo bin/ which is added to PATH)
+    "bin\flow-banner.sh" = ".claude\bin\flow-banner.sh"
+    "bin\flow-convert.sh" = ".claude\bin\flow-convert.sh"
+    "bin\flow-install-global.sh" = ".claude\bin\flow-install-global.sh"
+    "bin\flow-install-user.sh" = ".claude\bin\flow-install-user.sh"
 }
 
 # -------------------------

@@ -9,6 +9,13 @@ set -e
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Check for required dependencies
+if ! command -v claude &> /dev/null; then
+    echo "Error: 'claude' CLI is not installed or not in PATH"
+    echo "Please install Claude Code CLI first: https://docs.anthropic.com/en/docs/claude-code"
+    exit 1
+fi
+
 # Source banner
 if [ -f "$SCRIPT_DIR/../.claude/bin/flow-banner.sh" ]; then
     source "$SCRIPT_DIR/../.claude/bin/flow-banner.sh"

@@ -1,4 +1,5 @@
 ---
+name: flow
 description: Run Maven Flow - autonomous AI development with PRD-driven iteration and 10-step workflow
 argument-hint: start [max-iterations] | status | continue [prd-name] | reset [prd-name] | test [prd-name] | consolidate [prd-name] | help
 ---
@@ -457,7 +458,7 @@ Recent progress:
 - Uses testing-agent with chrome-devtools MCP
 - Tests all completed stories (where `passes: true`)
 - Creates error log at `docs/errors-[feature-name].md`
-- Uses standard test user: `revccnt@gmail.com` / `Elishiba!90`
+- Uses standard test user: `${TEST_USER_EMAIL}` / `${TEST_USER_PASSWORD}`
 
 **Process:**
 1. Reads PRD to find completed stories
@@ -859,8 +860,8 @@ Each story is implemented through specific steps, each handled by a specialist a
 - chrome-devtools (REQUIRED - cannot test without it)
 
 **Test Credentials:**
-- Email: `revccnt@gmail.com`
-- Password: `Elishiba!90`
+- Email: `${TEST_USER_EMAIL}`
+- Password: `${TEST_USER_PASSWORD}`
 
 **Commit prefix:** `test:` (only commits if making test fixes)
 
@@ -1251,8 +1252,8 @@ import { useAuth } from '../hooks';
 
 ### Test User Credentials (Standard Across All Projects)
 
-**Email:** `revccnt@gmail.com`
-**Password:** `Elishiba!90`
+**Email:** `${TEST_USER_EMAIL}`
+**Password:** `${TEST_USER_PASSWORD}`
 
 ### Testing Process
 
@@ -1282,7 +1283,7 @@ import { useAuth } from '../hooks';
 
 **Do NOT create separate accounts for each role. Use role switching:**
 
-1. Log in as `revccnt@gmail.com`
+1. Log in as `${TEST_USER_EMAIL}`
 2. Use role switcher in application
 3. Change roles: SUPER_ADMIN → SHOP_OWNER → SHOP_EMPLOYEE
 4. Test each role's features
@@ -1397,8 +1398,8 @@ Maven Flow includes a systematic testing and error consolidation workflow to ens
 8. Creates error log at `docs/errors-[feature-name].md`
 
 **Standard Test User:**
-- Email: `revccnt@gmail.com`
-- Password: `Elishiba!90`
+- Email: `${TEST_USER_EMAIL}`
+- Password: `${TEST_USER_PASSWORD}`
 
 **What gets tested:**
 - User authentication (signup, login, logout)
@@ -2042,7 +2043,7 @@ Tell me you want to create a PRD for [feature]
 - Verify API endpoints exist
 
 **Test user cannot log in:**
-- Create user: `revccnt@gmail.com` / `Elishiba!90`
+- Create user: `${TEST_USER_EMAIL}` / `${TEST_USER_PASSWORD}`
 - Verify signup flow works
 - Check database for user record
 

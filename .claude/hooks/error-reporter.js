@@ -337,6 +337,7 @@ function formatReport(report, options = {}) {
   const colors = {
     reset: color ? '\x1b[0m' : '',
     red: color ? '\x1b[31m' : '',
+    green: color ? '\x1b[32m' : '',
     yellow: color ? '\x1b[33m' : '',
     blue: color ? '\x1b[34m' : '',
     cyan: color ? '\x1b[36m' : '',

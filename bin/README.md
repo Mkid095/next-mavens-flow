@@ -317,8 +317,8 @@ flow test task-priority  # Test task-priority PRD
 7. Creates error log at `docs/errors-[feature-name].md`
 
 **Test User Credentials:**
-- Email: `revccnt@gmail.com`
-- Password: `Elishiba!90`
+- Email: `${TEST_USER_EMAIL}`
+- Password: `${TEST_USER_PASSWORD}`
 
 ---
 

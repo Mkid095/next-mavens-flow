@@ -370,7 +370,7 @@ Exit Codes:
 
 Examples:
     # Restore session (if valid)
-    $(basename "$0}")
+    $(basename "$0")
 
     # Force restore even if expired
     $(basename "$0") --force
